@@ -1550,9 +1550,13 @@ bool BBWorker::generateStateFromNode(EnumTreeNode *GlobalPoolNode, bool isGlobal
   }
 
   else {
-    if (!Enumrtr_->isFsbl(GlobalPoolNode, false)) return false;
+    Enumrtr_->setIsGenerateState(true);
+    //if (!Enumrtr_->isFsbl(GlobalPoolNode, false)) return false;
     fsbl = scheduleArtificialRoot(true);
-    if (!fsbl) return false;
+    if (!fsbl) {
+      Enumrtr_->setIsGenerateState(false); 
+      return false;
+    }
 
     std::stack<EnumTreeNode *> prefix;
     int prefixLength = 0;
@@ -1587,14 +1591,19 @@ bool BBWorker::generateStateFromNode(EnumTreeNode *GlobalPoolNode, bool isGlobal
         //Logger::Info("before scheduling prefix");
         //printRdyLst();
         fsbl = Enumrtr_->scheduleNodeOrPrune(temp, false);
-        if (!fsbl) return false;
         Enumrtr_->removeInstFromRdyLst_(temp->GetInstNum());
+        if (!fsbl) {
+          Enumrtr_->setIsGenerateState(false); 
+          return false;
+        }
+        
         // TODO -- delete node
       }
 
       fsbl = Enumrtr_->scheduleNodeOrPrune(GlobalPoolNode, true);
-      if (!fsbl) return false;
       Enumrtr_->removeInstFromRdyLst_(GlobalPoolNode->GetInstNum());
+      Enumrtr_->setIsGenerateState(false); 
+      if (!fsbl) return false;
     }
   }
   //Logger::Info("ending BBTHread genStateFromNode, entryCnt %d", Enumrtr_->getHistTableEntryCnt());

@@ -2265,7 +2265,7 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
 
   // lock table for syncrhonized iterator
   
-  bbt_->histTableLock(key);
+  //bbt_->histTableLock(key);
   listSize = exmndSubProbs_->GetListSize(newNode->GetSig());
   //Logger::Info("Solver %d, made it through door %d", SolverID_, key);
   //Logger::Info("Solver %d inside lock key %d, instNum %d", SolverID_, key, newNode->GetInstNum());
@@ -2337,7 +2337,7 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
   
   // unlock
   //Logger::Info("Solver %d unlocking key %d", SolverID_, key);
-  bbt_->histTableUnlock(key);  
+  //bbt_->histTableUnlock(key);  
 
   stats::traversedHistoryListSize.Record(trvrsdListSize);
   return wasDmntSubProbExmnd;
