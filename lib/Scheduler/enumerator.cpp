@@ -1275,7 +1275,7 @@ bool Enumerator::FindNxtFsblBrnch_(EnumTreeNode *&newNode) {
       //Logger::Info("SolverID %d attempting to probe next inst", SolverID_);
       assert(rdyLst_);
 
-#ifdef WORK_STEAL
+if (bbt_->isWorkSteal()) {
     if (!bbt_->isWorker()) {
       inst = rdyLst_->GetNextPriorityInst();
     }
@@ -1318,12 +1318,11 @@ bool Enumerator::FindNxtFsblBrnch_(EnumTreeNode *&newNode) {
         }
       }
     }
-#endif
+}
 
-
-#ifndef WORK_STEAL
+else {
       inst = rdyLst_->GetNextPriorityInst();
-#endif
+}
 
       //inst = rdyLst_->GetNextPriorityInst();
 
@@ -1682,7 +1681,7 @@ void Enumerator::StepFrwrd_(EnumTreeNode *&newNode) {
 
   // TODO: toggle work stealing on-off
 
-#ifdef WORK_STEAL
+if (bbt_->isWorkSteal()) {
   if (bbt_->isWorker()) {
     bool pushedToLocal = false;
     if (!crntNode_->getPushedToLocalPool()) {
@@ -1734,7 +1733,7 @@ void Enumerator::StepFrwrd_(EnumTreeNode *&newNode) {
 
     }
   }  
-#endif
+}
 //TEST CODE
 /*
 if (!crntNode_->getPushedToLocalPool() || !bbt_->isWorker() || isSecondPass()) {
@@ -3099,7 +3098,7 @@ bool LengthCostEnumerator::BackTrack_(bool trueState) {
     }
   }
 
-  #ifdef WORK_STEAL
+if (bbt_->isWorkSteal()) {
   // it is possible that a crntNode becomes infeasible before exploring all its children
   // thus we need to ensure that all children are removed on backtrack
   if (bbt_->isWorker() && !fsbl) {
@@ -3128,7 +3127,7 @@ bool LengthCostEnumerator::BackTrack_(bool trueState) {
     }
     bbt_->localPoolUnlock(SolverID_ - 2);
   }
-  #endif
+}
 
   #ifdef IS_DEBUG_METADATA
   backtrackTime += Utilities::GetProcessorTime() - startTime;

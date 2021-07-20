@@ -201,6 +201,7 @@ public:
 
   virtual void incrementImprvmntCnt() = 0;
   
+  virtual bool isWorkSteal() = 0;
   // Thread stealing
   //virtual LinkedListIterator<EnumTreeNode> localPoolBegin(int SolverID) = 0;
   //virtual LinkedListIterator<EnumTreeNode> localPoolEnd(int SolverID) = 0 ;    
@@ -425,6 +426,8 @@ public:
 
     uint64_t getExaminedNodeCount() override {return Enumrtr_->GetNodeCnt(); }
 
+    inline bool isWorkSteal() override {return false;}
+
 };
 
 
@@ -498,6 +501,8 @@ private:
 
     int *IdleTime_;
     int *InactiveThreads_;
+
+    bool WorkSteal_;
     
 
     void handlEnumrtrRslt_(FUNC_RESULT rslt, InstCount trgtLngth);
@@ -528,7 +533,7 @@ public:
               std::mutex *ImprCountLock, std::mutex *RegionSchedLock, std::mutex *AllocatorLock,
               vector<FUNC_RESULT> *resAddr, int *idleTimes, int NumSolvers, std::vector<InstPool3 *> localPools, 
               std::mutex **localPoolLocks, int *inactiveThreads, std::mutex *inactiveThreadLock, 
-              int LocalPoolSize);
+              int LocalPoolSize, bool WorkSteal);
 
     ~BBWorker();
     /*
@@ -601,6 +606,8 @@ public:
     void histTableLock(UDT_HASHVAL key) override;
     void histTableUnlock(UDT_HASHVAL key) override; 
 
+    inline bool isWorkSteal() override {return WorkSteal_;}
+
     void allocatorLock() override;
     void allocatorUnlock() override;
 
@@ -668,6 +675,8 @@ private:
     SPILL_COST_FUNCTION GlobalPoolSCF_;
     int GlobalPoolSort_;
 
+    bool WorkSteal_;
+
 
     void initWorkers(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
              long rgnNum, int16_t sigHashSize, LB_ALG lbAlg,
@@ -681,7 +690,7 @@ private:
              std::mutex *NodeCountLock, std::mutex *ImprvCountLock, std::mutex *RegionSchedLock, 
              std::mutex *AllocatorLock, vector<FUNC_RESULT> *results, int *idleTimes,
              int NumSolvers, std::vector<InstPool3 *> localPools, std::mutex **localPoolLocks,
-             int *InactiveThreads_, std::mutex *InactiveThreadLock, int LocalPoolSize);
+             int *InactiveThreads_, std::mutex *InactiveThreadLock, int LocalPoolSize, bool WorkSteal);
 
   
     bool initGlobalPool();
@@ -702,7 +711,7 @@ public:
              SchedulerType HeurSchedType, int NumThreads, int MinNodesAsMultiple, 
              int MinSplittingDepth,
              int MaxSplittingDepth, int NumSolvers, int LocalPoolSize, float ExploitationPercent,
-             SPILL_COST_FUNCTION GlobalPoolSCF, int GlobalPoolSort);
+             SPILL_COST_FUNCTION GlobalPoolSCF, int GlobalPoolSort, bool WorkSteal);
 
     ~BBMaster();
     
@@ -719,6 +728,8 @@ public:
     uint64_t getExaminedNodeCount() override {return MasterNodeCount_; }
 
     int getGlobalPoolSortMethod() override {return GlobalPool->getSortMethod();}
+
+    inline bool isWorkSteal() override {return WorkSteal_;}
 
 
 

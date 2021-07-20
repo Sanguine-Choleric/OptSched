@@ -1304,7 +1304,7 @@ BBWorker::BBWorker(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
               std::mutex *BestSchedLock, std::mutex *NodeCountLock, std::mutex *ImprvmntCntLock,
               std::mutex *RegionSchedLock, std::mutex *AllocatorLock, vector<FUNC_RESULT> *RsltAddr, int *idleTimes,
               int NumSolvers, vector<InstPool3 *> localPools, std::mutex **localPoolLocks,
-              int *inactiveThreads, std::mutex *inactiveThreadLock, int LocalPoolSize) 
+              int *inactiveThreads, std::mutex *inactiveThreadLock, int LocalPoolSize, bool WorkSteal) 
               : BBThread(OST_, dataDepGraph, rgnNum, sigHashSize, lbAlg,
               hurstcPrirts, enumPrirts, vrfySched, PruningStrategy, SchedForRPOnly,
               enblStallEnum, SCW, spillCostFunc, HeurSchedType)
@@ -1352,6 +1352,8 @@ BBWorker::BBWorker(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
 
   InactiveThreads_ = inactiveThreads;
   InactiveThreadLock_ = inactiveThreadLock;
+
+  WorkSteal_ = WorkSteal;
 }
 
 BBWorker::~BBWorker() {
@@ -1791,7 +1793,7 @@ FUNC_RESULT BBWorker::enumerate_(EnumTreeNode *GlobalPoolNode,
   Logger::Info("Solver %d bypassed global pool pulling (size = %d)", SolverID_, GlobalPool_->size());
 #endif
 
-#ifdef WORK_STEAL
+if (isWorkSteal()) {
 
   //Logger::Info("SolverID %d beginning work steal loop", SolverID_);
   IdleTime_[SolverID_ - 2] = Utilities::GetProcessorTime();
@@ -1895,8 +1897,7 @@ FUNC_RESULT BBWorker::enumerate_(EnumTreeNode *GlobalPoolNode,
     rslt = RES_SUCCESS;
     return rslt;
   }
-
-#endif
+}
 
   // most recent comment -- why are these needed? we already do this after FFS completes
   // outside length lkoop
@@ -2048,7 +2049,7 @@ BBMaster::BBMaster(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
              SchedulerType HeurSchedType, int NumThreads, int MinNodesAsMultiple,
              int MinSplittingDepth, 
              int MaxSplittingDepth, int NumSolvers, int LocalPoolSize, float ExploitationPercent, 
-             SPILL_COST_FUNCTION GlobalPoolSCF, int GlobalPoolSort)
+             SPILL_COST_FUNCTION GlobalPoolSCF, int GlobalPoolSort, bool WorkSteal)
              : BBInterfacer(OST_, dataDepGraph, rgnNum, sigHashSize, lbAlg, hurstcPrirts,
              enumPrirts, vrfySched, PruningStrategy, SchedForRPOnly, 
              enblStallEnum, SCW, spillCostFunc, HeurSchedType) {
@@ -2064,6 +2065,9 @@ BBMaster::BBMaster(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
   ExploitationPercent_ = ExploitationPercent;
   Logger::Info("setting globalPoolSCF to %d", GlobalPoolSCF);
   GlobalPoolSCF_ = GlobalPoolSCF;
+
+  Logger::Info("setting work steal to %d", WorkSteal_);
+  WorkSteal_ = WorkSteal;
 
   HistTableSize_ = 1 + (UDT_HASHVAL)(((int64_t)(1) << sigHashSize) - 1);
   HistTableLock = new std::mutex*[HistTableSize_];
@@ -2095,7 +2099,7 @@ BBMaster::BBMaster(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
               HeurSchedType, BestCost_, schedLwrBound_, enumBestSched_, &OptmlSpillCost_, 
               &bestSchedLngth_, GlobalPool, &MasterNodeCount_, HistTableLock, &GlobalPoolLock, &BestSchedLock, 
               &NodeCountLock, &ImprvCountLock, &RegionSchedLock, &AllocatorLock, &results, idleTimes,
-              NumSolvers_, localPools, localPoolLocks, &InactiveThreads_, &InactiveThreadLock, LocalPoolSize_);
+              NumSolvers_, localPools, localPoolLocks, &InactiveThreads_, &InactiveThreadLock, LocalPoolSize_, WorkSteal_);
   
   ThreadManager.resize(NumThreads_);
 }
@@ -2132,7 +2136,7 @@ void BBMaster::initWorkers(const OptSchedTarget *OST_, DataDepGraph *dataDepGrap
              std::mutex *NodeCountLock, std::mutex *ImprvCountLock, std::mutex *RegionSchedLock,
              std::mutex *AllocatorLock, vector<FUNC_RESULT> *results, int *idleTimes,
              int NumSolvers, vector<InstPool3 *> localPools, std::mutex **localPoolLocks, int *inactiveThreads,
-             std::mutex *inactiveThreadLock, int LocalPoolSize) {
+             std::mutex *inactiveThreadLock, int LocalPoolSize, bool WorkSteal) {
   
   Workers.resize(NumThreads_);
   
@@ -2143,7 +2147,7 @@ void BBMaster::initWorkers(const OptSchedTarget *OST_, DataDepGraph *dataDepGrap
                                    BestSpill, BestLength, GlobalPool, NodeCount, i+2, HistTableLock, 
                                    GlobalPoolLock, BestSchedLock, NodeCountLock, ImprvCountLock, RegionSchedLock, 
                                    AllocatorLock, results, idleTimes, NumThreads_, localPools, localPoolLocks,
-                                   inactiveThreads, inactiveThreadLock, LocalPoolSize);
+                                   inactiveThreads, inactiveThreadLock, LocalPoolSize, WorkSteal);
   }
 }
 /*****************************************************************************/
@@ -2645,9 +2649,10 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
   Logger::Info("using exploitationPercent %f", ExploitationPercent_);
   int exploitationCount;
   exploitationCount =  NumThreads_ - (NumThreads_ * (1 - ExploitationPercent_));
+  int globalPoolSizeStart = GlobalPool->size();
 
-  if (GlobalPool->size() < NumThreads_) {
-    NumThreadsToLaunch = GlobalPool->size();
+  if (globalPoolSizeStart < NumThreads_) {
+    NumThreadsToLaunch = globalPoolSizeStart;
     Logger::Info("we were not able to find enough global pool nodes");
     Logger::Info("Launching %d threads", NumThreadsToLaunch);
 
@@ -2660,7 +2665,7 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
 
 
   else {
-      Logger::Info("Master launching parallel threads");
+    Logger::Event("LaunchingParallelThreads", "num", NumThreads_);
     NumThreadsToLaunch = NumThreads_;
   while (NumNodesPicked < NumThreads_) {
     for (int i = 0; i < firstLevelSize_; i++) {
@@ -2745,6 +2750,10 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
       Logger::Info("Idle time for solver %d: %d", j + 1, temp);
     //}
   }
+
+  int globalPoolSizeEnd = GlobalPool->size();
+
+  Logger::Event("GlobalPoolNodesExplored", "num", globalPoolSizeStart - globalPoolSizeEnd);
 
   //delete[] LaunchNodes;
   delete GlobalPool;
