@@ -549,6 +549,8 @@ protected:
   inline void ClearState_();
   inline bool IsStateClear_();
 
+  bool alctrsFreed_;
+
   // Can we find an instruction that uses a register in the ready list
   bool IsUseInRdyLst_();
 
@@ -610,7 +612,7 @@ protected:
   inline void FreeNode_(EnumTreeNode *node);
 
   virtual void SetupAllocators_();
-  virtual void FreeAllocators_();//bool isMaster);
+
   virtual void ResetAllocators_();
 
   void SetTotalCostsAndSuffixes(EnumTreeNode *const, EnumTreeNode *const, const InstCount, const bool);
@@ -715,6 +717,8 @@ public:
   inline SchedPriorities getSchedPriorities() {return prirts_;}
   inline void setSchedPriorities(SchedPriorities prirts) {prirts_ = prirts;}
 
+  virtual void FreeAllocators_();//bool isMaster);
+
 };
 /*****************************************************************************/
 
@@ -727,7 +731,7 @@ private:
   virtual bool WasObjctvMet_();
 
   void SetupAllocators_();
-  void FreeAllocators_();//bool isMaster = false);
+  
   void ResetAllocators_();
 
   HistEnumTreeNode *AllocHistNode_(EnumTreeNode *node);
@@ -749,6 +753,8 @@ public:
   FUNC_RESULT FindFeasibleSchedule(InstSchedule *sched, InstCount trgtLngth,
                                    Milliseconds deadline);
   bool IsCostEnum();
+
+  void FreeAllocators_();//bool isMaster = false);
 };
 /*****************************************************************************/
 
@@ -800,6 +806,8 @@ public:
   bool WasObjctvMet_();
   
   void FreeAllocators_();
+
+  void destroy();
 
   void Reset();
 

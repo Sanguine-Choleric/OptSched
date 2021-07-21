@@ -1684,8 +1684,10 @@ FUNC_RESULT BBWorker::enumerate_(EnumTreeNode *GlobalPoolNode,
         NodeCountLock_->unlock();
 
         Enumrtr_->setNodeCnt(0);
-        if (rslt == RES_EXIT)
+        if (rslt == RES_EXIT) {
+          //Enumrtr_->destroy();
           return rslt;
+        }
                 
   
         if (rslt == RES_TIMEOUT)
@@ -1724,7 +1726,7 @@ FUNC_RESULT BBWorker::enumerate_(EnumTreeNode *GlobalPoolNode,
             (*InactiveThreads_)++;
             InactiveThreadLock_->unlock();
 #endif
-*/          
+*/          //Enumrtr_->destroy();
             IdleTime_[SolverID_ - 2] = Utilities::GetProcessorTime();
             return rslt;
         }
@@ -1782,8 +1784,10 @@ FUNC_RESULT BBWorker::enumerate_(EnumTreeNode *GlobalPoolNode,
         Logger::Info("Stepping forward to inst %d", temp->GetInstNum());
       assert(temp != NULL);
       rslt = enumerate_(temp, StartTime, RgnTimeout, LngthTimeout);
-      if (RegionSched_->GetSpillCost() == 0 || rslt == RES_ERROR || (rslt == RES_TIMEOUT) || rslt == RES_EXIT)
+      if (RegionSched_->GetSpillCost() == 0 || rslt == RES_ERROR || (rslt == RES_TIMEOUT) || rslt == RES_EXIT) {
+        //Enumrtr_->destroy();
         return rslt;
+      }
       break;
       //}
     }
@@ -1875,6 +1879,7 @@ if (isWorkSteal()) {
   if ((*InactiveThreads_) == NumSolvers_) {
     Logger::Info("All threads inactive");
     // we have exhausted the search space
+    //Enumrtr_->destroy();
     return RES_EXIT;
   }
 
@@ -1884,16 +1889,19 @@ if (isWorkSteal()) {
     rslt = enumerate_(workStealNode, StartTime, RgnTimeout, LngthTimeout, true);
     assert(getLocalPoolSize(SolverID_ - 2) == 0 || RegionSched_->GetSpillCost() == 0 || rslt == RES_TIMEOUT || rslt == RES_ERROR || rslt == RES_EXIT);
     if (RegionSched_->GetSpillCost() == 0 || rslt == RES_ERROR || (rslt == RES_TIMEOUT) || rslt == RES_EXIT) {
+      //Enumrtr_->destroy();
       return rslt;
     }
   }
 
   if (isTimedOut) {
-    rslt = RES_TIMEOUT;
+    //Enumrtr_->destroy();
+    //rslt = RES_TIMEOUT;
     return rslt;
   }
 
   if (Enumrtr_->WasObjctvMet_()) {
+    //Enumrtr_->destroy();
     rslt = RES_SUCCESS;
     return rslt;
   }
@@ -1942,6 +1950,7 @@ if (isWorkSteal()) {
   //Logger::Info("worker returning %d", rslt);
   // do we need to write to RsltAddr here?
   //RsltAddr_[SolverID_ - 2] = rslt;
+  //Enumrtr_->destroy();
   return rslt;
 }
 
@@ -2066,7 +2075,7 @@ BBMaster::BBMaster(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
   Logger::Info("setting globalPoolSCF to %d", GlobalPoolSCF);
   GlobalPoolSCF_ = GlobalPoolSCF;
 
-  Logger::Info("setting work steal to %d", WorkSteal_);
+  Logger::Info("setting work steal to %d", WorkSteal);
   WorkSteal_ = WorkSteal;
 
   HistTableSize_ = 1 + (UDT_HASHVAL)(((int64_t)(1) << sigHashSize) - 1);

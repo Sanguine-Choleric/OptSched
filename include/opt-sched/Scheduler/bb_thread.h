@@ -554,6 +554,8 @@ public:
 
     void allocSched_();
 
+    inline void destroy() {Enumrtr_->destroy();}
+
     void setBestSched(InstSchedule *sched);
     void setCrntSched(InstSchedule *sched);
 

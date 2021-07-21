@@ -103,7 +103,7 @@ template <class T> inline MemAlloc<T>::~MemAlloc() {
     delete[] blk;
   }
 
-  //Logger::Info("deleted %d blocks", i);
+  Logger::Info("deleted %d blocks", i);
 }
 
 template <class T> inline void MemAlloc<T>::Reset() {

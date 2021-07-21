@@ -638,6 +638,7 @@ void Enumerator::SetupAllocators_() {
   //maxNodeCnt *= multiplier;
   int maxSize = INVALID_VALUE;
 
+  //maxNodeCnt = (SolverID_ = 1) ? maxNodeCnt * 15 : maxNodeCnt;
   nodeAlctr_ = new EnumTreeNodeAlloc(maxNodeCnt, maxSize);
 
   if (IsHistDom()) {
@@ -650,6 +651,8 @@ void Enumerator::SetupAllocators_() {
     lastInsts_ = new SchedInstruction *[lastInstsEntryCnt];
     othrLastInsts_ = new SchedInstruction *[totInstCnt_];
   }
+
+  alctrsFreed_ = false;
 }
 /****************************************************************************/
 
@@ -673,18 +676,39 @@ void Enumerator::FreeAllocators_(){
     delete nodeAlctr_;
     //Logger::Info("SolverID %d just deleted nodeAlctr", SolverID_);
   }*/
-  delete nodeAlctr_;
-  //Logger::Info("SolverID %d just deleted nodeAlctr", SolverID_);
-  nodeAlctr_ = NULL;
-  delete rlxdSchdulr_;
 
-  if (IsHistDom()) {
-    delete hashTblEntryAlctr_;
-    hashTblEntryAlctr_ = NULL;
-    delete bitVctr1_;
-    delete bitVctr2_;
-    delete[] lastInsts_;
-    delete[] othrLastInsts_;
+  if (!alctrsFreed_) {
+    Logger::Info("SolverID %d freeing enum::alctr", SolverID_);
+    if (nodeAlctr_ != NULL)
+      delete nodeAlctr_;
+  //Logger::Info("SolverID %d just deleted nodeAlctr", SolverID_);
+    nodeAlctr_ = NULL;
+    if (rlxdSchdulr_ != NULL)
+      delete rlxdSchdulr_;
+    rlxdSchdulr_ = NULL;
+
+    Logger::Info("SolverID %d freeing enum::histAlctr");
+    if (IsHistDom()) {
+      if (hashTblEntryAlctr_ != NULL)
+        delete hashTblEntryAlctr_;
+      hashTblEntryAlctr_ = NULL;
+      if (bitVctr1_ != NULL)
+        delete bitVctr1_;
+      if (bitVctr2_ != NULL)
+        delete bitVctr2_;
+      if (lastInsts_ != NULL)
+        delete[] lastInsts_;
+      if (othrLastInsts_ != NULL)
+        delete[] othrLastInsts_;
+
+      bitVctr1_ = NULL;
+      bitVctr2_ = NULL;
+      lastInsts_ = NULL;
+      othrLastInsts_ = NULL;
+    }
+    Logger::Info("finished freeing enum::histAcltr");
+
+    alctrsFreed_ = true;
   }
 }
 /****************************************************************************/
@@ -2762,12 +2786,13 @@ void LengthEnumerator::ResetAllocators_() {
 /****************************************************************************/
 
 void LengthEnumerator::FreeAllocators_(){
-  Enumerator::FreeAllocators_();//isMaster);
-
-  if (IsHistDom()) {
+  if (IsHistDom() && !alctrsFreed_) {
     delete histNodeAlctr_;
     histNodeAlctr_ = NULL;
   }
+
+  Enumerator::FreeAllocators_();//isMaster);
+
 }
 /****************************************************************************/
 
@@ -2834,17 +2859,35 @@ LengthCostEnumerator::LengthCostEnumerator(BBThread *bbt,
 /*****************************************************************************/
 
 LengthCostEnumerator::~LengthCostEnumerator() {
-  Reset();
-  if (SolverID_ > 1) {
-    //Logger::Info("resseting node allocator for solverID %d", SolverID_);
-    nodeAlctr_->Reset();
-    if (IsHistDom()) {
-      hashTblEntryAlctr_->Reset();
+  if (!alctrsFreed_) {
+    Reset();
+    if (SolverID_ > 1) {
+      //Logger::Info("resseting node allocator for solverID %d", SolverID_);
+      nodeAlctr_->Reset();
+      if (IsHistDom()) {
+        hashTblEntryAlctr_->Reset();
+      }
     }
+    FreeAllocators_();
   }
-  FreeAllocators_();
 }
 /*****************************************************************************/
+
+void LengthCostEnumerator::destroy() {
+  if (!alctrsFreed_) {
+    Reset();
+    if (SolverID_ > 1) {
+      //Logger::Info("resseting node allocator for solverID %d", SolverID_);
+      nodeAlctr_->Reset();
+      if (IsHistDom()) {
+        hashTblEntryAlctr_->Reset();
+      }
+    }
+    //FreeAllocators_();
+  }
+}
+
+
 
 void LengthCostEnumerator::SetupAllocators_() {
   int memAllocBlkSize = memAllocBlkSize_;
@@ -2865,12 +2908,16 @@ void LengthCostEnumerator::ResetAllocators_() {
 /****************************************************************************/
 
 void LengthCostEnumerator::FreeAllocators_(){
-  Enumerator::FreeAllocators_();
-
-  if (IsHistDom()) {
-    delete histNodeAlctr_;
+  if (IsHistDom() & !alctrsFreed_) {
+    Logger::Info("SolverID %d freeing LCE::alctr", SolverID_);
+    if (histNodeAlctr_ != NULL)
+      delete histNodeAlctr_;
     histNodeAlctr_ = NULL;
   }
+  
+  Enumerator::FreeAllocators_();
+
+
 }
 
 void LengthCostEnumerator::deleteNodeAlctr() {
@@ -4019,7 +4066,7 @@ EnumTreeNode *LengthCostEnumerator::checkTreeFsblty(bool &fsbl) {
 
 void LengthCostEnumerator::getRdyListAsNodes(std::pair<EnumTreeNode *, unsigned long *> *ExploreNode, InstPool *pool, int depth) {
   std::stack<EnumTreeNode *> prefix;
-  std::queue<EnumTreeNode *> subPrefix; //make these hold EnumTreeNodes?
+  std::queue<EnumTreeNode *> subPrefix; 
   int prefixLength = 0;
 
   EnumTreeNode *node = ExploreNode->first;
@@ -4079,6 +4126,8 @@ void LengthCostEnumerator::getRdyListAsNodes(std::pair<EnumTreeNode *, unsigned 
 
 
     prefixLength = node->getPrefixSize();
+    EnumTreeNode *parent = node->GetParent();
+
     //assert(prefixLength >= 1);
 
     // pop the root
@@ -4089,7 +4138,10 @@ void LengthCostEnumerator::getRdyListAsNodes(std::pair<EnumTreeNode *, unsigned 
         subPrefix.push(temp);
         //Logger::Info("scheduling the %dth inst of prefix (inst is %d)", i, temp->GetInstNum());
         scheduleNode(temp, false, false);
-        removeInstFromRdyLst_(temp->GetInstNum()); 
+        removeInstFromRdyLst_(temp->GetInstNum());
+        //EnumTreeNode *nextParent = parent->GetParent();
+        //nodeAlctr_->Free(parent);
+        //parent = nextParent;
       }
     }
     scheduleNode(node, false, false);
