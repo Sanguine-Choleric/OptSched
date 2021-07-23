@@ -1892,7 +1892,6 @@ FUNC_RESULT BBWorker::enumerate_(EnumTreeNode *GlobalPoolNode,
         if (*MasterImprvCount_ > 0) {
             RegionSchedLock_->lock(); 
               if (MasterSched_->GetSpillCost() < RegionSched_->GetSpillCost()) {
-                Logger::Info("updating best schedule");
                 RegionSched_->Copy(MasterSched_);
                 RegionSched_->SetSpillCost(MasterSched_->GetSpillCost());
               }
@@ -2245,7 +2244,6 @@ FUNC_RESULT BBWorker::enumerate2_(HalfNode *GlobalPoolNode,
             //Logger::Info("found an improved schedule");
             RegionSchedLock_->lock(); 
               if (MasterSched_->GetSpillCost() < RegionSched_->GetSpillCost()) {
-                Logger::Info("updating region schedule");
                 RegionSched_->Copy(MasterSched_);
                 RegionSched_->SetSpillCost(MasterSched_->GetSpillCost());
               }
@@ -3420,7 +3418,6 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
   
   if (enumBestSched_->GetSpillCost() < bestSched_->GetSpillCost() && *Enumrtr_->getImprvCnt() > 0)
   {
-    Logger::Info("master updating region sched");
     bestSched_ = enumBestSched_;
   }
 
