@@ -14,6 +14,7 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
+#include <stack>
 
 namespace llvm {
 namespace opt_sched {
@@ -23,6 +24,28 @@ class EnumTreeNode;
 class Register;
 class RegisterFile;
 class BitVector;
+
+
+
+class InstPool4 {
+private:
+  std::queue<HalfNode *> pool;
+  int maxSize_;
+  int SortMethod_;
+  int Depth_;
+public:
+  InstPool4();
+  ~InstPool4();
+  InstPool4(int SortMethod);
+  void push(HalfNode *n) {pool.push(n);}
+  int size() {return pool.size();}
+  HalfNode *front() {return pool.front();}
+  void pop() {pool.pop();}
+  bool empty() {return pool.empty();}
+  void sort();
+  inline int getSortMethod() {return SortMethod_;}
+  inline void setDepth(int Depth) {Depth_ = Depth;}
+};
 
 
 class InstPool {
@@ -44,6 +67,11 @@ public:
   inline int getSortMethod() {return SortMethod_;}
   inline void setDepth(int Depth) {Depth_ = Depth;}
 };
+
+
+
+
+
 
 
 class InstPool2 {
@@ -143,7 +171,7 @@ private:
   void InitForCostCmputtn_();
   InstCount CmputDynmcCost_();
 
-  void UpdateSpillInfoForSchdul_(SchedInstruction *inst, bool trackCnflcts);
+  
   void SetupPhysRegs_();
   void CmputCrntSpillCost_();
   void CmputCnflcts_(InstSchedule *sched);
@@ -170,6 +198,8 @@ public:
                   bool trackCnflcts);
   void UnschdulInstBBThread(SchedInstruction *inst, InstCount cycleNum,
                     InstCount slotNum, EnumTreeNode *trgtNode);
+  void UnschdulInstBBThread2(SchedInstruction *inst, InstCount cycleNum,
+                    InstCount slotNum, InstCount prevPeakSpillCost);  
   void UpdateSpillInfoForUnSchdul_(SchedInstruction *inst);
   void setSttcLwrBounds(EnumTreeNode *node);
   bool ChkInstLgltyBBThread(SchedInstruction *inst);
@@ -177,10 +207,14 @@ public:
   void InitForSchdulngBBThread();
 
   InstSchedule *allocNewSched_();
+
+  void UpdateSpillInfoForSchdul_(SchedInstruction *inst, bool trackCnflcts);
   
   InstCount cmputNormCostBBThread_(InstSchedule *sched, COST_COMP_MODE compMode,
                            InstCount &execCost, bool trackCnflcts);
 
+  inline InstCount getCrntSpillCost() {return CrntSpillCost_;}
+  inline InstCount getCrntPeakSpillCost() {return PeakSpillCost_;}
   // virtuals
   virtual InstCount getBestCost() = 0;
 
@@ -484,7 +518,7 @@ private:
     bool IsSecondPass_;
 
     // A reference to the shared GlobalPool
-    InstPool *GlobalPool_;
+    InstPool4 *GlobalPool_;
 
     vector<InstPool3 *> localPools_;
     std::mutex **localPoolLocks_;
@@ -527,7 +561,7 @@ public:
               SchedulerType HeurSchedType, bool IsSecondPass, 
               InstSchedule *MasterSched, InstCount *MasterCost, 
               InstCount *MasterSpill, InstCount *MasterLength, 
-              InstPool *GlobalPool, 
+              InstPool4 *GlobalPool, 
               uint64_t *NodeCount, int SolverID, std::mutex **HistTableLock, 
               std::mutex *GlobalPoolLock, std::mutex *BestSchedLock, std::mutex *NodeCountLock,
               std::mutex *ImprCountLock, std::mutex *RegionSchedLock, std::mutex *AllocatorLock,
@@ -579,8 +613,14 @@ public:
 
     bool generateStateFromNode(EnumTreeNode *GlobalPoolNode, bool isGlobalPoolNode = true);
 
+    bool generateStateFromNode(HalfNode *GlobalPoolNode);
+
     FUNC_RESULT enumerate_(EnumTreeNode *GlobalPoolNode, Milliseconds StartTime, 
                            Milliseconds RgnTimeout, Milliseconds LngthTimeout, 
+                           bool isWorkStealing = false);
+
+    FUNC_RESULT enumerate2_(HalfNode *GlobalPoolNode, Milliseconds StartTime, 
+                           Milliseconds RgnTimeout, Milliseconds LngthTimeout,
                            bool isWorkStealing = false);
 
     //TODO - clean this up
@@ -647,7 +687,7 @@ class BBMaster : public BBInterfacer {
 private:
     vector<BBWorker *> Workers;
     vector<std::thread> ThreadManager;
-    InstPool *GlobalPool; 
+    InstPool4 *GlobalPool; 
     int firstLevelSize_;
     int NumThreads_;
     int MinNodesAsMultiple_,MinSplittingDepth_, MaxSplittingDepth_;
@@ -687,7 +727,7 @@ private:
              bool enblStallEnum, int SCW, SPILL_COST_FUNCTION spillCostFunc,
              SchedulerType HeurSchedType, InstCount *BestCost, InstCount SchedLwrBound,
              InstSchedule *BestSched, InstCount *BestSpill, 
-             InstCount *BestLength, InstPool *GlobalPool, 
+             InstCount *BestLength, InstPool4 *GlobalPool, 
              uint64_t *NodeCount,  std::mutex **HistTableLock, std::mutex *GlobalPoolLock, std::mutex *BestSchedLock, 
              std::mutex *NodeCountLock, std::mutex *ImprvCountLock, std::mutex *RegionSchedLock, 
              std::mutex *AllocatorLock, vector<FUNC_RESULT> *results, int *idleTimes,

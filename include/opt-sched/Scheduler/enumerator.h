@@ -18,6 +18,7 @@ Last Update:  Apr. 2020
 #include <vector>
 #include <mutex>
 #include <queue>
+#include <stack>
 
 namespace llvm {
 namespace opt_sched {
@@ -29,7 +30,32 @@ class SchedRegion;
 class BBThread;
 class InstPool;
 class InstPool3;
+class InstPool4;
 
+
+class HalfNode {
+  private:
+    std::queue<int> prefix_;
+    unsigned long *heuristic_;
+    InstCount cost_;
+    int divNum_;
+  public:
+    HalfNode();
+    HalfNode(std::queue<int> prefix, unsigned long *heuristic, InstCount cost);
+    ~HalfNode();
+    inline void setPrefix(std::queue<int> &prefix) {prefix_ = prefix;}
+    inline void setHeuristic(unsigned long *heuristic) {heuristic = heuristic;}
+    inline void setCost(InstCount cost) {cost_ = cost;}
+    inline void setDiversityNum(InstCount divNum) {divNum_ = divNum;}
+    inline std::queue<int> &getPrefix() {return prefix_;}
+    inline unsigned long *getHeuristic() {return heuristic_;}
+    inline InstCount getCost() {return cost_;}
+    inline int getDiversityNum() {return divNum_;}
+
+    inline int getPrefixSize() {return prefix_.size();}
+
+    int getAndRemoveNextPrefixInst();
+};
 
 // A pruning strategy.
 struct Pruning {
@@ -622,6 +648,9 @@ protected:
   FUNC_RESULT FindFeasibleSchedule_(InstSchedule *sched, InstCount trgtLngth,
                                     Milliseconds deadline);
 
+
+  
+
   // Virtual Functions
 
   // Check if branching from the current node by scheduling this instruction
@@ -819,6 +848,13 @@ public:
 
   EnumTreeNode *checkTreeFsblty(bool &fsbl);
 
+  void getAndRemoveInstFromRdyLst(int instNum, SchedInstruction *&inst);
+
+  void schedulePrefixInst_(SchedInstruction *instToSchdul, std::stack<InstCount> &costStack);
+  void unschedulePrefixInst_(SchedInstruction *instToSchdul, std::stack<InstCount> &costStack);
+
+  void splitNode(HalfNode *&ExploreNode, InstPool4 *fillPool, int depth);
+
   void getRdyListAsNodes(std::pair<EnumTreeNode *, unsigned long *> *ExploreNode, InstPool *fillQueue, int depth);
 
   ReadyList *getGlobalPoolList(EnumTreeNode *newNode);
@@ -830,6 +866,7 @@ public:
   
   //state generation
   bool scheduleNodeOrPrune(EnumTreeNode *node, bool isPseudoRoot = false);
+  bool scheduleIntOrPrune(int instToSchdul, bool isPseudoRoot = false);
 
   EnumTreeNode *scheduleInst_(SchedInstruction *inst, bool isPseudoRoot, bool &isFsbl, bool isRoot = false, bool prune = true);
 

@@ -13,6 +13,34 @@
 
 using namespace llvm::opt_sched;
 
+class InstPool4;
+
+int HalfNode::getAndRemoveNextPrefixInst() {
+  int temp = prefix_.front();
+  prefix_.pop();
+  return temp;
+}
+
+HalfNode::HalfNode() {
+  heuristic_ = nullptr;
+}
+
+HalfNode::HalfNode(std::queue<int> prefix, unsigned long *heuristic, InstCount cost) :
+  prefix_ {prefix},
+  heuristic_ {heuristic},
+  cost_ {cost} {
+  
+}
+
+HalfNode::~HalfNode() {
+  if (heuristic_ != nullptr) {
+    delete heuristic_;
+  }
+}
+
+
+
+
 EnumTreeNode::EnumTreeNode() {
   isCnstrctd_ = false;
   isClean_ = true;
@@ -678,7 +706,7 @@ void Enumerator::FreeAllocators_(){
   }*/
 
   if (!alctrsFreed_) {
-    Logger::Info("SolverID %d freeing enum::alctr", SolverID_);
+    //Logger::Info("SolverID %d freeing enum::alctr", SolverID_);
     if (nodeAlctr_ != NULL)
       delete nodeAlctr_;
   //Logger::Info("SolverID %d just deleted nodeAlctr", SolverID_);
@@ -687,7 +715,7 @@ void Enumerator::FreeAllocators_(){
       delete rlxdSchdulr_;
     rlxdSchdulr_ = NULL;
 
-    Logger::Info("SolverID %d freeing enum::histAlctr");
+    //Logger::Info("SolverID %d freeing enum::histAlctr");
     if (IsHistDom()) {
       if (hashTblEntryAlctr_ != NULL)
         delete hashTblEntryAlctr_;
@@ -706,7 +734,7 @@ void Enumerator::FreeAllocators_(){
       lastInsts_ = NULL;
       othrLastInsts_ = NULL;
     }
-    Logger::Info("finished freeing enum::histAcltr");
+    //Logger::Info("finished freeing enum::histAcltr");
 
     alctrsFreed_ = true;
   }
@@ -2277,7 +2305,7 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
 #endif
   HistEnumTreeNode *exNode;
   int listSize = exmndSubProbs_->GetListSize(newNode->GetSig());
-  UDT_HASHVAL key = exmndSubProbs_->HashKey(newNode->GetSig());
+  //UDT_HASHVAL key = exmndSubProbs_->HashKey(newNode->GetSig());
   stats::historyListSize.Record(listSize);
   //Logger::Info("bucket has size of %d and key %d", listSize, key);
   if (listSize == 0) return false;
@@ -2909,7 +2937,7 @@ void LengthCostEnumerator::ResetAllocators_() {
 
 void LengthCostEnumerator::FreeAllocators_(){
   if (IsHistDom() & !alctrsFreed_) {
-    Logger::Info("SolverID %d freeing LCE::alctr", SolverID_);
+    //Logger::Info("SolverID %d freeing LCE::alctr", SolverID_);
     if (histNodeAlctr_ != NULL)
       delete histNodeAlctr_;
     histNodeAlctr_ = NULL;
@@ -3412,7 +3440,7 @@ void LengthCostEnumerator::scheduleNode(EnumTreeNode *node, bool isPseudoRoot, b
   }
 
 
-  ProbeIssuSlotFsblty_(inst);
+  ProbeIssuSlotFsblty_(inst, false);
   state_.issuSlotsProbed = true;
 
   if (bbt_->isSecondPass()) {
@@ -3498,7 +3526,7 @@ bool LengthCostEnumerator::scheduleNodeOrPrune(EnumTreeNode *node,
   SchedInstruction *inst;
   bool isFsbl = true;
   InstCount brnchCnt = node->GetBranchCnt(isEmptyNode);
-  InstCount crntBrnchNum = node->GetCrntBranchNum();
+  //InstCount crntBrnchNum = node->GetCrntBranchNum();
 
   // iterate until we find the node
   rdyLst_->ResetIterator();
@@ -3531,6 +3559,53 @@ bool LengthCostEnumerator::scheduleNodeOrPrune(EnumTreeNode *node,
   // nodes examined? if (fsbl) 
 }
 /*****************************************************************************/
+bool LengthCostEnumerator::scheduleIntOrPrune(int instToSchdul,
+                                               bool isPseudoRoot) {
+  //Logger::Info("beginning enum schedNodeOrPrune, entryCnt %d", getHistTableEntryCnt());
+
+  // shculeding function for state generation
+
+
+  InstCount i;
+  //bool isEmptyNode;
+  SchedInstruction *inst;
+  bool isFsbl = true;
+  InstCount brnchCnt = rdyLst_->GetInstCnt();
+
+  // iterate until we find the node
+  rdyLst_->ResetIterator();
+
+  // TODO(JEFF) 6/28
+  // changed for (i = crntBrnchNum) to for (i = 0) -- to test work stealing
+
+  for (i = 0; i < brnchCnt; i++) {
+    inst = rdyLst_->GetNextPriorityInst();
+    if (inst->GetNum() == instToSchdul) {
+      // schedule its instruction
+      //Logger::Info("SolverID %d attempting to schedule inst #%d", SolverID_, inst->GetNum());
+
+
+      //if (!bbt_->isWorker() || SolverID_ == 3)
+      //  Logger::Info("attempting to schedule inst %d", inst->GetNum());
+      scheduleInst_(inst, isPseudoRoot, isFsbl);
+      rdyLst_->ResetIterator();
+      if (!isFsbl) {
+        //nodeAlctr_->Free(node);
+        //Logger::Info("ending enum schedNodeOrPrune, entryCnt %d", getHistTableEntryCnt());
+        return false;
+      }
+      break;
+    }
+  }
+  //Logger::Info("ending enum schedNodeOrPrune, entryCnt %d", getHistTableEntryCnt());
+  return true;
+  
+  // nodes examined? if (fsbl) 
+}
+/********************************************************************************/
+
+
+
 
 bool LengthCostEnumerator::isFsbl(EnumTreeNode *node, bool checkHistory) {
   
@@ -3827,7 +3902,7 @@ EnumTreeNode *LengthCostEnumerator::scheduleInst_(SchedInstruction *inst, bool i
   }
     
   rdyLst_->RemoveNextPriorityInst();
-
+  rdyLst_->ResetIterator();
 
   if (inst->GetTplgclOrdr() == minUnschduldTplgclOrdr_) {
     minUnschduldTplgclOrdr_++;
@@ -3903,6 +3978,7 @@ bool LengthCostEnumerator::scheduleArtificialRoot(bool setAsRoot)
   //Logger::Info("SolverID_ %d Scheduling artificial root", SolverID_);
 
   SchedInstruction *inst = rdyLst_->GetNextPriorityInst();
+  //Logger::Info("SolverID_ %d Scheduling artificial root inst %d", SolverID_, inst->GetNum());
   bool isFsbl = true;
 
   scheduleInst_(inst, setAsRoot, isFsbl, true, false);
@@ -4064,6 +4140,131 @@ EnumTreeNode *LengthCostEnumerator::checkTreeFsblty(bool &fsbl) {
 
 /*****************************************************************************/
 
+void LengthCostEnumerator::getAndRemoveInstFromRdyLst(int instNum, SchedInstruction *&inst) {
+  int rdyLstSize = rdyLst_->GetInstCnt();
+  inst = nullptr;
+  for (int i = 0; i < rdyLstSize; i++) {
+    SchedInstruction *temp = rdyLst_->GetNextPriorityInst();
+    if (temp->GetNum() == instNum) {
+      rdyLst_->RemoveNextPriorityInst();
+      inst = temp;
+      rdyLst_->ResetIterator();
+      break;
+    }
+  }
+
+  assert(inst != nullptr);
+}
+
+
+void LengthCostEnumerator::schedulePrefixInst_(SchedInstruction *instToSchdul, std::stack<InstCount> &costStack) {
+  instToSchdul->Schedule(crntCycleNum_, crntSlotNum_, SolverID_);
+  bbt_->SchdulInstBBThread(instToSchdul, crntCycleNum_, crntSlotNum_, false);
+  costStack.push(bbt_->getCrntPeakSpillCost());
+  
+  ConstrainedScheduler::SchdulInst_(instToSchdul, crntCycleNum_);
+
+  MovToNxtSlot_(instToSchdul);
+  if (crntSlotNum_ == 0) {
+    InitNewCycle_();
+  }
+
+  UpdtRdyLst_(crntCycleNum_, crntSlotNum_);
+}
+
+void LengthCostEnumerator::unschedulePrefixInst_(SchedInstruction *instToUnschdul, std::stack<InstCount> &costStack) {
+  InstCount tempCost = costStack.top();
+  costStack.pop();
+  bbt_->UnschdulInstBBThread2(instToUnschdul, crntCycleNum_, crntSlotNum_, tempCost);
+  rdyLst_->RemoveLatestSubList();
+  rdyLst_->AddInst(instToUnschdul);
+  MovToPrevSlot_(crntSlotNum_);
+  ConstrainedScheduler::UnSchdulInst_(instToUnschdul);
+  instToUnschdul->UnSchedule(SolverID_);
+
+}
+
+
+void LengthCostEnumerator::splitNode(HalfNode *&ExploreNode, InstPool4 *fillPool, int depth) {
+  //if (ExploreNode != nullptr) Logger::Info("splitting node with inst %d at depth %d", ExploreNode->getPrefix().back(), depth);
+  std::queue<int> tempPrefix;
+  std::stack<SchedInstruction *> tempStack;
+  std::stack<InstCount> costStack;
+  SchedInstruction *tempInst = nullptr;
+  int tempInstNum;
+  ReadyList *originalRdyLst;
+
+  originalRdyLst = new ReadyList(dataDepGraph_, prirts_, SolverID_);
+  //Logger::Info("new rdyLst has element count of %d", originalRdyLst->GetInstCnt());
+  originalRdyLst->CopyList(rdyLst_);
+
+  int prefixLength = 0;
+  
+  if (ExploreNode != nullptr) prefixLength = ExploreNode->getPrefixSize();
+
+  //Logger::Info("prefix has length %d", prefixLength);
+
+  for (int i = 0; i < prefixLength; i++) {
+    tempInstNum = ExploreNode->getAndRemoveNextPrefixInst();
+    //Logger::Info("prefix inst %d", tempInstNum);
+    //printRdyLst();
+    tempPrefix.push(tempInstNum);
+    getAndRemoveInstFromRdyLst(tempInstNum, tempInst);
+    schedulePrefixInst_(tempInst, costStack);
+    removeInstFromRdyLst_(tempInstNum);
+    tempStack.push(tempInst);
+  }
+
+  int rdyListSize = rdyLst_->GetInstCnt();
+
+
+  //Logger::Info("after scheduling the prefix, rdyLst --");
+  //printRdyLst();
+  for (int i = 0; i < rdyListSize; i++) {
+    std::queue<int> tempPrefix2 = tempPrefix;
+    unsigned long nextKey;
+    SchedInstruction *temp = rdyLst_->GetNextPriorityInst(nextKey);
+    unsigned long *heur;
+    
+    if (bbt_->getGlobalPoolSortMethod() == 1) {
+      heur = new unsigned long[depth];
+      heur[0] = nextKey;
+      unsigned long *prevHeur = nullptr;
+      if (ExploreNode != nullptr) prevHeur = ExploreNode->getHeuristic();
+      for (int i = 1; i < depth; i++) {
+        assert(prevHeur != nullptr);
+        //if (i >= 1 && i == depth - 1) 
+        //  Logger::Info("Setting heur[%d] to %d", i, ExploreNode->second[i-1]);
+        heur[i] = prevHeur[i-1];
+      }
+    }
+    else {
+      heur = new unsigned long[1];
+      heur[0] = nextKey;
+    }
+
+    bbt_->UpdateSpillInfoForSchdul_(temp, false);
+    tempPrefix2.push(temp->GetNum());
+    //Logger::Info("creating halfnode for inst %d", temp->GetNum());
+    //Logger::Info("heur is %d", heur[0]);
+    fillPool->push(new HalfNode(tempPrefix2, heur, bbt_->getCrntSpillCost()));
+    bbt_->UpdateSpillInfoForUnSchdul_(temp);
+  }
+
+  for (int i = 0; i < prefixLength; i++) {
+    SchedInstruction *temp = tempStack.top();
+    unschedulePrefixInst_(temp, costStack);
+    tempStack.pop();
+  }
+
+  rdyLst_->Reset();
+  rdyLst_->CopyList(originalRdyLst);
+  delete originalRdyLst;
+
+}
+
+
+
 void LengthCostEnumerator::getRdyListAsNodes(std::pair<EnumTreeNode *, unsigned long *> *ExploreNode, InstPool *pool, int depth) {
   std::stack<EnumTreeNode *> prefix;
   std::queue<EnumTreeNode *> subPrefix; 
@@ -4126,7 +4327,7 @@ void LengthCostEnumerator::getRdyListAsNodes(std::pair<EnumTreeNode *, unsigned 
 
 
     prefixLength = node->getPrefixSize();
-    EnumTreeNode *parent = node->GetParent();
+    //EnumTreeNode *parent = node->GetParent();
 
     //assert(prefixLength >= 1);
 
@@ -4340,7 +4541,7 @@ EnumTreeNode *LengthCostEnumerator::allocAndInitNextNode(std::pair<SchedInstruct
   }
 
 
-  ProbeIssuSlotFsblty_(inst);
+  ProbeIssuSlotFsblty_(inst, false);
   state_.issuSlotsProbed = true;
 
 
