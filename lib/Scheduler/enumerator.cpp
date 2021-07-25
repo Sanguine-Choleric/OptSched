@@ -508,6 +508,10 @@ Enumerator::Enumerator(DataDepGraph *dataDepGraph, MachineModel *machMdl,
                        bool isSecondPass, InstCount preFxdInstCnt, SchedInstruction *preFxdInsts[])
     : ConstrainedScheduler(dataDepGraph, machMdl, schedUprBound, SolverID) {
 
+  //#ifndef IS_CORRECT_LOCALPOOL
+  //  #define IS_CORRECT_LOCALPOOL
+  //#endif
+
   //#ifndef IS_DEBUG_SEARCH_ORDER
   //  #define IS_DEBUG_SEARCH_ORDER
   //#endif
@@ -1178,6 +1182,7 @@ FUNC_RESULT Enumerator::FindFeasibleSchedule_(InstSchedule *sched,
   while (!(allNodesExplrd || WasObjctvMet_())) {
     if (deadline != INVALID_VALUE && Utilities::GetProcessorTime() > deadline) {
       isTimeout = true;
+      //Logger::Info("timed out");
       break;
     }
 
@@ -1235,8 +1240,9 @@ FUNC_RESULT Enumerator::FindFeasibleSchedule_(InstSchedule *sched,
     } else {
       // All branches from the current node have been explored, and no more
       // branches that lead to feasible nodes have been found.
+      //Logger::Info("SolverID %d going to bracktrack", SolverID_);
       if (crntNode_ == rootNode_) {
-        //if (bbt_->isWorker()) BackTrack_();
+        if (bbt_->isWorker()) BackTrack_();
         allNodesExplrd = true;
       } else {
         isCrntNodeFsbl = BackTrack_();
@@ -1256,8 +1262,10 @@ FUNC_RESULT Enumerator::FindFeasibleSchedule_(InstSchedule *sched,
   stats::nodesPerLength.Record(crntNodeCnt);
 #endif
 
-  if (isTimeout)
+  if (isTimeout) {
+    //Logger::Info("SolverID %d returning timeout from inside enum", SolverID_);
     return RES_TIMEOUT;
+  }
   // Logger::Info("\nEnumeration at length %d done\n", trgtLngth);
   return fsblSchedCnt_ > 0 ? RES_SUCCESS : RES_FAIL;
 }
@@ -1293,7 +1301,7 @@ bool Enumerator::FindNxtFsblBrnch_(EnumTreeNode *&newNode) {
 
   for (i = crntBrnchNum; i < brnchCnt && crntNode_->IsFeasible(); i++) {
 #ifdef IS_CORRECT_LOCALPOOL
-    Logger::Info("probing branch %d out of %d", i, brnchCnt);
+    //Logger::Info("probing branch %d out of %d", i, brnchCnt);
 #endif
 #ifdef IS_DEBUG_FLOW
     Logger::Info("SolverID %d Probing branch %d out of %d", SolverID_, i, brnchCnt);
@@ -1307,7 +1315,7 @@ bool Enumerator::FindNxtFsblBrnch_(EnumTreeNode *&newNode) {
         return false;
       }
 #ifdef IS_DEBUG_SEARCH_ORDER
-      Logger::Log((Logger::LOG_LEVEL) 4, false, "Out of instructions, stalling");
+      //Logger::Log((Logger::LOG_LEVEL) 4, false, "Out of instructions, stalling");
 #endif
       // then we only have the option of scheduling a stall
       assert(isEmptyNode == false || brnchCnt == 1);
@@ -1352,13 +1360,15 @@ if (bbt_->isWorkSteal()) {
         bbt_->localPoolUnlock(SolverID_ - 2);
         if (removed != nullptr) {
 #ifdef IS_CORRECT_LOCALPOOL
-          Logger::Info("removed element from pool at depth %d", removed->GetTime());
+          Logger::Info("SolverID %d removed element from pool at depth %d", SolverID_, removed->GetTime());
 #endif
           nodeAlctr_->Free(removed);
         }
+        /*else {
 #ifdef IS_CORRECT_LOCALPOOL
-        else Logger::Info("failed to find a matching node in rdyLst_");
+        Logger::Info("SolverID %dfailed to find a matching node in rdyLst_", SolverID_);
 #endif
+        }*/
       }
 
       else { //we haven't pushed this nodes rdylst to local pool
@@ -1724,7 +1734,7 @@ void Enumerator::StepFrwrd_(EnumTreeNode *&newNode) {
   SchedInstruction *instToSchdul = newNode->GetInst();
   InstCount instNumToSchdul;
 #ifdef IS_CORRECT_LOCALPOOL
-  Logger::Info("stepping frwrd to time %d", newNode->GetTime());
+  Logger::Info("SolverID %d stepping frwrd to time %d", SolverID_, newNode->GetTime());
 #endif
 #ifdef IS_DEBUG_SEARCH_ORDER
   if (instToSchdul)
@@ -1746,7 +1756,7 @@ if (bbt_->isWorkSteal()) {
         EnumTreeNode *pushNode;
         if (fillList.GetElmntCnt() > 0) {
 #ifdef IS_CORRECT_LOCALPOOL
-          Logger::Info("added %d elements to local pool with time %d", fillList.GetElmntCnt(), crntNode_->GetTime());
+          Logger::Info("SolverID %d added %d elements to local pool with time %d", SolverID_, fillList.GetElmntCnt(), crntNode_->GetTime());
 #endif
           pushedToLocal = true;
           fillList.ResetIterator();
@@ -2090,7 +2100,7 @@ bool Enumerator::BackTrack_(bool trueState) {
   SchedInstruction *inst = crntNode_->GetInst();
   EnumTreeNode *trgtNode = crntNode_->GetParent();
 #ifdef IS_CORRECT_LOCALPOOL
-  Logger::Info("backtracking to time %d", trgtNode->GetTime());
+  Logger::Info("SolverID %d backtracking to time %d", SolverID_, trgtNode->GetTime());
 #endif
   if (crntNode_->GetInst()) {
 #ifdef IS_DEBUG_SEARCH_ORDER
@@ -3044,6 +3054,7 @@ bool LengthCostEnumerator::WasObjctvMet_() {
   checkSolnTime += Utilities::GetProcessorTime() - startTime;
   #endif
 
+  if (newCost == costLwrBound_) Logger::Info("objctv met");
   return newCost == costLwrBound_;
 }
 /*****************************************************************************/
@@ -3154,6 +3165,7 @@ bool LengthCostEnumerator::ChkCostFsblty_(SchedInstruction *inst,
 /*****************************************************************************/
 
 bool LengthCostEnumerator::BackTrack_(bool trueState) {
+  //Logger::Info("SolverID %d in LCE Backtrack", SolverID_);
   #ifdef IS_DEBUG_METADATA
   Milliseconds startTime;
   startTime = Utilities::GetProcessorTime();
@@ -3188,7 +3200,7 @@ if (bbt_->isWorkSteal()) {
 
       while (popNode->GetTime() == (crntNode_->GetTime() + 1)) {
 #ifdef IS_CORRECT_LOCALPOOL
-        Logger::Info("removed element from localPool at time %d", popNode->GetTime());
+        Logger::Info("SolverID %d removed element from localPool at time %d", SolverID_, popNode->GetTime());
 #endif
         assert(popNode->GetParent() == crntNode_);
         nodeAlctr_->Free(popNode);

@@ -1860,7 +1860,7 @@ FUNC_RESULT BBWorker::enumerate_(EnumTreeNode *GlobalPoolNode,
 
       //Logger::Info("Solver %d Enumerating", SolverID_);
       rslt = Enumrtr_->FindFeasibleSchedule(EnumCrntSched_, trgtLngth, this,
-                                          costLwrBound, lngthDeadline);
+                                          costLwrBound, rgnDeadline);
 
     
 
@@ -1899,7 +1899,7 @@ FUNC_RESULT BBWorker::enumerate_(EnumTreeNode *GlobalPoolNode,
         }
 
         if (RegionSched_->GetSpillCost() == 0 || rslt == RES_ERROR ||
-          (lngthDeadline == rgnDeadline && rslt == RES_TIMEOUT)) {
+          (rslt == RES_TIMEOUT)) {
    
             //TODO -- notify all other threads to stop
             if (rslt == RES_SUCCESS || rslt == RES_FAIL) {
@@ -1917,13 +1917,16 @@ FUNC_RESULT BBWorker::enumerate_(EnumTreeNode *GlobalPoolNode,
 #endif
 */          //Enumrtr_->destroy();
             IdleTime_[SolverID_ - 2] = Utilities::GetProcessorTime();
+            //if (rslt == RES_TIMEOUT)
+            //  Logger::Info("SolverID_ %d returning timeout from bbw:enum", SolverID_);
             return rslt;
         }
     }
   //else 
   //  Logger::Info("found infsbl during state generation, skipping enumeration");
 
-  //Logger::Info("SolverID %d has localPoolSize of %d", SolverID_, getLocalPoolSize(SolverID_ - 2));
+  //if (!(RegionSched_->GetSpillCost() == 0 || rslt == RES_TIMEOUT || rslt == RES_ERROR || rslt == RES_EXIT))
+  // Logger::Info("SolverID %d has localPoolSize of %d", SolverID_, getLocalPoolSize(SolverID_ - 2));
   assert(getLocalPoolSize(SolverID_ - 2) == 0 || RegionSched_->GetSpillCost() == 0 || rslt == RES_TIMEOUT || rslt == RES_ERROR || rslt == RES_EXIT);
 
 
@@ -2055,8 +2058,9 @@ if (isWorkSteal()) {
     }
 
     else {
-      if (RgnTimeout != INVALID_VALUE && (Utilities::GetProcessorTime() > StartTime + LngthTimeout)) {
+      if (RgnTimeout != INVALID_VALUE && (Utilities::GetProcessorTime() > StartTime + LngthTimeout || Utilities::GetProcessorTime() > StartTime + RgnTimeout)) {
         isTimedOut = true;
+        timeout = true;
         break;
       }
     }
@@ -2064,9 +2068,9 @@ if (isWorkSteal()) {
 
   //Logger::Info("There are %d inactiveThreads", *InactiveThreads_);
   //Logger::Info("there are %d numSolvers", NumSolvers_);
-  assert((*InactiveThreads_) <= NumSolvers_);
-  if ((*InactiveThreads_) == NumSolvers_) {
-    Logger::Info("All threads inactive");
+  assert((*InactiveThreads_) < 2 * NumSolvers_);
+  if ((*InactiveThreads_) >= NumSolvers_) {
+    //Logger::Info("All threads inactive");
     // we have exhausted the search space
     //Enumrtr_->destroy();
     return RES_EXIT;
@@ -2074,7 +2078,7 @@ if (isWorkSteal()) {
 
   //Logger::Info("SolverID %d finished work stealing loop", SolverID_);
 
-  if (stoleWork && workStolenFsbl) {
+  if (stoleWork && workStolenFsbl && !isTimedOut) {
     rslt = enumerate_(workStealNode, StartTime, RgnTimeout, LngthTimeout, true);
     assert(getLocalPoolSize(SolverID_ - 2) == 0 || RegionSched_->GetSpillCost() == 0 || rslt == RES_TIMEOUT || rslt == RES_ERROR || rslt == RES_EXIT);
     if (RegionSched_->GetSpillCost() == 0 || rslt == RES_ERROR || (rslt == RES_TIMEOUT) || rslt == RES_EXIT) {
@@ -2158,9 +2162,7 @@ FUNC_RESULT BBWorker::enumerate2_(HalfNode *GlobalPoolNode,
                                  bool isWorkStealing) {
 
   bool fsbl = false;
-  //Logger::Info("SovlerID %d got node with inst %d", SolverID_, GlobalPoolNode->GetInstNum());
   assert(GlobalPoolNode != NULL);
-  // TODO handle rslt
   FUNC_RESULT rslt = RES_SUCCESS;
   bool timeout = false;
 
@@ -2210,7 +2212,7 @@ FUNC_RESULT BBWorker::enumerate2_(HalfNode *GlobalPoolNode,
 
       //Logger::Info("Solver %d Enumerating", SolverID_);
       rslt = Enumrtr_->FindFeasibleSchedule(EnumCrntSched_, trgtLngth, this,
-                                          costLwrBound, lngthDeadline);
+                                          costLwrBound, rgnDeadline);
 
     
 
@@ -2251,7 +2253,7 @@ FUNC_RESULT BBWorker::enumerate2_(HalfNode *GlobalPoolNode,
         }
 
         if (RegionSched_->GetSpillCost() == 0 || rslt == RES_ERROR ||
-          (lngthDeadline == rgnDeadline && rslt == RES_TIMEOUT)) {
+          (rslt == RES_TIMEOUT)) {
    
             //TODO -- notify all other threads to stop
             if (rslt == RES_SUCCESS || rslt == RES_FAIL) {
@@ -2269,13 +2271,16 @@ FUNC_RESULT BBWorker::enumerate2_(HalfNode *GlobalPoolNode,
 #endif
 */          //Enumrtr_->destroy();
             IdleTime_[SolverID_ - 2] = Utilities::GetProcessorTime();
+            //if (rslt == RES_TIMEOUT)
+            //  Logger::Info("SolverID_ %d returning timeout from bbw:enum2", SolverID_);
             return rslt;
         }
     }
   //else 
   //  Logger::Info("found infsbl during state generation, skipping enumeration");
 
-  //Logger::Info("SolverID %d has localPoolSize of %d", SolverID_, getLocalPoolSize(SolverID_ - 2));
+  //if (!(RegionSched_->GetSpillCost() == 0 || rslt == RES_TIMEOUT || rslt == RES_ERROR || rslt == RES_EXIT))
+  // Logger::Info("SolverID %d has localPoolSize of %d", SolverID_, getLocalPoolSize(SolverID_ - 2));
   assert(getLocalPoolSize(SolverID_ - 2) == 0 || RegionSched_->GetSpillCost() == 0 || rslt == RES_TIMEOUT || rslt == RES_ERROR || rslt == RES_EXIT);
 
 
@@ -2408,8 +2413,9 @@ if (isWorkSteal()) {
     }
 
     else {
-      if (RgnTimeout != INVALID_VALUE && (Utilities::GetProcessorTime() > StartTime + LngthTimeout)) {
+      if (RgnTimeout != INVALID_VALUE && (Utilities::GetProcessorTime() > StartTime + LngthTimeout || Utilities::GetProcessorTime() > StartTime + RgnTimeout)) {
         isTimedOut = true;
+        timeout = true;
         break;
       }
     }
@@ -2417,9 +2423,9 @@ if (isWorkSteal()) {
 
   //Logger::Info("There are %d inactiveThreads", *InactiveThreads_);
   //Logger::Info("there are %d numSolvers", NumSolvers_);
-  assert((*InactiveThreads_) <= NumSolvers_);
-  if ((*InactiveThreads_) == NumSolvers_) {
-    Logger::Info("All threads inactive");
+  assert((*InactiveThreads_) < 2 * NumSolvers_);
+  if ((*InactiveThreads_) >= NumSolvers_) {
+    //Logger::Info("All threads inactive");
     // we have exhausted the search space
     //Enumrtr_->destroy();
     return RES_EXIT;
@@ -2427,7 +2433,7 @@ if (isWorkSteal()) {
 
   //Logger::Info("SolverID %d finished work stealing loop", SolverID_);
 
-  if (stoleWork && workStolenFsbl) {
+  if (stoleWork && workStolenFsbl && !isTimedOut) {
     rslt = enumerate_(workStealNode, StartTime, RgnTimeout, LngthTimeout, true);
     assert(getLocalPoolSize(SolverID_ - 2) == 0 || RegionSched_->GetSpillCost() == 0 || rslt == RES_TIMEOUT || rslt == RES_ERROR || rslt == RES_EXIT);
     if (RegionSched_->GetSpillCost() == 0 || rslt == RES_ERROR || (rslt == RES_TIMEOUT) || rslt == RES_EXIT) {
@@ -3204,6 +3210,8 @@ void BBMaster::setWorkerHeurInfo() {
 
 FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout,
                                  Milliseconds lngthTimeout, int *OptimalSolverID) {
+
+  Logger::Info("alloted time fro this region is %d", (int)rgnTimeout);
 
 
   // first pass
