@@ -1242,7 +1242,7 @@ FUNC_RESULT Enumerator::FindFeasibleSchedule_(InstSchedule *sched,
       // branches that lead to feasible nodes have been found.
       //Logger::Info("SolverID %d going to bracktrack", SolverID_);
       if (crntNode_ == rootNode_) {
-        if (bbt_->isWorker()) BackTrack_();
+        if (bbt_->isWorker()) BackTrackRoot_();
         allNodesExplrd = true;
       } else {
         isCrntNodeFsbl = BackTrack_();
@@ -3165,6 +3165,7 @@ bool LengthCostEnumerator::ChkCostFsblty_(SchedInstruction *inst,
 /*****************************************************************************/
 
 bool LengthCostEnumerator::BackTrack_(bool trueState) {
+  
   //Logger::Info("SolverID %d in LCE Backtrack", SolverID_);
   #ifdef IS_DEBUG_METADATA
   Milliseconds startTime;
@@ -3222,6 +3223,37 @@ if (bbt_->isWorkSteal()) {
   return fsbl;
 }
 /*****************************************************************************/
+
+void Enumerator::BackTrackRoot_() {
+  if (bbt_->isWorkSteal()) {
+  // it is possible that a crntNode becomes infeasible before exploring all its children
+  // thus we need to ensure that all children are removed on backtrack
+    bbt_->localPoolLock(SolverID_ - 2);
+    if (bbt_->getLocalPoolSize(SolverID_ - 2) > 0) {
+      //Logger::Info("SolverID %d checking its own local pool", SolverID_);
+
+      EnumTreeNode *popNode = bbt_->localPoolPopFront(SolverID_ - 2);
+      assert(popNode);
+      //Logger::Info("popNode has time %d, prevNode has time %d", popNode->GetTime(), prevNode->GetTime());
+      assert(popNode->GetTime() <= (crntNode_->GetTime() + 1));
+
+      while (popNode->GetTime() == (crntNode_->GetTime() + 1)) {
+#ifdef IS_CORRECT_LOCALPOOL
+        Logger::Info("SolverID %d removed element from localPool at time %d", SolverID_, popNode->GetTime());
+#endif
+        assert(popNode->GetParent() == crntNode_);
+        nodeAlctr_->Free(popNode);
+        if (bbt_->getLocalPoolSize(SolverID_ - 2) == 0) break;
+        popNode = bbt_->localPoolPopFront(SolverID_ - 2);
+      }
+
+      if (popNode->GetTime() != (crntNode_->GetTime() + 1)) {
+        bbt_->localPoolPushFront(SolverID_- 2,popNode);
+      }
+    }
+    bbt_->localPoolUnlock(SolverID_ - 2);
+  }
+}
 
 InstCount LengthCostEnumerator::GetBestCost_() { return bbt_->getBestCost(); }
 /*****************************************************************************/

@@ -415,7 +415,7 @@ void ScheduleDAGOptSched::schedule() {
   int size = DDG.get()->getSize();
   DataDepGraph *dataDepGraph_ = static_cast<DataDepGraph *>(DDG.get());
   //Logger::Info("DDG size is %d", DDG.getsize());
-  if ((size < MinDDGSize || size > 500) && !SecondPass) {
+  if ((size < MinDDGSize || size > 1000) && !SecondPass) {
     Logger::Info("DDG of size %d is outside limits, bypassing region", size);
     Logger::Info("Limits: min (%d), max (%d)", MinDDGSize, 1000);
     return;
@@ -504,7 +504,7 @@ void ScheduleDAGOptSched::schedule() {
         LowerBoundAlgorithm, HeuristicPriorities, EnumPriorities, VerifySchedule,
         PruningStrategy, SchedForRPOnly, EnumStalls, SCW, SCF, HeurSchedType, 
         NumThreads, MinNodesAsMultiple, MinSplittingDepth, MaxSplittingDepth, NumSolvers, LocalPoolSize, ExploitationPercent, GlobalPoolSCF,
-        GlobalPoolSort, WorkSteal);
+        GlobalPoolSort, WorkSteal, IsTimeoutPerInst);
 
       // Used for two-pass-optsched to alter upper bound value.
     if (SecondPass)

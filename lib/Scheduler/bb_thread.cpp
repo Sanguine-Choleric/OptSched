@@ -1439,7 +1439,8 @@ BBWorker::BBWorker(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
               std::mutex *BestSchedLock, std::mutex *NodeCountLock, std::mutex *ImprvmntCntLock,
               std::mutex *RegionSchedLock, std::mutex *AllocatorLock, vector<FUNC_RESULT> *RsltAddr, int *idleTimes,
               int NumSolvers, vector<InstPool3 *> localPools, std::mutex **localPoolLocks,
-              int *inactiveThreads, std::mutex *inactiveThreadLock, int LocalPoolSize, bool WorkSteal) 
+              int *inactiveThreads, std::mutex *inactiveThreadLock, int LocalPoolSize, bool WorkSteal,
+              bool IsTimeoutPerInst) 
               : BBThread(OST_, dataDepGraph, rgnNum, sigHashSize, lbAlg,
               hurstcPrirts, enumPrirts, vrfySched, PruningStrategy, SchedForRPOnly,
               enblStallEnum, SCW, spillCostFunc, HeurSchedType)
@@ -1489,6 +1490,7 @@ BBWorker::BBWorker(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
   InactiveThreadLock_ = inactiveThreadLock;
 
   WorkSteal_ = WorkSteal;
+  IsTimeoutPerInst_ = IsTimeoutPerInst;
 }
 
 BBWorker::~BBWorker() {
@@ -1557,6 +1559,8 @@ void BBWorker::handlEnumrtrRslt_(FUNC_RESULT rslt, InstCount trgtLngth) {
     //    #ifdef IS_DEBUG_ENUM_ITERS
     //Logger::Info("Enumeration ended at length %d.", trgtLngth);
     //    #endif
+    break;
+  case RES_EXIT:
     break;
   }
 }
@@ -1801,17 +1805,24 @@ bool BBWorker::generateStateFromNode(EnumTreeNode *GlobalPoolNode, bool isGlobal
   return true;
 }
 /*****************************************************************************/
-
-FUNC_RESULT BBWorker::enumerate_(EnumTreeNode *GlobalPoolNode,
+FUNC_RESULT BBWorker::generateAndEnumerate(HalfNode *GlobalPoolNode,
                                  Milliseconds StartTime, 
                                  Milliseconds RgnTimeout,
-                                 Milliseconds LngthTimeout,
-                                 bool isWorkStealing) {
+                                 Milliseconds LngthTimeout) {
 
-  bool fsbl = false;
-  //Logger::Info("SovlerID %d got node with inst %d", SolverID_, GlobalPoolNode->GetInstNum());
-  assert(GlobalPoolNode != NULL);
-  // TODO handle rslt
+  bool fsbl = generateStateFromNode(GlobalPoolNode);
+  if (!fsbl) delete GlobalPoolNode;
+  return enumerate_(StartTime, RgnTimeout, LngthTimeout, false, fsbl);
+
+
+}
+
+FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime, 
+                                 Milliseconds RgnTimeout,
+                                 Milliseconds LngthTimeout,
+                                 bool isWorkStealing,
+                                 bool isNodeFsbl) {
+
   FUNC_RESULT rslt = RES_SUCCESS;
   bool timeout = false;
 
@@ -1822,31 +1833,8 @@ FUNC_RESULT BBWorker::enumerate_(EnumTreeNode *GlobalPoolNode,
   //#ifndef DEBUG_GP_HISTORY
   //  #define DEBUG_GP_HISTORY
   //#endif
-
-
-  //sleep(5);
-  //StartTime += 5000;
-  //intptr_t x = 10000;
-  //sbrk(50000);
-
-  //int *tmp;
-  //tmp = (int *)mmap(0, 12000, 0 | PROT_READ | PROT_WRITE, 0 | MAP_ANONYMOUS| MAP_PRIVATE, -1, 0);
-  //mmap(tmp, 12000, PROT_WRITE, MAP_SHARED, 0, 0);
   
-  if (!isWorkStealing) {
-    //if (Enumrtr_->isFsbl(GlobalPoolNode)) {
-    
-    fsbl = generateStateFromNode(GlobalPoolNode, true);
-    //Logger::Info("BBTHread after genStateFromNode, entryCnt %d", Enumrtr_->getHistTableEntryCnt());
-    //Logger::Info("Solver %d finished generating state from node", SolverID_);
-  }
-
-  if (!fsbl) {
-    //Logger::Info("Solver %d pruned the global pool node", SolverID_);
-    Enumrtr_->freeEnumTreeNode(GlobalPoolNode);
-  }
-
-  if (fsbl || isWorkStealing) {
+  if (isNodeFsbl || isWorkStealing) {
       // need to 
       InstCount trgtLngth = SchedLwrBound_;
       int costLwrBound = 0;
@@ -1856,363 +1844,14 @@ FUNC_RESULT BBWorker::enumerate_(EnumTreeNode *GlobalPoolNode,
           (RgnTimeout == INVALID_VALUE) ? INVALID_VALUE : StartTime + RgnTimeout;
       lngthDeadline =
           (RgnTimeout == INVALID_VALUE) ? INVALID_VALUE : StartTime + LngthTimeout;
-      assert(lngthDeadline <= rgnDeadline);
+      
+      Milliseconds deadline = IsTimeoutPerInst_ ? lngthDeadline : rgnDeadline;
+
+      //assert(lngthDeadline <= rgnDeadline);
 
       //Logger::Info("Solver %d Enumerating", SolverID_);
       rslt = Enumrtr_->FindFeasibleSchedule(EnumCrntSched_, trgtLngth, this,
-                                          costLwrBound, rgnDeadline);
-
-    
-
-    //#ifdef IS_DEBUG_SEARCH_ORDER
-        //Logger::Info("solver %d finished findFeasiblSchedule", SolverID_);
-    //#endif
-      //Logger::Info("exited find feasible schedule, adding %d to nodeCount", Enumrtr_->GetNodeCnt());
-        NodeCountLock_->lock();
-          *NodeCount_ += Enumrtr_->GetNodeCnt();
-        NodeCountLock_->unlock();
-
-        Enumrtr_->setNodeCnt(0);
-        if (rslt == RES_EXIT) {
-          //Enumrtr_->destroy();
-          return rslt;
-        }
-                
-  
-        if (rslt == RES_TIMEOUT)
-          timeout = true;
-        handlEnumrtrRslt_(rslt, trgtLngth);
-    
-        // TODO START HERE
-        // if improvmntCnt > 0 -- bestSched = masterSched
-        // if (bestSched_->GetSillCost() == 0)
-        // ...
-
-        // first pass
-        if (*MasterImprvCount_ > 0) {
-            RegionSchedLock_->lock(); 
-              if (MasterSched_->GetSpillCost() < RegionSched_->GetSpillCost()) {
-                RegionSched_->Copy(MasterSched_);
-                RegionSched_->SetSpillCost(MasterSched_->GetSpillCost());
-              }
-            RegionSchedLock_->unlock();
-        }
-
-        if (RegionSched_->GetSpillCost() == 0 || rslt == RES_ERROR ||
-          (rslt == RES_TIMEOUT)) {
-   
-            //TODO -- notify all other threads to stop
-            if (rslt == RES_SUCCESS || rslt == RES_FAIL) {
-                rslt = RES_SUCCESS;
-            }
-            if (timeout)
-              rslt = RES_TIMEOUT;
-
-            (*RsltAddr_)[SolverID_-2] = rslt;
-/*            
-#ifdef WORK_STEAL
-            InactiveThreadLock_->lock();
-            (*InactiveThreads_)++;
-            InactiveThreadLock_->unlock();
-#endif
-*/          //Enumrtr_->destroy();
-            IdleTime_[SolverID_ - 2] = Utilities::GetProcessorTime();
-            //if (rslt == RES_TIMEOUT)
-            //  Logger::Info("SolverID_ %d returning timeout from bbw:enum", SolverID_);
-            return rslt;
-        }
-    }
-  //else 
-  //  Logger::Info("found infsbl during state generation, skipping enumeration");
-
-  //if (!(RegionSched_->GetSpillCost() == 0 || rslt == RES_TIMEOUT || rslt == RES_ERROR || rslt == RES_EXIT))
-  // Logger::Info("SolverID %d has localPoolSize of %d", SolverID_, getLocalPoolSize(SolverID_ - 2));
-  assert(getLocalPoolSize(SolverID_ - 2) == 0 || RegionSched_->GetSpillCost() == 0 || rslt == RES_TIMEOUT || rslt == RES_ERROR || rslt == RES_EXIT);
-
-
-  if (true) {
-      //Logger::Info("resetThreadWRiteFields");
-      DataDepGraph_->resetThreadWriteFields(SolverID_);
-      Enumrtr_->Reset();
-      if (Enumrtr_->IsHistDom())
-        Enumrtr_->resetEnumHistoryState();
-      EnumCrntSched_->Reset();
-      initEnumrtr_();
-  }
-
-
-  //TODO -- this may be buggy
-  if (!GlobalPool_->empty()) {
-    //Logger::Info("Solver %d pulling from global pool (%d nodes left)", SolverID_, GlobalPool_->size());
-
-        
-    HalfNode *temp;
-    while (true) {
-      GlobalPoolLock_->lock();
-        if (GlobalPool_->empty()) {
-          GlobalPoolLock_->unlock(); //deadlock if we dont unlock
-#ifdef DEBUG_GP_HISTORY
-          Logger::Info("Solver %d exiting global pool loop", SolverID_);
-#endif
-          break;
-        }
-        else {
-        temp = GlobalPool_->front();
-        GlobalPool_->pop();
-        }
-      GlobalPoolLock_->unlock();
-      //if (false)
-      //  Logger::Info("Probing inst %d", temp->GetInstNum());
-      /*if (!Enumrtr_->isFsbl(temp, false)) {
-        //delete temp;
-        Logger::Info("SolverID %d GlobalPoolNode with inst %d isNotFsbl", SolverID_, temp->GetInstNum());
-        continue;
-      }
-      else {*/
-#ifdef DEBUG_GP_HISTORY
-      Logger::Info("SolverID %d launching GlobalPoolNode with inst %d (parent %d)", SolverID_, temp->GetInstNum(), temp->GetParent()->GetInstNum());
-#endif
-      //if (false)
-      //  Logger::Info("Stepping forward to inst %d", temp->GetInstNum());
-      assert(temp != NULL);
-      rslt = enumerate2_(temp, StartTime, RgnTimeout, LngthTimeout);
-      if (RegionSched_->GetSpillCost() == 0 || rslt == RES_ERROR || (rslt == RES_TIMEOUT) || rslt == RES_EXIT) {
-        //Enumrtr_->destroy();
-        return rslt;
-      }
-      break;
-      //}
-    }
-  }
-
-#ifdef DEBUG_GP_HISTORY
-  Logger::Info("Solver %d bypassed global pool pulling (size = %d)", SolverID_, GlobalPool_->size());
-#endif
-
-if (isWorkSteal()) {
-
-  //Logger::Info("SolverID %d beginning work steal loop", SolverID_);
-  IdleTime_[SolverID_ - 2] = Utilities::GetProcessorTime();
-  InactiveThreadLock_->lock();
-  (*InactiveThreads_)++;
-  //Logger::Info("SovlerID %d incremented inactive threads to %d", SolverID_, *InactiveThreads_);
-  InactiveThreadLock_->unlock();
-  EnumTreeNode *workStealNode;
-  bool stoleWork = false;
-  bool workStolenFsbl = false;
-  bool isTimedOut = false;
-  while (!workStolenFsbl && !Enumrtr_->WasObjctvMet_() && !isTimedOut && (*InactiveThreads_) < NumSolvers_) {
-    //Logger::Info("SolverID %d in main work stealing loop", SolverID_);
-    if (true) {
-      //Logger::Info("resetThreadWRiteFields");
-      DataDepGraph_->resetThreadWriteFields(SolverID_);
-      Enumrtr_->Reset();
-      //if (Enumrtr_->IsHistDom())
-      //  Enumrtr_->resetEnumHistoryState();
-      EnumCrntSched_->Reset();
-      initEnumrtr_();
-    }
-
-    stoleWork = false;
-
-    for (int i = 1; i < NumSolvers_; i++) {
-      int victimID = (SolverID_ - 2 + i) % NumSolvers_;
-      localPoolLock(victimID);
-      if (getLocalPoolSize(victimID) < 1) {
-        //Logger::Info("VictimID %d has empty pool (SolverID %d)", victimID + 2, SolverID_);
-        localPoolUnlock(victimID);
-      }
-      else {
-        // must decrement inactive thread count here (before popping)
-        // otherwise it is possible that active thread becomes inactive with this steal
-        // and reaches while loop condition before we decrement active thread count
-        // leading it to believe all threads are inactive
-        InactiveThreadLock_->lock();
-        (*InactiveThreads_)--;
-        //Logger::Info("SovlerID %d decremented inactive threads to %d", SolverID_, *InactiveThreads_);
-        InactiveThreadLock_->unlock();
-        workStealNode = localPoolPopTail(victimID);
-        workStealNode->GetParent()->setStolen(workStealNode->GetInstNum());
-        //Logger::Info("stealing inst %d (parent inst %d) from solver %d",  workStealNode->GetInstNum(), workStealNode->GetParent()->GetInstNum(), victimID + 2);
-        //workStealNode->GetParent()->RemoveSpecificInst(workStealNode->GetInst());
-        //Logger::Info("SolverID %d found node with inst %d to work steal", SolverID_, workStealNode->GetInstNum());
-        stoleWork = true;
-        localPoolUnlock(victimID);
-        break;
-      }
-    }
-
-    if (stoleWork) {
-      workStolenFsbl = generateStateFromNode(workStealNode, false);
-      if (!workStolenFsbl) {
-        //Logger::Info("SolverID %d pruned its stolen node", SolverID_);
-        InactiveThreadLock_->lock();
-        (*InactiveThreads_)++;
-        //Logger::Info("SovlerID %d incremented inactive threads to %d", SolverID_, *InactiveThreads_);
-        InactiveThreadLock_->unlock();
-        stoleWork = false;
-      }
-      else {
-        Logger::Info("SolverID %d found a feasible stolen node", SolverID_);
-      }
-    }
-
-    else {
-      if (RgnTimeout != INVALID_VALUE && (Utilities::GetProcessorTime() > StartTime + LngthTimeout || Utilities::GetProcessorTime() > StartTime + RgnTimeout)) {
-        isTimedOut = true;
-        timeout = true;
-        break;
-      }
-    }
-  }
-
-  //Logger::Info("There are %d inactiveThreads", *InactiveThreads_);
-  //Logger::Info("there are %d numSolvers", NumSolvers_);
-  assert((*InactiveThreads_) < 2 * NumSolvers_);
-  if ((*InactiveThreads_) >= NumSolvers_) {
-    //Logger::Info("All threads inactive");
-    // we have exhausted the search space
-    //Enumrtr_->destroy();
-    return RES_EXIT;
-  }
-
-  //Logger::Info("SolverID %d finished work stealing loop", SolverID_);
-
-  if (stoleWork && workStolenFsbl && !isTimedOut) {
-    rslt = enumerate_(workStealNode, StartTime, RgnTimeout, LngthTimeout, true);
-    assert(getLocalPoolSize(SolverID_ - 2) == 0 || RegionSched_->GetSpillCost() == 0 || rslt == RES_TIMEOUT || rslt == RES_ERROR || rslt == RES_EXIT);
-    if (RegionSched_->GetSpillCost() == 0 || rslt == RES_ERROR || (rslt == RES_TIMEOUT) || rslt == RES_EXIT) {
-      //Enumrtr_->destroy();
-      return rslt;
-    }
-  }
-
-  if (isTimedOut) {
-    //Enumrtr_->destroy();
-    //rslt = RES_TIMEOUT;
-    return rslt;
-  }
-
-  if (Enumrtr_->WasObjctvMet_()) {
-    //Enumrtr_->destroy();
-    rslt = RES_SUCCESS;
-    return rslt;
-  }
-}
-
-  // most recent comment -- why are these needed? we already do this after FFS completes
-  // outside length lkoop
-  // TODO -- these clear the history table -- need to set a barrier for these
-  Enumrtr_->Reset();
-  EnumCrntSched_->Reset();
-
-    
-    //if (!IsSecondPass())
-    //  CmputSchedUprBound_();
-
-  
-  IdleTime_[SolverID_ - 2] = Utilities::GetProcessorTime();
-
-/*
-  if (rslt != RES_TIMEOUT && rslt != RES_SUCCESS)
-  {
-    // if bestSched not provably optimal (pull from GPQ)
-    // acquire lock
-    if (!GlobalPool_->empty())
-    { 
-      *this = *GlobalPool_->front();
-      Logger::Info("Enumerating thread starting with inst: %d", Enumrtr_->getRootInstNum());
-      GlobalPool->pop();
-      // release lock
-      enumerate_(startTime, rgnTimeout, lngthTimeout);
-    }
-
-  }
-*/
-  
-  // Failure to find a feasible sched. in the last iteration is still
-  // considered an overall success
-
-  if (rslt == RES_SUCCESS || rslt == RES_FAIL) {
-    rslt = RES_SUCCESS;
-  }
-  if (timeout) 
-    rslt = RES_TIMEOUT;
-
-
-  //Logger::Info("worker returning %d", rslt);
-  // do we need to write to RsltAddr here?
-  //RsltAddr_[SolverID_ - 2] = rslt;
-  //Enumrtr_->destroy();
-  return rslt;
-}
-
-
-
-
-
-
-
-
-
-FUNC_RESULT BBWorker::enumerate2_(HalfNode *GlobalPoolNode,
-                                 Milliseconds StartTime, 
-                                 Milliseconds RgnTimeout,
-                                 Milliseconds LngthTimeout,
-                                 bool isWorkStealing) {
-
-  bool fsbl = false;
-  assert(GlobalPoolNode != NULL);
-  FUNC_RESULT rslt = RES_SUCCESS;
-  bool timeout = false;
-
-  //#ifndef WORK_STEAL
-  //  #define WORK_STEAL
-  //#endif
-
-  //#ifndef DEBUG_GP_HISTORY
-  //  #define DEBUG_GP_HISTORY
-  //#endif
-
-
-  //sleep(5);
-  //StartTime += 5000;
-  //intptr_t x = 10000;
-  //sbrk(50000);
-
-  //int *tmp;
-  //tmp = (int *)mmap(0, 12000, 0 | PROT_READ | PROT_WRITE, 0 | MAP_ANONYMOUS| MAP_PRIVATE, -1, 0);
-  //mmap(tmp, 12000, PROT_WRITE, MAP_SHARED, 0, 0);
-  
-  if (!isWorkStealing) {
-    //if (Enumrtr_->isFsbl(GlobalPoolNode)) {
-    
-    fsbl = generateStateFromNode(GlobalPoolNode);
-    //Logger::Info("BBTHread after genStateFromNode, entryCnt %d", Enumrtr_->getHistTableEntryCnt());
-    //Logger::Info("Solver %d finished generating state from node", SolverID_);
-  }
-
-  if (!fsbl) {
-    //Logger::Info("Solver %d pruned the global pool node", SolverID_);
-    //Enumrtr_->freeEnumTreeNode(GlobalPoolNode);
-    delete GlobalPoolNode;
-  }
-
-  if (fsbl || isWorkStealing) {
-      // need to 
-      InstCount trgtLngth = SchedLwrBound_;
-      int costLwrBound = 0;
-
-      Milliseconds rgnDeadline, lngthDeadline;
-      rgnDeadline =
-          (RgnTimeout == INVALID_VALUE) ? INVALID_VALUE : StartTime + RgnTimeout;
-      lngthDeadline =
-          (RgnTimeout == INVALID_VALUE) ? INVALID_VALUE : StartTime + LngthTimeout;
-      assert(lngthDeadline <= rgnDeadline);
-
-      //Logger::Info("Solver %d Enumerating", SolverID_);
-      rslt = Enumrtr_->FindFeasibleSchedule(EnumCrntSched_, trgtLngth, this,
-                                          costLwrBound, rgnDeadline);
+                                          costLwrBound, deadline);
 
     
 
@@ -2330,7 +1969,7 @@ FUNC_RESULT BBWorker::enumerate2_(HalfNode *GlobalPoolNode,
       //  Logger::Info("Stepping forward to inst %d", temp->GetInstNum());
       assert(temp != NULL);
       //Logger::Info("launching a new globalpool node");
-      rslt = enumerate2_(temp, StartTime, RgnTimeout, LngthTimeout);
+      rslt = generateAndEnumerate(temp, StartTime, RgnTimeout, LngthTimeout);
       if (RegionSched_->GetSpillCost() == 0 || rslt == RES_ERROR || (rslt == RES_TIMEOUT) || rslt == RES_EXIT) {
         //Enumrtr_->destroy();
         return rslt;
@@ -2346,7 +1985,7 @@ FUNC_RESULT BBWorker::enumerate2_(HalfNode *GlobalPoolNode,
 
 if (isWorkSteal()) {
 
-  //Logger::Info("SolverID %d beginning work steal loop", SolverID_);
+ // Logger::Info("SolverID %d beginning work steal loop", SolverID_);
   IdleTime_[SolverID_ - 2] = Utilities::GetProcessorTime();
   InactiveThreadLock_->lock();
   (*InactiveThreads_)++;
@@ -2434,7 +2073,7 @@ if (isWorkSteal()) {
   //Logger::Info("SolverID %d finished work stealing loop", SolverID_);
 
   if (stoleWork && workStolenFsbl && !isTimedOut) {
-    rslt = enumerate_(workStealNode, StartTime, RgnTimeout, LngthTimeout, true);
+    rslt = enumerate_(StartTime, RgnTimeout, LngthTimeout, true, true);
     assert(getLocalPoolSize(SolverID_ - 2) == 0 || RegionSched_->GetSpillCost() == 0 || rslt == RES_TIMEOUT || rslt == RES_ERROR || rslt == RES_EXIT);
     if (RegionSched_->GetSpillCost() == 0 || rslt == RES_ERROR || (rslt == RES_TIMEOUT) || rslt == RES_EXIT) {
       //Enumrtr_->destroy();
@@ -2606,7 +2245,7 @@ BBMaster::BBMaster(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
              SchedulerType HeurSchedType, int NumThreads, int MinNodesAsMultiple,
              int MinSplittingDepth, 
              int MaxSplittingDepth, int NumSolvers, int LocalPoolSize, float ExploitationPercent, 
-             SPILL_COST_FUNCTION GlobalPoolSCF, int GlobalPoolSort, bool WorkSteal)
+             SPILL_COST_FUNCTION GlobalPoolSCF, int GlobalPoolSort, bool WorkSteal, bool IsTimeoutPerInst)
              : BBInterfacer(OST_, dataDepGraph, rgnNum, sigHashSize, lbAlg, hurstcPrirts,
              enumPrirts, vrfySched, PruningStrategy, SchedForRPOnly, 
              enblStallEnum, SCW, spillCostFunc, HeurSchedType) {
@@ -2647,6 +2286,7 @@ BBMaster::BBMaster(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
   MasterNodeCount_ = 0;
 
   InactiveThreads_ = 0;
+  IsTimeoutPerInst_ = IsTimeoutPerInst;
                 
   // each thread must have some work initially
   // assert(PoolSize_ >= NumThreads_);
@@ -2656,7 +2296,8 @@ BBMaster::BBMaster(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
               HeurSchedType, BestCost_, schedLwrBound_, enumBestSched_, &OptmlSpillCost_, 
               &bestSchedLngth_, GlobalPool, &MasterNodeCount_, HistTableLock, &GlobalPoolLock, &BestSchedLock, 
               &NodeCountLock, &ImprvCountLock, &RegionSchedLock, &AllocatorLock, &results, idleTimes,
-              NumSolvers_, localPools, localPoolLocks, &InactiveThreads_, &InactiveThreadLock, LocalPoolSize_, WorkSteal_);
+              NumSolvers_, localPools, localPoolLocks, &InactiveThreads_, &InactiveThreadLock, LocalPoolSize_, WorkSteal_,
+              IsTimeoutPerInst_);
   
   ThreadManager.resize(NumThreads_);
 }
@@ -2693,7 +2334,7 @@ void BBMaster::initWorkers(const OptSchedTarget *OST_, DataDepGraph *dataDepGrap
              std::mutex *NodeCountLock, std::mutex *ImprvCountLock, std::mutex *RegionSchedLock,
              std::mutex *AllocatorLock, vector<FUNC_RESULT> *results, int *idleTimes,
              int NumSolvers, vector<InstPool3 *> localPools, std::mutex **localPoolLocks, int *inactiveThreads,
-             std::mutex *inactiveThreadLock, int LocalPoolSize, bool WorkSteal) {
+             std::mutex *inactiveThreadLock, int LocalPoolSize, bool WorkSteal, bool IsTimeoutPerInst) {
   
   Workers.resize(NumThreads_);
   
@@ -2704,7 +2345,7 @@ void BBMaster::initWorkers(const OptSchedTarget *OST_, DataDepGraph *dataDepGrap
                                    BestSpill, BestLength, GlobalPool, NodeCount, i+2, HistTableLock, 
                                    GlobalPoolLock, BestSchedLock, NodeCountLock, ImprvCountLock, RegionSchedLock, 
                                    AllocatorLock, results, idleTimes, NumThreads_, localPools, localPoolLocks,
-                                   inactiveThreads, inactiveThreadLock, LocalPoolSize, WorkSteal);
+                                   inactiveThreads, inactiveThreadLock, LocalPoolSize, WorkSteal, IsTimeoutPerInst);
   }
 }
 /*****************************************************************************/
@@ -2832,7 +2473,10 @@ bool BBMaster::initGlobalPool() {
 
   assert(firstLevelSize_ > 0);
 
-  if (firstLevelSize_ < NumThreads_ * MinNodesAsMultiple_ || MinSplittingDepth_ > 0) {
+  // if the global pool has a size that is initially <= 20 * numThreads we dont want
+  // to incur overhead of splitting even once despite our minimums
+  if (firstLevelSize_ < NumThreads_ * 20 && (
+    firstLevelSize_ < NumThreads_ * MinNodesAsMultiple_ || MinSplittingDepth_ > 0)) {
     InstPool4 **diversityPools = new InstPool4*[firstLevelSize_];
     for (int i = 0; i < firstLevelSize_; i++) {
       //Logger::Info("setting up primarysubspace %d", i);
@@ -3307,6 +2951,12 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
     Logger::Info("the %dth node to launch has parent %d and inst %d", k, temp->GetParent()->GetInstNum(), temp->GetInstNum());
   }*/
 
+
+  //FUNC_RESULT (BBWorker::*launchFunc)(HalfNode *, Milliseconds, Milliseconds, Milliseconds, bool) = &BBWorker::enumerate_;
+  //using launchFunc_type = FUNC_RESULT (BBWorker::*)(HalfNode *, Milliseconds, Milliseconds, Milliseconds, bool); 
+  //launchFunc_type launchFunc = &BBWorker::enumerate_;
+
+
   for (int j = 0; j < NumThreadsToLaunch; j++) {
 #ifdef DEBUG_GP_HISTORY
     Logger::Info("SolverID %d launching GlobalPoolNode with inst %d (parent %d)", j+2, LaunchNodes[j]->GetInstNum(), LaunchNodes[j]->prefix_.back()->GetInstNum());
@@ -3321,7 +2971,8 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
       tempPrefix.push(tempInt);
     }*/
     //Logger::Info("SolverID %d launching GlobalPoolNode with inst %d, (parent %d)", j+2, tempPrefix.back(), tempPrefix.front());
-    ThreadManager[j] = std::thread(&BBWorker::enumerate2_, Workers[j], LaunchNodes[j], startTime, rgnTimeout, lngthTimeout, false);
+    //ThreadManager[j] = std::thread(&launchFunc, Workers[j], LaunchNodes[j], startTime, rgnTimeout, lngthTimeout, false);
+    ThreadManager[j] = std::thread([=]{Workers[j]->generateAndEnumerate(LaunchNodes[j], startTime, rgnTimeout, lngthTimeout);});
   }
 
 

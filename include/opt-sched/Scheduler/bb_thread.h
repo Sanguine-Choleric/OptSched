@@ -537,6 +537,7 @@ private:
     int *InactiveThreads_;
 
     bool WorkSteal_;
+    bool IsTimeoutPerInst_;
     
 
     void handlEnumrtrRslt_(FUNC_RESULT rslt, InstCount trgtLngth);
@@ -567,7 +568,7 @@ public:
               std::mutex *ImprCountLock, std::mutex *RegionSchedLock, std::mutex *AllocatorLock,
               vector<FUNC_RESULT> *resAddr, int *idleTimes, int NumSolvers, std::vector<InstPool3 *> localPools, 
               std::mutex **localPoolLocks, int *inactiveThreads, std::mutex *inactiveThreadLock, 
-              int LocalPoolSize, bool WorkSteal);
+              int LocalPoolSize, bool WorkSteal, bool IsTimeoutPerInst);
 
     ~BBWorker();
     /*
@@ -617,11 +618,14 @@ public:
 
     FUNC_RESULT enumerate_(EnumTreeNode *GlobalPoolNode, Milliseconds StartTime, 
                            Milliseconds RgnTimeout, Milliseconds LngthTimeout, 
-                           bool isWorkStealing = false);
+                           bool isWorkStealing = false, bool isNodeFsbl = true);
 
-    FUNC_RESULT enumerate2_(HalfNode *GlobalPoolNode, Milliseconds StartTime, 
+    FUNC_RESULT enumerate_(Milliseconds StartTime, 
                            Milliseconds RgnTimeout, Milliseconds LngthTimeout,
-                           bool isWorkStealing = false);
+                           bool isWorkStealing = false, bool isNodeFsbl = true);
+
+    FUNC_RESULT generateAndEnumerate(HalfNode *GlobalPoolNode, Milliseconds StartTime, 
+                                     Milliseconds RgnTimeout, Milliseconds LngthTimeout);
 
     //TODO - clean this up
     inline InstCount CmputNormCost_(InstSchedule *sched, COST_COMP_MODE compMode,
@@ -718,6 +722,7 @@ private:
     int GlobalPoolSort_;
 
     bool WorkSteal_;
+    bool IsTimeoutPerInst_;
 
 
     void initWorkers(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
@@ -732,7 +737,7 @@ private:
              std::mutex *NodeCountLock, std::mutex *ImprvCountLock, std::mutex *RegionSchedLock, 
              std::mutex *AllocatorLock, vector<FUNC_RESULT> *results, int *idleTimes,
              int NumSolvers, std::vector<InstPool3 *> localPools, std::mutex **localPoolLocks,
-             int *InactiveThreads_, std::mutex *InactiveThreadLock, int LocalPoolSize, bool WorkSteal);
+             int *InactiveThreads_, std::mutex *InactiveThreadLock, int LocalPoolSize, bool WorkSteal, bool IsTimeoutPerInst);
 
   
     bool initGlobalPool();
@@ -753,7 +758,7 @@ public:
              SchedulerType HeurSchedType, int NumThreads, int MinNodesAsMultiple, 
              int MinSplittingDepth,
              int MaxSplittingDepth, int NumSolvers, int LocalPoolSize, float ExploitationPercent,
-             SPILL_COST_FUNCTION GlobalPoolSCF, int GlobalPoolSort, bool WorkSteal);
+             SPILL_COST_FUNCTION GlobalPoolSCF, int GlobalPoolSort, bool WorkSteal, bool IsTimeoutPerInst);
 
     ~BBMaster();
     
