@@ -473,7 +473,7 @@ void CostHistEnumTreeNode::Construct(EnumTreeNode *node, bool isTemp, bool isGen
   HistEnumTreeNode::Construct(node, isTemp, isGenerateState);
 #ifdef INSERT_ON_STEPFRWRD
   partialCost_ = node->GetCostLwrBound();
-  totalCost_ = currentNode->GetCost()();
+  totalCost_ = node->GetCost();
 #endif
 }
 
