@@ -132,6 +132,7 @@ bool ConstrainedScheduler::Initialize_(InstCount trgtSchedLngth,
   crntRealSlotNum_ = 0;
   crntCycleNum_ = 0;
   InitNewCycle_();
+  Logger::Info("solverID %d calling from CS:init", SolverID_);
   bbt_->InitForSchdulngBBThread();
 
   return true;

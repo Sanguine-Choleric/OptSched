@@ -583,6 +583,7 @@ public:
     void allocEnumrtr_(Milliseconds timeout, std::mutex *AllocatorLock);
     void initEnumrtr_(bool scheduleRoot = true);
     void setLCEElements_(InstCount costLwrBound);
+    void setLowerBounds_(InstCount costLwrBound);
     inline void setEnumHistTable(BinHashTable<HistEnumTreeNode> *histTable)  {
       Enumrtr_->setHistTable(histTable);
     }

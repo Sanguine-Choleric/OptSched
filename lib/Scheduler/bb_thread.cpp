@@ -436,6 +436,7 @@ void BBThread::InitForCostCmputtn_() {
   for (auto &i : SumOfLiveIntervalLengths_)
     i = 0;
 
+  Logger::Info("threadID %d setting dynamicSlilLowerBound to %d", SolverID_, StaticSlilLowerBound_);
   DynamicSlilLowerBound_ = StaticSlilLowerBound_;
 }
 /*****************************************************************************/
@@ -888,12 +889,14 @@ bool BBThread::ChkCostFsblty(InstCount trgtLngth, EnumTreeNode *node, bool isGlo
   
   bool fsbl = true;
   InstCount crntCost, dynmcCostLwrBound;
-  
+  Logger::Info("dynamicslilLowerBound is %d", DynamicSlilLowerBound_);
   if (SpillCostFuncBBT_ == SCF_SLIL) {
     crntCost = DynamicSlilLowerBound_ * SCW_ + trgtLngth * SchedCostFactor_;
+    Logger::Info("just set crntCost to %d", crntCost);
   } else {
     crntCost = CrntSpillCost_ * SCW_ + trgtLngth * SchedCostFactor_;
   }
+  Logger::Info("crntCost %d, getCostLwrBound %d", crntCost, getCostLwrBound());
   crntCost -= getCostLwrBound();
   dynmcCostLwrBound = crntCost;
 
@@ -1521,6 +1524,13 @@ void BBWorker::setLCEElements_(InstCount costLwrBound)
   Enumrtr_->setLCEElements((BBThread *)this, costLwrBound);
 }
 
+void BBWorker::setLowerBounds_(InstCount costLwrBound) {
+  if (SpillCostFunc_ == SCF_SLIL) {
+    //DynamicSlilLowerBound_ = costLwrBound;
+    StaticSlilLowerBound_ = costLwrBound;
+  }
+}
+
 /*****************************************************************************/
 
 void BBWorker::allocSched_() {
@@ -1931,6 +1941,16 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
         Enumrtr_->resetEnumHistoryState();
       EnumCrntSched_->Reset();
       initEnumrtr_();
+      
+      /* 
+        The following is called by constrainedScheduler::Initialize
+        which in turn is called by enumerator::Initialize which is called by
+        initEnumrtr_() above
+      */
+
+      /*if (SpillCostFuncBBT_ == SCF_SLIL) {
+        DynamicSlilLowerBound_ = StaticSlilLowerBound_;
+      }*/
   }
 
 
@@ -2829,7 +2849,9 @@ bool BBMaster::initGlobalPool() {
 bool BBMaster::init() {
   InitForSchdulng();
   for (int i = 0; i < NumThreads_; i++) {
+    Workers[i]->setLowerBounds_(costLwrBound_);
     Workers[i]->SetupForSchdulngBBThread_();
+    Logger::Info("solverID %d calling from BBM:init", i);
     Workers[i]->InitForSchdulngBBThread();
   }
 
