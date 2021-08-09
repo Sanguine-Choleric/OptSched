@@ -436,7 +436,6 @@ void BBThread::InitForCostCmputtn_() {
   for (auto &i : SumOfLiveIntervalLengths_)
     i = 0;
 
-  Logger::Info("threadID %d setting dynamicSlilLowerBound to %d", SolverID_, StaticSlilLowerBound_);
   DynamicSlilLowerBound_ = StaticSlilLowerBound_;
 }
 /*****************************************************************************/
@@ -889,14 +888,11 @@ bool BBThread::ChkCostFsblty(InstCount trgtLngth, EnumTreeNode *node, bool isGlo
   
   bool fsbl = true;
   InstCount crntCost, dynmcCostLwrBound;
-  Logger::Info("dynamicslilLowerBound is %d", DynamicSlilLowerBound_);
   if (SpillCostFuncBBT_ == SCF_SLIL) {
     crntCost = DynamicSlilLowerBound_ * SCW_ + trgtLngth * SchedCostFactor_;
-    Logger::Info("just set crntCost to %d", crntCost);
   } else {
     crntCost = CrntSpillCost_ * SCW_ + trgtLngth * SchedCostFactor_;
   }
-  Logger::Info("crntCost %d, getCostLwrBound %d", crntCost, getCostLwrBound());
   crntCost -= getCostLwrBound();
   dynmcCostLwrBound = crntCost;
 
@@ -2851,7 +2847,6 @@ bool BBMaster::init() {
   for (int i = 0; i < NumThreads_; i++) {
     Workers[i]->setLowerBounds_(costLwrBound_);
     Workers[i]->SetupForSchdulngBBThread_();
-    Logger::Info("solverID %d calling from BBM:init", i);
     Workers[i]->InitForSchdulngBBThread();
   }
 
