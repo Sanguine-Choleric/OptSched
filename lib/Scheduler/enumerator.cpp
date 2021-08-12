@@ -1335,7 +1335,7 @@ bool Enumerator::FindNxtFsblBrnch_(EnumTreeNode *&newNode) {
       //Logger::Info("SolverID %d attempting to probe next inst", SolverID_);
       assert(rdyLst_);
 
-if (bbt_->isWorkSteal()) {
+if (bbt_->isWorkStealOn()) {
     if (!bbt_->isWorker()) {
       inst = rdyLst_->GetNextPriorityInst();
     }
@@ -1743,7 +1743,8 @@ void Enumerator::StepFrwrd_(EnumTreeNode *&newNode) {
 
   // TODO: toggle work stealing on-off
 
-if (bbt_->isWorkSteal()) {
+if (bbt_->isWorkStealOn()) {
+  Logger::Info("GOOD HIT! work steal on in step frwrd");
   if (bbt_->isWorker()) {
     bool pushedToLocal = false;
     if (!crntNode_->getPushedToLocalPool()) {
@@ -1796,6 +1797,7 @@ if (bbt_->isWorkSteal()) {
     }
   }  
 }
+
 //TEST CODE
 /*
 if (!crntNode_->getPushedToLocalPool() || !bbt_->isWorker() || isSecondPass()) {
@@ -3186,7 +3188,8 @@ bool LengthCostEnumerator::BackTrack_(bool trueState) {
     }
   }
 
-if (bbt_->isWorkSteal()) {
+if (bbt_->isWorkStealOn()) {
+  Logger::Info("checking localpool on backtrack");
   // it is possible that a crntNode becomes infeasible before exploring all its children
   // thus we need to ensure that all children are removed on backtrack
   if (bbt_->isWorker() && !fsbl) {
@@ -3225,7 +3228,7 @@ if (bbt_->isWorkSteal()) {
 /*****************************************************************************/
 
 void Enumerator::BackTrackRoot_() {
-  if (bbt_->isWorkSteal()) {
+  if (bbt_->isWorkStealOn()) {
   // it is possible that a crntNode becomes infeasible before exploring all its children
   // thus we need to ensure that all children are removed on backtrack
     bbt_->localPoolLock(SolverID_ - 2);
