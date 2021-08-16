@@ -542,6 +542,7 @@ private:
 
     int *IdleTime_;
     int *InactiveThreads_;
+    uint64_t *nodeCounts_;
 
     bool WorkSteal_;
     bool *WorkStealOn_;
@@ -577,7 +578,7 @@ public:
               std::mutex *ImprCountLock, std::mutex *RegionSchedLock, std::mutex *AllocatorLock,
               vector<FUNC_RESULT> *resAddr, int *idleTimes, int NumSolvers, std::vector<InstPool3 *> localPools, 
               std::mutex **localPoolLocks, int *inactiveThreads, std::mutex *inactiveThreadLock, 
-              int LocalPoolSize, bool WorkSteal, bool *WorkStealOn, bool IsTimeoutPerInst);
+              int LocalPoolSize, bool WorkSteal, bool *WorkStealOn, bool IsTimeoutPerInst, uint64_t *nodeCounts);
 
     ~BBWorker();
     /*
@@ -726,6 +727,7 @@ private:
     int64_t HistTableSize_;
 
     int *idleTimes;
+    uint64_t *nodeCounts;
 
     std::vector<InstPool3 *> localPools;
     std::mutex **localPoolLocks;
@@ -753,7 +755,7 @@ private:
              std::mutex *AllocatorLock, vector<FUNC_RESULT> *results, int *idleTimes,
              int NumSolvers, std::vector<InstPool3 *> localPools, std::mutex **localPoolLocks,
              int *InactiveThreads_, std::mutex *InactiveThreadLock, int LocalPoolSize, bool WorkSteal, 
-             bool *WorkStealOn, bool IsTimeoutPerInst);
+             bool *WorkStealOn, bool IsTimeoutPerInst, uint64_t *nodeCounts);
 
   
     bool initGlobalPool();

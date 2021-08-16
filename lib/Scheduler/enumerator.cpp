@@ -1744,7 +1744,6 @@ void Enumerator::StepFrwrd_(EnumTreeNode *&newNode) {
   // TODO: toggle work stealing on-off
 
 if (bbt_->isWorkStealOn()) {
-  Logger::Info("GOOD HIT! work steal on in step frwrd");
   if (bbt_->isWorker()) {
     bool pushedToLocal = false;
     if (!crntNode_->getPushedToLocalPool()) {
@@ -3189,7 +3188,6 @@ bool LengthCostEnumerator::BackTrack_(bool trueState) {
   }
 
 if (bbt_->isWorkStealOn()) {
-  Logger::Info("checking localpool on backtrack");
   // it is possible that a crntNode becomes infeasible before exploring all its children
   // thus we need to ensure that all children are removed on backtrack
   if (bbt_->isWorker() && !fsbl) {
