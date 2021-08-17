@@ -898,6 +898,11 @@ bool BBThread::ChkCostFsblty(InstCount trgtLngth, EnumTreeNode *node, bool isGlo
   // assert(cost >= 0);
   assert(dynmcCostLwrBound >= 0);
  
+  /*if (Enumrtr_->isGenerateState_) {
+    Logger::Info("DynamicSlilLowerBound_ %d", DynamicSlilLowerBound_);
+    Logger::Info("SolverID %d, dyncCostLB %d, getBestCost %d", SolverID_, dynmcCostLwrBound, getBestCost());
+  }*/
+
 
   // GlobalPoolNodes need to store cost information for pruning when distributing to workers
   fsbl = dynmcCostLwrBound < getBestCost(); 
@@ -1522,10 +1527,10 @@ void BBWorker::setLCEElements_(InstCount costLwrBound)
   Enumrtr_->setLCEElements((BBThread *)this, costLwrBound);
 }
 
-void BBWorker::setLowerBounds_(InstCount costLwrBound) {
+void BBWorker::setLowerBounds_(InstCount SlilLowerBound) {
   if (SpillCostFunc_ == SCF_SLIL) {
-    //DynamicSlilLowerBound_ = costLwrBound;
-    StaticSlilLowerBound_ = costLwrBound;
+    DynamicSlilLowerBound_ = SlilLowerBound;
+    StaticSlilLowerBound_ = SlilLowerBound;
   }
 }
 
@@ -2860,7 +2865,7 @@ bool BBMaster::initGlobalPool() {
 bool BBMaster::init() {
   InitForSchdulng();
   for (int i = 0; i < NumThreads_; i++) {
-    Workers[i]->setLowerBounds_(costLwrBound_);
+    Workers[i]->setLowerBounds_(StaticSlilLowerBound_);
     Workers[i]->SetupForSchdulngBBThread_();
     Workers[i]->InitForSchdulngBBThread();
   }
