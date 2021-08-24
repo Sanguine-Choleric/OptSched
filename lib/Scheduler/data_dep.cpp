@@ -214,6 +214,7 @@ DataDepGraph::DataDepGraph(MachineModel *machMdl, LATENCY_PRECISION ltncyPrcsn, 
 }
 
 DataDepGraph::~DataDepGraph() {
+  Logger::Info("staring to delete DDG");
 
   if (insts_ != NULL) {
     for (InstCount i = 0; i < instCnt_; i++) {
@@ -257,6 +258,7 @@ DataDepGraph::~DataDepGraph() {
   if (instCntPerType_ != NULL)
     delete[] instCntPerType_;
  
+  Logger::Info("finished deleting the DDG");
 }
 
 void DataDepGraph::resetThreadWriteFields(int SolverID)

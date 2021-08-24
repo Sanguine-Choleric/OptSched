@@ -2352,6 +2352,8 @@ BBMaster::~BBMaster() {
   
   delete[] localPoolLocks;
   delete[] idleTimes;
+
+  Logger::Info("finished deleting master");
   //delete GlobalPool;
 }
 /*****************************************************************************/
