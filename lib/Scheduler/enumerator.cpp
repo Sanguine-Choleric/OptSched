@@ -638,12 +638,12 @@ Enumerator::Enumerator(DataDepGraph *dataDepGraph, MachineModel *machMdl,
 /****************************************************************************/
 
 Enumerator::~Enumerator() {
-  Logger::Info("SolverID %d deleting enum", SolverID_);
+  //Logger::Info("SolverID %d deleting enum", SolverID_);
   // double free if workers try to delete hist table -- refers to same object
   if (SolverID_ <= 1) {
-    Logger::Info("starting deletion of history table");
+    //Logger::Info("starting deletion of history table");
     delete exmndSubProbs_;
-    Logger::Info("deleted history table");
+    //Logger::Info("deleted history table");
   }
 
   for (InstCount i = 0; i < schedUprBound_; i++) {
@@ -662,7 +662,7 @@ Enumerator::~Enumerator() {
   tmpHstryNode_->Clean();
   delete tmpHstryNode_;
 
-  Logger::Info("SolverID %d finished deleting enum", SolverID_);
+  //Logger::Info("SolverID %d finished deleting enum", SolverID_);
 }
 /****************************************************************************/
 
@@ -717,16 +717,16 @@ void Enumerator::FreeAllocators_(){
   }*/
 
   if (!alctrsFreed_) {
-    Logger::Info("SolverID %d freeing enum::alctr", SolverID_);
+    //Logger::Info("SolverID %d freeing enum::alctr", SolverID_);
     if (nodeAlctr_ != NULL)
       delete nodeAlctr_;
-  //Logger::Info("SolverID %d just deleted nodeAlctr", SolverID_);
+    //Logger::Info("SolverID %d just deleted nodeAlctr", SolverID_);
     nodeAlctr_ = NULL;
     if (rlxdSchdulr_ != NULL)
       delete rlxdSchdulr_;
     rlxdSchdulr_ = NULL;
 
-    Logger::Info("SolverID %d freeing enum::histAlctr", SolverID_);
+    //Logger::Info("SolverID %d freeing enum::histAlctr", SolverID_);
     if (IsHistDom()) {
       if (hashTblEntryAlctr_ != NULL)
         delete hashTblEntryAlctr_;
@@ -745,7 +745,7 @@ void Enumerator::FreeAllocators_(){
       lastInsts_ = NULL;
       othrLastInsts_ = NULL;
     }
-    Logger::Info("finished freeing enum::histAcltr");
+    //Logger::Info("finished freeing enum::histAcltr");
 
     alctrsFreed_ = true;
   }
