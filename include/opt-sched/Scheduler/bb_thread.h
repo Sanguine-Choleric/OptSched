@@ -698,6 +698,8 @@ public:
                                                 EnumTreeNode *parent, 
                                                 EnumTreeNode *&removed) override;
 
+    inline void freeAlctrs() {Enumrtr_->FreeAllocators_();}
+
 };
 
 /******************************************************************/
@@ -714,6 +716,7 @@ private:
     vector<FUNC_RESULT> results;
 
     int InactiveThreads_;
+    int NumThreadsToLaunch_;
 
     std::mutex **HistTableLock;
     std::mutex GlobalPoolLock;

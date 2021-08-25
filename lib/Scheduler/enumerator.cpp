@@ -750,6 +750,7 @@ void Enumerator::FreeAllocators_(){
     alctrsFreed_ = true;
   }
 }
+
 /****************************************************************************/
 
 void Enumerator::deleteNodeAlctr() {
@@ -2905,7 +2906,7 @@ LengthCostEnumerator::LengthCostEnumerator(BBThread *bbt,
 /*****************************************************************************/
 
 LengthCostEnumerator::~LengthCostEnumerator() {
-  if (!alctrsFreed_) {
+  if (!alctrsFreed_ && SolverID_ <= 1) {
     Reset();
     if (SolverID_ > 1) {
       //Logger::Info("resseting node allocator for solverID %d", SolverID_);
@@ -2947,9 +2948,11 @@ void LengthCostEnumerator::SetupAllocators_() {
 /****************************************************************************/
 
 void LengthCostEnumerator::ResetAllocators_() {
-  Enumerator::ResetAllocators_();
-  if (IsHistDom() && SolverID_ <= 1)
-    histNodeAlctr_->Reset();
+  if (!alctrsFreed_) {
+    Enumerator::ResetAllocators_();
+    if (IsHistDom() && SolverID_ <= 1)
+      histNodeAlctr_->Reset();
+  }
 }
 /****************************************************************************/
 

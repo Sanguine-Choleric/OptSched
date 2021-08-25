@@ -2349,7 +2349,6 @@ BBMaster::~BBMaster() {
     delete localPoolLocks[i];
   }
 
-  
   delete[] localPoolLocks;
   delete[] idleTimes;
 
@@ -2911,7 +2910,7 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
 
   bool *subspaceRepresented;
   subspaceRepresented = new bool[firstLevelSize_];
-  int NumThreadsToLaunch;
+  
 
   Logger::Info("using exploitationPercent %f", ExploitationPercent_);
   int exploitationCount;
@@ -2919,11 +2918,11 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
   int globalPoolSizeStart = GlobalPool->size();
 
   if (globalPoolSizeStart < NumThreads_) {
-    NumThreadsToLaunch = globalPoolSizeStart;
+    NumThreadsToLaunch_ = globalPoolSizeStart;
     Logger::Info("we were not able to find enough global pool nodes");
-    Logger::Info("Launching %d threads", NumThreadsToLaunch);
+    Logger::Info("Launching %d threads", NumThreadsToLaunch_);
 
-    for (int i = 0; i < NumThreadsToLaunch; i++) {
+    for (int i = 0; i < NumThreadsToLaunch_; i++) {
       Temp = GlobalPool->front();
       GlobalPool->pop();
       LaunchNodes[i] = Temp;
@@ -2933,7 +2932,7 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
 
   else {
     Logger::Event("LaunchingParallelThreads", "num", NumThreads_);
-    NumThreadsToLaunch = NumThreads_;
+    NumThreadsToLaunch_ = NumThreads_;
   while (NumNodesPicked < NumThreads_) {
     for (int i = 0; i < firstLevelSize_; i++) {
       subspaceRepresented[i] = false;
@@ -2996,7 +2995,7 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
   //launchFunc_type launchFunc = &BBWorker::enumerate_;
 
 
-  for (int j = 0; j < NumThreadsToLaunch; j++) {
+  for (int j = 0; j < NumThreadsToLaunch_; j++) {
 #ifdef DEBUG_GP_HISTORY
     Logger::Info("SolverID %d launching GlobalPoolNode with inst %d (parent %d)", j+2, LaunchNodes[j]->GetInstNum(), LaunchNodes[j]->prefix_.back()->GetInstNum());
 #endif
@@ -3016,7 +3015,7 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
 
 
 
-  for (int j = 0; j < NumThreadsToLaunch; j++) {
+  for (int j = 0; j < NumThreadsToLaunch_; j++) {
     ThreadManager[j].join();
   }
 
@@ -3144,6 +3143,15 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
 
   //TODO: fix this return values
   Enumrtr_->Reset();
+
+  for (int j = 0; j < NumThreadsToLaunch_; j++) {
+    // run function to delete history and node alcts
+    ThreadManager[j] = std::thread([=]{Workers[j]->freeAlctrs();});
+  }
+
+  for (int j = 0; j < NumThreadsToLaunch_; j++) {
+    ThreadManager[j].join();
+  }
 
   /*
   for (int j = 0; j < i; j++) {
