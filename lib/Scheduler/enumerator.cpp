@@ -542,7 +542,9 @@ Enumerator::Enumerator(DataDepGraph *dataDepGraph, MachineModel *machMdl,
 
   NumSolvers_ = NumSolvers;
   
-  memAllocBlkSize_ = (int)timeout / TIMEOUT_TO_MEMBLOCK_RATIO;
+  Logger::Info("timout is %d", (int)timeout);
+
+  memAllocBlkSize_ = (int)timeout *10;// TIMEOUT_TO_MEMBLOCK_RATIO;
   assert(preFxdInstCnt >= 0);
 
   if (memAllocBlkSize_ > MAX_MEMBLOCK_SIZE) {
