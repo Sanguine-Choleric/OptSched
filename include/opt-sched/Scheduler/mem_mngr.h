@@ -30,6 +30,8 @@ public:
   inline void Reset();
   // Returns an allocated object.
   inline T *GetObject();
+  // Get number of blocks allocated
+  inline int GetSize();
   // Frees an object and recycles it for future use.
   inline void FreeObject(T *obj);
 
@@ -166,6 +168,8 @@ template <class T> inline T *MemAlloc<T>::GetObjects_(int count) {
 }
 
 template <class T> inline T *MemAlloc<T>::GetObject() { return GetObjects_(1); }
+
+template <class T> inline int MemAlloc<T>::GetSize() {return allocatedBlocks_.GetElmntCnt();}
 
 template <class T> inline void MemAlloc<T>::FreeObject(T *obj) {
   availableObjects_.InsrtElmnt(obj);

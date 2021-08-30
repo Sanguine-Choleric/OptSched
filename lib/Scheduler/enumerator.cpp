@@ -2960,7 +2960,7 @@ void LengthCostEnumerator::ResetAllocators_() {
 
 void LengthCostEnumerator::FreeAllocators_(){
   if (IsHistDom() & !alctrsFreed_) {
-    //Logger::Info("SolverID %d freeing LCE::alctr", SolverID_);
+    Logger::Info("SolverID %d freeing history allocator with %d blocks", SolverID_, histNodeAlctr_->GetSize());
     if (histNodeAlctr_ != NULL)
       delete histNodeAlctr_;
     histNodeAlctr_ = NULL;
