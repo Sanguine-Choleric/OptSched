@@ -130,6 +130,8 @@ private:
   // What list scheduler should be used to find an initial feasible schedule.
   SchedulerType HeurSchedType_;
 
+  
+
 
   // list scheduling heuristics
   SchedPriorities hurstcPrirts_;
@@ -181,6 +183,8 @@ protected:
 
   // Used for two-pass-optsched to enable second pass functionalies.
   bool isSecondPass_;
+
+  bool IsTimeoutPerInst_ = true;
 
   // The absolute cost lower bound to be used as a ref for normalized costs.
   InstCount costLwrBound_ = 0;

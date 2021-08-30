@@ -1402,12 +1402,14 @@ BBWithSpill::BBWithSpill(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
               SchedPriorities hurstcPrirts, SchedPriorities enumPrirts,
               bool vrfySched, Pruning PruningStrategy, bool SchedForRPOnly,
               bool enblStallEnum, int SCW, SPILL_COST_FUNCTION spillCostFunc,
-              SchedulerType HeurSchedType)
+              SchedulerType HeurSchedType, int timeoutToMemblock)
               : BBInterfacer(OST_, dataDepGraph, rgnNum, sigHashSize, lbAlg, hurstcPrirts,
                              enumPrirts, vrfySched, PruningStrategy, SchedForRPOnly, 
                              enblStallEnum, SCW, spillCostFunc, HeurSchedType) {
     SolverID_ = 0;
     NumSolvers_ = 1;
+
+    timeoutToMemblock_ = timeoutToMemblock;
 }
 
 Enumerator *BBWithSpill::AllocEnumrtr_(Milliseconds timeout) {
@@ -1419,7 +1421,7 @@ Enumerator *BBWithSpill::AllocEnumrtr_(Milliseconds timeout) {
   Enumrtr_ = new LengthCostEnumerator(this,
       dataDepGraph_, machMdl_, schedUprBound_, GetSigHashSize(),
       GetEnumPriorities(), GetPruningStrategy(), SchedForRPOnly_, enblStallEnum,
-      timeout, GetSpillCostFunc(), isSecondPass_, 1, nullptr, 0, 0, NULL);
+      timeout, GetSpillCostFunc(), isSecondPass_, 1, timeoutToMemblock_, nullptr, 0, 0, NULL);
 
   return Enumrtr_;
 }
@@ -1443,7 +1445,7 @@ BBWorker::BBWorker(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
               std::mutex *RegionSchedLock, std::mutex *AllocatorLock, vector<FUNC_RESULT> *RsltAddr, int *idleTimes,
               int NumSolvers, vector<InstPool3 *> localPools, std::mutex **localPoolLocks,
               int *inactiveThreads, std::mutex *inactiveThreadLock, int LocalPoolSize, bool WorkSteal,
-              bool *WorkStealOn, bool IsTimeoutPerInst, uint64_t *nodeCounts) 
+              bool *WorkStealOn, bool IsTimeoutPerInst, uint64_t *nodeCounts, int timeoutToMemblock) 
               : BBThread(OST_, dataDepGraph, rgnNum, sigHashSize, lbAlg,
               hurstcPrirts, enumPrirts, vrfySched, PruningStrategy, SchedForRPOnly,
               enblStallEnum, SCW, spillCostFunc, HeurSchedType)
@@ -1497,6 +1499,7 @@ BBWorker::BBWorker(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
   WorkStealOn_ = WorkStealOn;
   //Logger::Info("solverID %d has WorkStealOn_ %p", SolverID_, WorkStealOn_);
   IsTimeoutPerInst_ = IsTimeoutPerInst;
+  timeoutToMemblock_ = timeoutToMemblock;
 }
 
 BBWorker::~BBWorker() {
@@ -1517,7 +1520,7 @@ void BBWorker::allocEnumrtr_(Milliseconds Timeout, std::mutex *AllocatorLock) {
   Enumrtr_ = new LengthCostEnumerator(this,
       DataDepGraph_, MachMdl_, SchedUprBound_, SigHashSize_,
       EnumPrirts_, PruningStrategy_, SchedForRPOnly_, EnblStallEnum_,
-      Timeout, SpillCostFunc_, IsSecondPass_, NumSolvers_, AllocatorLock, SolverID_, 0, NULL);
+      Timeout, SpillCostFunc_, IsSecondPass_, timeoutToMemblock_, NumSolvers_, AllocatorLock, SolverID_, 0, NULL);
 
 }
 /*****************************************************************************/
@@ -1859,6 +1862,8 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
           (RgnTimeout == INVALID_VALUE) ? INVALID_VALUE : StartTime + LngthTimeout;
       
       Milliseconds deadline = IsTimeoutPerInst_ ? lngthDeadline : rgnDeadline;
+
+      Logger::Info("we have deadline of %d", (int)(deadline-StartTime));
 
       //assert(lngthDeadline <= rgnDeadline);
 
@@ -2276,7 +2281,8 @@ BBMaster::BBMaster(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
              SchedulerType HeurSchedType, int NumThreads, int MinNodesAsMultiple,
              int MinSplittingDepth, 
              int MaxSplittingDepth, int NumSolvers, int LocalPoolSize, float ExploitationPercent, 
-             SPILL_COST_FUNCTION GlobalPoolSCF, int GlobalPoolSort, bool WorkSteal, bool IsTimeoutPerInst)
+             SPILL_COST_FUNCTION GlobalPoolSCF, int GlobalPoolSort, bool WorkSteal, bool IsTimeoutPerInst,
+             int timeoutToMemblock)
              : BBInterfacer(OST_, dataDepGraph, rgnNum, sigHashSize, lbAlg, hurstcPrirts,
              enumPrirts, vrfySched, PruningStrategy, SchedForRPOnly, 
              enblStallEnum, SCW, spillCostFunc, HeurSchedType) {
@@ -2321,6 +2327,8 @@ BBMaster::BBMaster(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
 
   InactiveThreads_ = 0;
   IsTimeoutPerInst_ = IsTimeoutPerInst;
+
+  timeoutToMemblock_ = timeoutToMemblock;
                 
   // each thread must have some work initially
   // assert(PoolSize_ >= NumThreads_);
@@ -2331,7 +2339,7 @@ BBMaster::BBMaster(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
               &bestSchedLngth_, GlobalPool, &MasterNodeCount_, HistTableLock, &GlobalPoolLock, &BestSchedLock, 
               &NodeCountLock, &ImprvCountLock, &RegionSchedLock, &AllocatorLock, &results, idleTimes,
               NumSolvers_, localPools, localPoolLocks, &InactiveThreads_, &InactiveThreadLock, LocalPoolSize_, WorkSteal_, 
-              &WorkStealOn_, IsTimeoutPerInst_, nodeCounts);
+              &WorkStealOn_, IsTimeoutPerInst_, nodeCounts, timeoutToMemblock_);
   
   ThreadManager.resize(NumThreads_);
 }
@@ -2370,7 +2378,7 @@ void BBMaster::initWorkers(const OptSchedTarget *OST_, DataDepGraph *dataDepGrap
              std::mutex *AllocatorLock, vector<FUNC_RESULT> *results, int *idleTimes,
              int NumSolvers, vector<InstPool3 *> localPools, std::mutex **localPoolLocks, int *inactiveThreads,
              std::mutex *inactiveThreadLock, int LocalPoolSize, bool WorkSteal, bool *WorkStealOn, bool IsTimeoutPerInst,
-             uint64_t *nodeCounts) {
+             uint64_t *nodeCounts, int timeoutToMemblock) {
   
   Workers.resize(NumThreads_);
   
@@ -2382,7 +2390,7 @@ void BBMaster::initWorkers(const OptSchedTarget *OST_, DataDepGraph *dataDepGrap
                                    GlobalPoolLock, BestSchedLock, NodeCountLock, ImprvCountLock, RegionSchedLock, 
                                    AllocatorLock, results, idleTimes, NumThreads_, localPools, localPoolLocks,
                                    inactiveThreads, inactiveThreadLock, LocalPoolSize, WorkSteal, WorkStealOn,
-                                   IsTimeoutPerInst, nodeCounts);
+                                   IsTimeoutPerInst, nodeCounts, timeoutToMemblock);
   }
 }
 /*****************************************************************************/
@@ -2405,7 +2413,7 @@ Enumerator *BBMaster::allocEnumHierarchy_(Milliseconds timeout, bool *fsbl) {
   Enumrtr_ = new LengthCostEnumerator(this,
       dataDepGraph_, machMdl_, schedUprBound_, GetSigHashSize(),
       GetEnumPriorities(), GetPruningStrategy(), SchedForRPOnly_, enblStallEnum,
-      timeout, GetSpillCostFunc(), isSecondPass_, NumThreads_, nullptr, 1, 0, NULL);
+      timeout, GetSpillCostFunc(), isSecondPass_, NumThreads_, timeoutToMemblock_, nullptr, 1, 0, NULL);
 
     Enumrtr_->setLCEElements(this, costLwrBound_);
 
@@ -2892,8 +2900,7 @@ void BBMaster::setWorkerHeurInfo() {
 
 FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout,
                                  Milliseconds lngthTimeout, int *OptimalSolverID) {
-
-  Logger::Info("alloted time fro this region is %d", (int)rgnTimeout);
+                              
 
 
   // first pass

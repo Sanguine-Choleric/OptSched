@@ -459,7 +459,7 @@ void ScheduleDAGOptSched::schedule() {
     auto region = llvm::make_unique<BBWithSpill>(
         OST.get(), dataDepGraph_, 0, HistTableHashBits,
         LowerBoundAlgorithm, HeuristicPriorities, EnumPriorities, VerifySchedule,
-        PruningStrategy, SchedForRPOnly, EnumStalls, SCW, SCF, HeurSchedType);
+        PruningStrategy, SchedForRPOnly, EnumStalls, SCW, SCF, HeurSchedType, TimeoutToMemblock);
 
       // Used for two-pass-optsched to alter upper bound value.
     if (SecondPass)
@@ -504,7 +504,7 @@ void ScheduleDAGOptSched::schedule() {
         LowerBoundAlgorithm, HeuristicPriorities, EnumPriorities, VerifySchedule,
         PruningStrategy, SchedForRPOnly, EnumStalls, SCW, SCF, HeurSchedType, 
         NumThreads, MinNodesAsMultiple, MinSplittingDepth, MaxSplittingDepth, NumSolvers, LocalPoolSize, ExploitationPercent, GlobalPoolSCF,
-        GlobalPoolSort, WorkSteal, IsTimeoutPerInst);
+        GlobalPoolSort, WorkSteal, IsTimeoutPerInst, TimeoutToMemblock);
 
       // Used for two-pass-optsched to alter upper bound value.
     if (SecondPass)
@@ -670,6 +670,8 @@ void ScheduleDAGOptSched::loadOptSchedConfig() {
   LengthTimeout = schedIni.GetInt("LENGTH_TIMEOUT");
   FirstPassLengthTimeout = schedIni.GetInt("FIRST_PASS_LENGTH_TIMEOUT");
   SecondPassLengthTimeout = schedIni.GetInt("SECOND_PASS_LENGTH_TIMEOUT");
+
+  TimeoutToMemblock = schedIni.GetInt("TIMEOUT_TO_MEMBLOCK_RATIO");
 
   ParallelBB = schedIni.GetBool("USE_PARALLEL_BB");
   NumThreads = schedIni.GetInt("NUMBER_THREADS");

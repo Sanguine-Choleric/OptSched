@@ -23,7 +23,7 @@ Last Update:  Apr. 2020
 namespace llvm {
 namespace opt_sched {
 
-const int MAX_MEMBLOCK_SIZE = 10000;
+const int MAX_MEMBLOCK_SIZE = 500000;
 const int TIMEOUT_TO_MEMBLOCK_RATIO = 1;
 
 class SchedRegion;
@@ -533,6 +533,8 @@ protected:
   int iterNum_;
   long backTrackCnt_;
 
+  int timeoutToMemblock_ = 1;
+
   bool alctrsSetup_;
   MemAlloc<BinHashTblEntry<HistEnumTreeNode>> *hashTblEntryAlctr_;
   EnumTreeNodeAlloc *nodeAlctr_;
@@ -674,8 +676,8 @@ public:
              InstCount schedUprBound, int16_t sigHashSize,
              SchedPriorities prirts, Pruning PruningStrategy,
              bool SchedForRPOnly, bool enblStallEnum, Milliseconds timeout, 
-             int SolverID, int NumSolvers, std::mutex *AllocatorLock, bool isSecondPass = false, InstCount preFxdInstCnt = 0,
-             SchedInstruction *preFxdInsts[] = NULL);
+             int SolverID, int NumSolvers, std::mutex *AllocatorLock, int timeoutToMemblock, bool isSecondPass = false,
+             InstCount preFxdInstCnt = 0, SchedInstruction *preFxdInsts[] = NULL);
   virtual ~Enumerator();
   virtual void Reset();
 
@@ -825,7 +827,7 @@ public:
                        SchedPriorities prirts, Pruning PruningStrategy,
                        bool SchedForRPOnly, bool enblStallEnum,
                        Milliseconds timeout, SPILL_COST_FUNCTION spillCostFunc, bool IsSecondPass,
-                       int NumSolvers, std::mutex *AllocatorLock = nullptr, int SolverID = 0, InstCount preFxdInstCnt = 0, 
+                       int NumSolvers, int timeoutToMemblock, std::mutex *AllocatorLock = nullptr, int SolverID = 0, InstCount preFxdInstCnt = 0, 
                        SchedInstruction *preFxdInsts[] = NULL);
   virtual ~LengthCostEnumerator();
 

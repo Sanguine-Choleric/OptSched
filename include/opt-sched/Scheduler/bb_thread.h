@@ -445,14 +445,14 @@ class BBWithSpill : public BBInterfacer {
 private:
 
 protected:
-
+  int timeoutToMemblock_;
 public:
     BBWithSpill(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
                 long rgnNum, int16_t sigHashSize, LB_ALG lbAlg,
                 SchedPriorities hurstcPrirts, SchedPriorities enumPrirts,
                 bool vrfySched, Pruning PruningStrategy, bool SchedForRPOnly,
                 bool enblStallEnum, int SCW, SPILL_COST_FUNCTION spillCostFunc,
-                SchedulerType HeurSchedType);
+                SchedulerType HeurSchedType, int timeoutToMemblock);
 
     
     FUNC_RESULT Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout,
@@ -548,7 +548,7 @@ private:
     bool *WorkStealOn_;
 
     bool IsTimeoutPerInst_;
-    
+    int timeoutToMemblock_;
 
     void handlEnumrtrRslt_(FUNC_RESULT rslt, InstCount trgtLngth);
 
@@ -578,7 +578,8 @@ public:
               std::mutex *ImprCountLock, std::mutex *RegionSchedLock, std::mutex *AllocatorLock,
               vector<FUNC_RESULT> *resAddr, int *idleTimes, int NumSolvers, std::vector<InstPool3 *> localPools, 
               std::mutex **localPoolLocks, int *inactiveThreads, std::mutex *inactiveThreadLock, 
-              int LocalPoolSize, bool WorkSteal, bool *WorkStealOn, bool IsTimeoutPerInst, uint64_t *nodeCounts);
+              int LocalPoolSize, bool WorkSteal, bool *WorkStealOn, bool IsTimeoutPerInst, uint64_t *nodeCounts,
+              int timeoutToMemblock);
 
     ~BBWorker();
     /*
@@ -742,8 +743,8 @@ private:
 
     bool WorkSteal_;
     bool WorkStealOn_;
-    bool IsTimeoutPerInst_;
-
+    
+    int timeoutToMemblock_;
 
     void initWorkers(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
              long rgnNum, int16_t sigHashSize, LB_ALG lbAlg,
@@ -758,7 +759,7 @@ private:
              std::mutex *AllocatorLock, vector<FUNC_RESULT> *results, int *idleTimes,
              int NumSolvers, std::vector<InstPool3 *> localPools, std::mutex **localPoolLocks,
              int *InactiveThreads_, std::mutex *InactiveThreadLock, int LocalPoolSize, bool WorkSteal, 
-             bool *WorkStealOn, bool IsTimeoutPerInst, uint64_t *nodeCounts);
+             bool *WorkStealOn, bool IsTimeoutPerInst, uint64_t *nodeCounts, int timeoutToMemblock);
 
   
     bool initGlobalPool();
@@ -779,7 +780,8 @@ public:
              SchedulerType HeurSchedType, int NumThreads, int MinNodesAsMultiple, 
              int MinSplittingDepth,
              int MaxSplittingDepth, int NumSolvers, int LocalPoolSize, float ExploitationPercent,
-             SPILL_COST_FUNCTION GlobalPoolSCF, int GlobalPoolSort, bool WorkSteal, bool IsTimeoutPerInst);
+             SPILL_COST_FUNCTION GlobalPoolSCF, int GlobalPoolSort, bool WorkSteal, bool IsTimeoutPerInst,
+             int timeoutToMemblock);
 
     ~BBMaster();
     

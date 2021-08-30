@@ -505,6 +505,7 @@ Enumerator::Enumerator(DataDepGraph *dataDepGraph, MachineModel *machMdl,
                        SchedPriorities prirts, Pruning PruningStrategy,
                        bool SchedForRPOnly, bool enblStallEnum,
                        Milliseconds timeout, int SolverID, int NumSolvers, std::mutex *AllocatorLock,
+                       int timeoutToMemblock,
                        bool isSecondPass, InstCount preFxdInstCnt, SchedInstruction *preFxdInsts[])
     : ConstrainedScheduler(dataDepGraph, machMdl, schedUprBound, SolverID) {
 
@@ -542,9 +543,10 @@ Enumerator::Enumerator(DataDepGraph *dataDepGraph, MachineModel *machMdl,
 
   NumSolvers_ = NumSolvers;
   
-  Logger::Info("timout is %d", (int)timeout);
+  Logger::Info("timeout is %d", (int)timeout);
+  timeoutToMemblock_ = timeoutToMemblock;
 
-  memAllocBlkSize_ = (int)timeout *10;// TIMEOUT_TO_MEMBLOCK_RATIO;
+  memAllocBlkSize_ = (int)timeout / timeoutToMemblock_;// TIMEOUT_TO_MEMBLOCK_RATIO;
   assert(preFxdInstCnt >= 0);
 
   if (memAllocBlkSize_ > MAX_MEMBLOCK_SIZE) {
@@ -2803,7 +2805,7 @@ LengthEnumerator::LengthEnumerator(
     bool SchedForRPOnly, bool enblStallEnum, Milliseconds timeout, bool IsSecondPass,
     InstCount preFxdInstCnt, SchedInstruction *preFxdInsts[])
     : Enumerator(dataDepGraph, machMdl, schedUprBound, sigHashSize, prirts,
-                 PruningStrategy, SchedForRPOnly, enblStallEnum, timeout, 0, 1, nullptr, IsSecondPass,
+                 PruningStrategy, SchedForRPOnly, enblStallEnum, timeout, 0, 1, nullptr, 1, IsSecondPass,
                  preFxdInstCnt, preFxdInsts) {
   SetupAllocators_();
   tmpHstryNode_ = new HistEnumTreeNode;
@@ -2889,11 +2891,11 @@ LengthCostEnumerator::LengthCostEnumerator(BBThread *bbt,
     DataDepGraph *dataDepGraph, MachineModel *machMdl, InstCount schedUprBound,
     int16_t sigHashSize, SchedPriorities prirts, Pruning PruningStrategy,
     bool SchedForRPOnly, bool enblStallEnum, Milliseconds timeout,
-    SPILL_COST_FUNCTION spillCostFunc, bool IsSecondPass, int NumSolvers,  std::mutex *AllocatorLock,
+    SPILL_COST_FUNCTION spillCostFunc, bool IsSecondPass, int NumSolvers,  int timeoutToMemblock, std::mutex *AllocatorLock,
     int SolverID, InstCount preFxdInstCnt, SchedInstruction *preFxdInsts[])
     : Enumerator(dataDepGraph, machMdl, schedUprBound, sigHashSize, prirts,
                  PruningStrategy, SchedForRPOnly, enblStallEnum, timeout,
-                 SolverID, NumSolvers, AllocatorLock, IsSecondPass, preFxdInstCnt, preFxdInsts) {
+                 SolverID, NumSolvers, AllocatorLock, timeoutToMemblock, IsSecondPass, preFxdInstCnt, preFxdInsts) {
   bbt_ = bbt;
   SolverID_ = SolverID;
   SetupAllocators_();

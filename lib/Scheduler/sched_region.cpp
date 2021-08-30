@@ -774,7 +774,9 @@ FUNC_RESULT SchedRegion::Optimize_(Milliseconds startTime,
   enumBestSched_ = AllocNewSched_();
 
   InstCount initCost = bestCost_;
-  enumrtr = AllocEnumrtr_(lngthTimeout);
+  
+  Milliseconds timeout = IsTimeoutPerInst_ ? lngthTimeout : rgnTimeout;
+  enumrtr = AllocEnumrtr_(timeout);
   
   if (enumrtr) {
     //#ifndef IS_TRACK_INFSBLTY_HITS
