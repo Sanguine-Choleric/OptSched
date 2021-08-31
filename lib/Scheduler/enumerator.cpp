@@ -46,6 +46,7 @@ EnumTreeNode::EnumTreeNode() {
   isClean_ = true;
   rdyLst_ = NULL;
   diversityNum_ = INVALID_VALUE;
+  delete prefixInstNums_;
 }
 /*****************************************************************************/
 
@@ -543,7 +544,6 @@ Enumerator::Enumerator(DataDepGraph *dataDepGraph, MachineModel *machMdl,
 
   NumSolvers_ = NumSolvers;
   
-  Logger::Info("timeout is %d", (int)timeout);
   timeoutToMemblock_ = timeoutToMemblock;
 
   memAllocBlkSize_ = (int)timeout / timeoutToMemblock_;// TIMEOUT_TO_MEMBLOCK_RATIO;
@@ -1924,6 +1924,9 @@ if (!crntNode_->getPushedToLocalPool() || !bbt_->isWorker() || isSecondPass()) {
 /*****************************************************************************/
 
 void Enumerator::InitNewNode_(EnumTreeNode *newNode) {
+  LinkedList<int> *temp = crntNode_->getInstPrefix();
+  newNode->copyInstPrefix(temp);
+  newNode->pushToInstPrefix(crntNode_->GetInstNum());
   crntNode_ = newNode;
 
   crntNode_->SetCrntCycleBlkd(isCrntCycleBlkd_);
@@ -3593,7 +3596,10 @@ bool LengthCostEnumerator::scheduleNodeOrPrune(EnumTreeNode *node,
   // TODO(JEFF) 6/28
   // changed for (i = crntBrnchNum) to for (i = 0) -- to test work stealing
 
+  Logger::Info("rdyLst has size %d", rdyLst_->GetInstCnt());
   for (i = 0; i < brnchCnt && node->IsFeasible(); i++) {
+    Logger::Info("checking %dth inst in rdyLst to find match", i);
+    assert(i != brnchCnt - 1);
     inst = rdyLst_->GetNextPriorityInst();
     if (inst == node->GetInst()) {
       // schedule its instruction
@@ -4041,6 +4047,7 @@ bool LengthCostEnumerator::scheduleArtificialRoot(bool setAsRoot)
   bool isFsbl = true;
 
   scheduleInst_(inst, setAsRoot, isFsbl, true, false);
+  crntNode_->allocateInstPrefix();
 
   return isFsbl;
 

@@ -1775,7 +1775,6 @@ bool BBWorker::generateStateFromNode(EnumTreeNode *GlobalPoolNode, bool isGlobal
 
     EnumTreeNode *temp;
   
-  // nneed to fix this, i dont think the enumrtr has a root at this point
     if (GlobalPoolNode->GetInstNum() != Enumrtr_->getRootInstNum()) {
     
     //prefix.push(node);
@@ -1783,7 +1782,7 @@ bool BBWorker::generateStateFromNode(EnumTreeNode *GlobalPoolNode, bool isGlobal
       temp = GlobalPoolNode->GetParent();
     
 
-      while (temp->GetTime() > 0) {
+      while (temp->GetInstNum() != Enumrtr_->getRootInstNum()) {
       //Logger::Info("adding %d to prefix", temp->GetInstNum());
         prefix.push(temp);
 
@@ -1791,7 +1790,7 @@ bool BBWorker::generateStateFromNode(EnumTreeNode *GlobalPoolNode, bool isGlobal
       }
 
       //Logger::Info("stolen node has a prefix of %d", prefixLength);
-      //assert(temp->GetInstNum() == Enumrtr_->getRootInstNum());
+      //assert(temp->GetParent()->GetInstNum() == Enumrtr_->getRootInstNum());
       //Logger::Info("temp has inst num %d, root has inst num %d", temp->GetInstNum(), Enumrtr_->getRootInstNum());
 
       int j = 0;
@@ -1862,8 +1861,6 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
           (RgnTimeout == INVALID_VALUE) ? INVALID_VALUE : StartTime + LngthTimeout;
       
       Milliseconds deadline = IsTimeoutPerInst_ ? lngthDeadline : rgnDeadline;
-
-      Logger::Info("we have deadline of %d", (int)(deadline-StartTime));
 
       //assert(lngthDeadline <= rgnDeadline);
 

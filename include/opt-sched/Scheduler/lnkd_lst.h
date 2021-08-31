@@ -222,6 +222,9 @@ public:
 
   // Constructs a linked list, by default using a dynamic size.
   LinkedList(int maxSize = INVALID_VALUE);
+  // Copy Constructor
+  LinkedList(LinkedList<T> const *const otherLst);
+
   // A virtual destructor, to support inheritance.
   virtual ~LinkedList();
   // Deletes all existing entries and resets the list to its initial state.
@@ -262,6 +265,8 @@ public:
   virtual void ResetIterator();
   // Removes the "current" element from the list.
   virtual void RmvCrntElmnt();
+
+  void CopyList(LinkedList<T> const *const otherLst);
 
   // Searches for an element in the list. Returns true if it is found.
   virtual bool FindElmnt(const T *const element) const;
@@ -391,6 +396,23 @@ template <class T>
 inline LinkedList<T>::LinkedList(std::unique_ptr<EntryAllocator<T>> Allocator)
     : Allocator_(std::move(Allocator)) {
   Init_();
+}
+
+template <class T>
+LinkedList<T>::LinkedList(LinkedList<T> const *const otherLst) : LinkedList() {
+  for (Entry<T> *entry = (Entry<T> *)otherLst->topEntry_;
+       entry != NULL; entry = entry->GetNext()) {
+    assert(entry);
+    T *elmnt = entry->element;
+    Entry<T> *newEntry = AllocEntry_(elmnt);
+    LinkedList<T>::AppendEntry_(newEntry);
+
+    if (entry == otherLst->rtrvEntry_) {
+      LinkedList<T>::rtrvEntry_ = newEntry;
+    }
+  }
+
+  LinkedList<T>::itrtrReset_ = otherLst->itrtrReset_;
 }
 
 template <class T> LinkedList<T>::~LinkedList() { Reset(); }
@@ -653,6 +675,40 @@ template <class T> inline void LinkedList<T>::Init_() {
   wasTopRmvd_ = false;
   wasBottomRmvd_ = false;
 }
+
+
+template <class T>
+void LinkedList<T>::CopyList(LinkedList<T> const *const otherLst) {
+  assert(LinkedList<T>::elmntCnt_ == 0);
+
+  for (Entry<T> *entry = (Entry<T> *)otherLst->topEntry_;
+       entry != NULL; entry = entry->GetNext()) {
+    assert(entry);
+    T *elmnt = entry->element;
+    Entry<T> *newEntry = AllocEntry_(elmnt);
+    LinkedList<T>::AppendEntry_(newEntry);
+
+    if (entry == otherLst->rtrvEntry_) {
+      LinkedList<T>::rtrvEntry_ = newEntry;
+    }
+  }
+
+  LinkedList<T>::itrtrReset_ = otherLst->itrtrReset_;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 template <class T> inline T *Queue<T>::ExtractElmnt() {
   if (LinkedList<T>::topEntry_ == NULL)

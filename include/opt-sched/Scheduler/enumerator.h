@@ -217,6 +217,7 @@ public:
   ~EnumTreeNode();
 
   std::queue<EnumTreeNode *> prefix_;
+  LinkedList<int> *prefixInstNums_;
 
   void Construct(EnumTreeNode *prevNode, SchedInstruction *inst,
                  Enumerator *enumrtr, bool fullNode = true, bool allocStructs = true,
@@ -369,6 +370,16 @@ public:
   EnumTreeNode *getAndRemoveNextPrefixInst();
   void pushToPrefix(EnumTreeNode *inst);
   inline void setPrefix(std::queue<EnumTreeNode *> prefix) {prefix_ = prefix;}
+
+
+
+  inline int getInstPrefixSize() {return prefixInstNums_->GetElmntCnt();}
+  inline int getNextInstPrefix() {return *(prefixInstNums_->GetNxtElmnt());}
+  inline void pushToInstPrefix(int instNum) {prefixInstNums_->InsrtElmnt(&instNum);};
+  inline LinkedList<int> *getInstPrefix() {return prefixInstNums_;}
+  inline void copyInstPrefix(LinkedList<int> *&prefix) {prefixInstNums_ = prefix;} //copy constructor
+  inline void allocateInstPrefix() {prefixInstNums_ = new LinkedList<int>();}
+ 
 
 
   inline void RemoveSpecificInst(SchedInstruction *inst) {rdyLst_->RemoveSpecificInst(inst);}
