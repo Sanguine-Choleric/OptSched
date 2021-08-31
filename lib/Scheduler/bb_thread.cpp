@@ -1734,13 +1734,7 @@ bool BBWorker::generateStateFromNode(EnumTreeNode *GlobalPoolNode, bool isGlobal
       temp = prefix.top();
       if (SolverID_ == 2)
         Logger::Info("scheduling the %dth inst of prefix (inst is %d)", j, temp->GetInstNum());
-      prefix.pop();
-      //Logger::Info("before scheduling prefix");
-      //printRdyLst();
-      fsbl = Enumrtr_->scheduleNodeOrPrune(temp, setAsRoot);
-      if (!fsbl) return false;
-      if (SolverID_ == 2)
-        Enumrtr_->printRdyLst();
+      prefix.pop();generateStateFromNode
       // TODO -- delete node
     }
     setAsRoot = true;
@@ -1783,13 +1777,14 @@ bool BBWorker::generateStateFromNode(EnumTreeNode *GlobalPoolNode, bool isGlobal
     
 
       while (temp->GetInstNum() != Enumrtr_->getRootInstNum()) {
-      //Logger::Info("adding %d to prefix", temp->GetInstNum());
+        Logger::Info("SolverID %d adding %d to prefix", SolverID_, temp->GetInstNum());
         prefix.push(temp);
 
         temp = temp->GetParent();
       }
 
-      //Logger::Info("stolen node has a prefix of %d", prefixLength);
+      
+      Logger::Info("SolverID %d stolen node has a prefix of size %d", SolverID_, prefix.size());
       //assert(temp->GetParent()->GetInstNum() == Enumrtr_->getRootInstNum());
       //Logger::Info("temp has inst num %d, root has inst num %d", temp->GetInstNum(), Enumrtr_->getRootInstNum());
 
@@ -1809,7 +1804,7 @@ bool BBWorker::generateStateFromNode(EnumTreeNode *GlobalPoolNode, bool isGlobal
         
         // TODO -- delete node
       }
-
+      Logger::Info("SolverID_ %d attempting to schedule tip inst %d", SolverID_, GlobalPoolNode->GetInstNum());
       fsbl = Enumrtr_->scheduleNodeOrPrune(GlobalPoolNode, true);
       Enumrtr_->removeInstFromRdyLst_(GlobalPoolNode->GetInstNum());
       Enumrtr_->setIsGenerateState(false); 

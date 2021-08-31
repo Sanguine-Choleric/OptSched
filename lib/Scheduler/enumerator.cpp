@@ -46,7 +46,6 @@ EnumTreeNode::EnumTreeNode() {
   isClean_ = true;
   rdyLst_ = NULL;
   diversityNum_ = INVALID_VALUE;
-  delete prefixInstNums_;
 }
 /*****************************************************************************/
 
@@ -74,6 +73,9 @@ EnumTreeNode::~EnumTreeNode() {
       delete rdyLst_;
     if (rsrvSlots_ != NULL)
       delete[] rsrvSlots_;
+#ifdef INSTPREFIX    
+    delete prefixInstNums_;
+#endif
   } else {
     assert(isClean_);
   }
@@ -1924,9 +1926,11 @@ if (!crntNode_->getPushedToLocalPool() || !bbt_->isWorker() || isSecondPass()) {
 /*****************************************************************************/
 
 void Enumerator::InitNewNode_(EnumTreeNode *newNode) {
+#ifdef INSTPREFIX
   LinkedList<int> *temp = crntNode_->getInstPrefix();
   newNode->copyInstPrefix(temp);
   newNode->pushToInstPrefix(crntNode_->GetInstNum());
+#endif
   crntNode_ = newNode;
 
   crntNode_->SetCrntCycleBlkd(isCrntCycleBlkd_);
@@ -3596,12 +3600,16 @@ bool LengthCostEnumerator::scheduleNodeOrPrune(EnumTreeNode *node,
   // TODO(JEFF) 6/28
   // changed for (i = crntBrnchNum) to for (i = 0) -- to test work stealing
 
-  Logger::Info("rdyLst has size %d", rdyLst_->GetInstCnt());
-  for (i = 0; i < brnchCnt && node->IsFeasible(); i++) {
-    Logger::Info("checking %dth inst in rdyLst to find match", i);
-    assert(i != brnchCnt - 1);
+  Logger::Info("SolverID %d rdyLst has size %d", SolverID_, rdyLst_->GetInstCnt());
+  for (i = 0; i < brnchCnt + 1 && node->IsFeasible(); i++) {
+    
+    //assert(i != brnchCnt - 1);
+    if (i == brnchCnt - 1) Logger::Info("SolverID %d, ALERT i == brnchCnt - 1", SolverID_);
+    if (i == brnchCnt && i != 0) Logger::Info("SolverID %d, DOUBLE ALERT", SolverID_);
     inst = rdyLst_->GetNextPriorityInst();
-    if (inst == node->GetInst()) {
+    Logger::Info("SolverID_ %d, checking %dth inst (num %d) in rdyLst to find match (against %d)", SolverID_, i, inst->GetNum(), node->GetInstNum());
+    if (inst->GetNum() == node->GetInstNum()) {
+      Logger::Info("SolverID_ %d , MATCH (num %d) (against %d)", SolverID_, inst->GetNum(), node->GetInstNum());
       // schedule its instruction
       //Logger::Info("SolverID %d attempting to schedule inst #%d", SolverID_, inst->GetNum());
 
@@ -4047,7 +4055,9 @@ bool LengthCostEnumerator::scheduleArtificialRoot(bool setAsRoot)
   bool isFsbl = true;
 
   scheduleInst_(inst, setAsRoot, isFsbl, true, false);
+#ifdef INSTPREFIX
   crntNode_->allocateInstPrefix();
+#endif
 
   return isFsbl;
 
