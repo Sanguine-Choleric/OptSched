@@ -757,6 +757,8 @@ public:
   std::queue<LinkedList<HistEnumTreeNode>*> *stateChldrn_;
   std::queue<InstCount*> *stateFrwrdLwrBounds_;
 
+  
+
   inline SchedPriorities getSchedPriorities() {return prirts_;}
   inline void setSchedPriorities(SchedPriorities prirts) {prirts_ = prirts;}
 
@@ -905,6 +907,9 @@ public:
   void setLCEElements(BBThread *bbt, InstCount costLwrBound);
   inline InstCount GetBestCost() { return GetBestCost_(); }
   inline SPILL_COST_FUNCTION GetSpillCostFunc() {return spillCostFunc_;}
+
+
+  inline InstCount getStaticCostLwrBound() {return costLwrBound_;}
 
   bool isFsbl(EnumTreeNode *node, bool checkHistory = true);
 

@@ -3600,16 +3600,16 @@ bool LengthCostEnumerator::scheduleNodeOrPrune(EnumTreeNode *node,
   // TODO(JEFF) 6/28
   // changed for (i = crntBrnchNum) to for (i = 0) -- to test work stealing
 
-  Logger::Info("SolverID %d rdyLst has size %d", SolverID_, rdyLst_->GetInstCnt());
+  //Logger::Info("SolverID %d rdyLst has size %d", SolverID_, rdyLst_->GetInstCnt());
   for (i = 0; i < brnchCnt + 1 && node->IsFeasible(); i++) {
     
     //assert(i != brnchCnt - 1);
-    if (i == brnchCnt - 1) Logger::Info("SolverID %d, ALERT i == brnchCnt - 1", SolverID_);
-    if (i == brnchCnt && i != 0) Logger::Info("SolverID %d, DOUBLE ALERT", SolverID_);
+    //if (i == brnchCnt - 1) Logger::Info("SolverID %d, ALERT i == brnchCnt - 1", SolverID_);
+    //if (i == brnchCnt && i != 0) Logger::Info("SolverID %d, DOUBLE ALERT", SolverID_);
     inst = rdyLst_->GetNextPriorityInst();
-    Logger::Info("SolverID_ %d, checking %dth inst (num %d) in rdyLst to find match (against %d)", SolverID_, i, inst->GetNum(), node->GetInstNum());
+    //Logger::Info("SolverID_ %d, checking %dth inst (num %d) in rdyLst to find match (against %d)", SolverID_, i, inst->GetNum(), node->GetInstNum());
     if (inst->GetNum() == node->GetInstNum()) {
-      Logger::Info("SolverID_ %d , MATCH (num %d) (against %d)", SolverID_, inst->GetNum(), node->GetInstNum());
+      //Logger::Info("SolverID_ %d , MATCH (num %d) (against %d)", SolverID_, inst->GetNum(), node->GetInstNum());
       // schedule its instruction
       //Logger::Info("SolverID %d attempting to schedule inst #%d", SolverID_, inst->GetNum());
 
