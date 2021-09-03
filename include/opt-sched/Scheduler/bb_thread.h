@@ -296,7 +296,7 @@ protected:
   InstCount DynamicSlilLowerBound_ = 0;
   InstCount StaticLowerBound_ = 0;
   
-  uint64_t SubspaceLwrBound_ = INVALID_VALUE;
+  int64_t SubspaceLwrBound_ = INVALID_VALUE;
 
   // Needed to override SchedRegion virtuals
   bool EnableEnumBBThread_();
@@ -548,7 +548,7 @@ private:
 
     bool WorkSteal_;
     bool *WorkStealOn_;
-    uint64_t **subspaceLwrBounds_;
+    int64_t **subspaceLwrBounds_;
 
     bool IsTimeoutPerInst_;
     int timeoutToMemblock_;
@@ -582,7 +582,7 @@ public:
               vector<FUNC_RESULT> *resAddr, int *idleTimes, int NumSolvers, std::vector<InstPool3 *> localPools, 
               std::mutex **localPoolLocks, int *inactiveThreads, std::mutex *inactiveThreadLock, 
               int LocalPoolSize, bool WorkSteal, bool *WorkStealOn, bool IsTimeoutPerInst, uint64_t *nodeCounts,
-              int timeoutToMemblock, uint64_t **subspaceLwrBounds);
+              int timeoutToMemblock, int64_t **subspaceLwrBounds);
 
     ~BBWorker();
     /*
@@ -746,7 +746,7 @@ private:
 
     bool WorkSteal_;
     bool WorkStealOn_;
-    uint64_t **subspaceLwrBounds_;
+    int64_t **subspaceLwrBounds_;
     
     int timeoutToMemblock_;
 
@@ -763,7 +763,7 @@ private:
              std::mutex *AllocatorLock, vector<FUNC_RESULT> *results, int *idleTimes,
              int NumSolvers, std::vector<InstPool3 *> localPools, std::mutex **localPoolLocks,
              int *InactiveThreads_, std::mutex *InactiveThreadLock, int LocalPoolSize, bool WorkSteal, 
-             bool *WorkStealOn, bool IsTimeoutPerInst, uint64_t *nodeCounts, int timeoutToMemblock, uint64_t **subspaceLwrBounds);
+             bool *WorkStealOn, bool IsTimeoutPerInst, uint64_t *nodeCounts, int timeoutToMemblock, int64_t **subspaceLwrBounds);
 
   
     bool initGlobalPool();

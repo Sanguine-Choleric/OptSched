@@ -632,25 +632,26 @@ void BBThread::UpdateSpillInfoForSchdul_(SchedInstruction *inst,
 
   if (SpillCostFuncBBT_ == SCF_TARGET) {
     newSpillCost = OST->getCost(RegPressures_);
-    SubspaceLwrBound_ = (uint64_t)std::accumulate(RegPressures_.begin(), RegPressures_.end(), 0);
+    SubspaceLwrBound_ = (int64_t)std::accumulate(RegPressures_.begin(), RegPressures_.end(), 0);
 
 
   } else if (SpillCostFuncBBT_ == SCF_SLIL) {
     SlilSpillCost_ = std::accumulate(SumOfLiveIntervalLengths_.begin(),
                                      SumOfLiveIntervalLengths_.end(), 0);
-    SubspaceLwrBound_ = (uint64_t)SlilSpillCost_;
+    SubspaceLwrBound_ = (int64_t)SlilSpillCost_;
 
   } else if (SpillCostFuncBBT_ == SCF_PRP) {
     newSpillCost =
         std::accumulate(RegPressures_.begin(), RegPressures_.end(), 0);
 
-    SubspaceLwrBound_ = (uint64_t)newSpillCost;
+    SubspaceLwrBound_ = (int64_t)newSpillCost;
 
   } else if (SpillCostFuncBBT_ == SCF_PEAK_PER_TYPE) {
-    for (int i = 0; i < RegTypeCnt_; i++)
+    for (int i = 0; i < RegTypeCnt_; i++) {
       newSpillCost +=
           std::max(0, PeakRegPressures_[i] - OST->MM->GetPhysRegCnt(i));
-      SubspaceLwrBound_ =(uint64_t)newSpillCost;
+    }
+    SubspaceLwrBound_ =(int64_t)newSpillCost;
 
   } else {
     // Default is PERP (Some SCF like SUM rely on PERP being the default here)
@@ -661,7 +662,7 @@ void BBThread::UpdateSpillInfoForSchdul_(SchedInstruction *inst,
         });
 
     //LB for work stealing is PRP if using PERP
-    SubspaceLwrBound_ = (uint64_t)std::accumulate(RegPressures_.begin(), RegPressures_.end(), 0);
+    SubspaceLwrBound_ = (int64_t)std::accumulate(RegPressures_.begin(), RegPressures_.end(), 0);
   }
 
 #ifdef IS_DEBUG_SLIL_CORRECT
@@ -1454,7 +1455,7 @@ BBWorker::BBWorker(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
               std::mutex *RegionSchedLock, std::mutex *AllocatorLock, vector<FUNC_RESULT> *RsltAddr, int *idleTimes,
               int NumSolvers, vector<InstPool3 *> localPools, std::mutex **localPoolLocks,
               int *inactiveThreads, std::mutex *inactiveThreadLock, int LocalPoolSize, bool WorkSteal,
-              bool *WorkStealOn, bool IsTimeoutPerInst, uint64_t *nodeCounts, int timeoutToMemblock, uint64_t **subspaceLwrBounds) 
+              bool *WorkStealOn, bool IsTimeoutPerInst, uint64_t *nodeCounts, int timeoutToMemblock, int64_t **subspaceLwrBounds) 
               : BBThread(OST_, dataDepGraph, rgnNum, sigHashSize, lbAlg,
               hurstcPrirts, enumPrirts, vrfySched, PruningStrategy, SchedForRPOnly,
               enblStallEnum, SCW, spillCostFunc, HeurSchedType)
@@ -2052,8 +2053,8 @@ if (isWorkSteal()) {
 
     stoleWork = false;
 
-    uint64_t minLB = INVALID_VALUE;
-    int IDminLB;
+    int64_t minLB = INVALID_VALUE;
+    int IDminLB = -1;
     int victimID;
 
     for (int i = 1; i < NumSolvers_; i++) {
@@ -2066,32 +2067,35 @@ if (isWorkSteal()) {
       }
     }
 
+    victimID = IDminLB;
 
-    localPoolLock(victimID);
-    if (getLocalPoolSize(victimID) < 1) {
-      Logger::Info("VictimID %d has empty pool (SolverID %d)", victimID + 2, SolverID_);
-      localPoolUnlock(victimID);
+    if (victimID != -1) {
+      localPoolLock(victimID);
+      if (getLocalPoolSize(victimID) < 1) {
+        Logger::Info("VictimID %d has empty pool (SolverID %d)", victimID + 2, SolverID_);
+        localPoolUnlock(victimID);
+      }
+
+      else {
+        // must decrement inactive thread count here (before popping)
+        // otherwise it is possible that active thread becomes inactive with this steal
+        // and reaches while loop condition before we decrement active thread count
+        // leading it to believe all threads are inactive
+        InactiveThreadLock_->lock();
+        (*InactiveThreads_)--;
+        //Logger::Info("SovlerID %d decremented inactive threads to %d", SolverID_, *InactiveThreads_);
+        InactiveThreadLock_->unlock();
+        workStealNode = localPoolPopTail(victimID);
+        workStealNode->GetParent()->setStolen(workStealNode->GetInstNum());
+        //Logger::Info("stealing inst %d (parent inst %d) from solver %d",  workStealNode->GetInstNum(), workStealNode->GetParent()->GetInstNum(), victimID + 2);
+        //workStealNode->GetParent()->RemoveSpecificInst(workStealNode->GetInst());
+        //Logger::Info("SolverID %d found node with inst %d to work steal", SolverID_, workStealNode->GetInstNum());
+        stoleWork = true;
+        localPoolUnlock(victimID);
+        break;
+      }
     }
-    
-    else {
-      // must decrement inactive thread count here (before popping)
-      // otherwise it is possible that active thread becomes inactive with this steal
-      // and reaches while loop condition before we decrement active thread count
-      // leading it to believe all threads are inactive
-      InactiveThreadLock_->lock();
-      (*InactiveThreads_)--;
-      //Logger::Info("SovlerID %d decremented inactive threads to %d", SolverID_, *InactiveThreads_);
-      InactiveThreadLock_->unlock();
-      workStealNode = localPoolPopTail(victimID);
-      workStealNode->GetParent()->setStolen(workStealNode->GetInstNum());
-      //Logger::Info("stealing inst %d (parent inst %d) from solver %d",  workStealNode->GetInstNum(), workStealNode->GetParent()->GetInstNum(), victimID + 2);
-      //workStealNode->GetParent()->RemoveSpecificInst(workStealNode->GetInst());
-      //Logger::Info("SolverID %d found node with inst %d to work steal", SolverID_, workStealNode->GetInstNum());
-      stoleWork = true;
-      localPoolUnlock(victimID);
-      break;
-    }
-    
+      
 
     if (stoleWork) {
       workStolenFsbl = generateStateFromNode(workStealNode, false);
@@ -2331,7 +2335,7 @@ BBMaster::BBMaster(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
   idleTimes = new int[NumThreads_];
   nodeCounts = new uint64_t[NumThreads_];
   localPools.resize(NumSolvers);
-  subspaceLwrBounds_ = new uint64_t*[NumThreads_];
+  subspaceLwrBounds_ = new int64_t*[NumThreads_];
   for (int i = 0; i < NumThreads_; i++) {
     idleTimes[i] = 0;
     nodeCounts[i] = 0;
@@ -2400,7 +2404,7 @@ void BBMaster::initWorkers(const OptSchedTarget *OST_, DataDepGraph *dataDepGrap
              std::mutex *AllocatorLock, vector<FUNC_RESULT> *results, int *idleTimes,
              int NumSolvers, vector<InstPool3 *> localPools, std::mutex **localPoolLocks, int *inactiveThreads,
              std::mutex *inactiveThreadLock, int LocalPoolSize, bool WorkSteal, bool *WorkStealOn, bool IsTimeoutPerInst,
-             uint64_t *nodeCounts, int timeoutToMemblock, uint64_t **subspaceLwrBounds) {
+             uint64_t *nodeCounts, int timeoutToMemblock, int64_t **subspaceLwrBounds) {
   
   Workers.resize(NumThreads_);
   
