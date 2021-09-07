@@ -2068,7 +2068,7 @@ if (isWorkSteal()) {
     }
 
     victimID = IDminLB;
-    Logger::Info("victimizing thread %d (SolverID %d)", victimID + 2, SolverID_);
+    //Logger::Info("victimizing thread %d (SolverID %d)", victimID + 2, SolverID_);
 
     if (victimID != -1) {
       localPoolLock(victimID);
@@ -2078,7 +2078,7 @@ if (isWorkSteal()) {
       }
 
       else {
-        Logger::Info("VictimID %d does not have empty pool (SolverID %d)", victimID + 2, SolverID_);
+        //Logger::Info("VictimID %d does not have empty pool (SolverID %d)", victimID + 2, SolverID_);
         // must decrement inactive thread count here (before popping)
         // otherwise it is possible that active thread becomes inactive with this steal
         // and reaches while loop condition before we decrement active thread count

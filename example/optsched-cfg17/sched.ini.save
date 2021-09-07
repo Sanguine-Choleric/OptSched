@@ -96,7 +96,7 @@ SECOND_PASS_ENUM_HEURISTIC LUC_CP_NID
 # SLIL: sum of live interval lengths for each block
 # SPILLS: number of spills after running a register allocator (doesn't work with enumerator)
 # TARGET: use target specific register pressure tracking
-SPILL_COST_FUNCTION SLIL
+SPILL_COST_FUNCTION PERP
 
 # The weight of the spill cost in the objective function. This factor
 # defines the importance of spill cost relative to schedule length. A good
@@ -105,7 +105,7 @@ SPILL_COST_FUNCTION SLIL
 # making spill cost minimization the primary objective) and smaller on
 # architectures with in-order execution like SPARC (thus making scheduling
 # the primary objective).
-SPILL_COST_WEIGHT 100
+SPILL_COST_WEIGHT 10000
 
 # Precision of latency info:
 # PRECISE: use precise latencies from the machine_model.cfg file
@@ -185,7 +185,7 @@ BLOCKS_TO_KEEP ALL
 # REGIONS_TO_SCHEDULE, which is a comma-separated list of
 # scheduling regions.
 SCHEDULE_SPECIFIC_REGIONS NO
-REGIONS_TO_SCHEDULE _ZN20ComputeNonbondedUtil32calc_pair_energy_fullelect_pprofEP9nonbonded:259
+REGIONS_TO_SCHEDULE bi_cgstab_block_:7,shell_:93,shell_:85,mat_times_vec_:5,mat_times_vec_:4,shell_:82
 
 SCHEDULE_SPECIFIC_FUNCTIONS NO
 FUNCTIONS_TO_SCHEDULE _ZNK16ConstraintMatrix8condenseIfEEvRK12SparseMatrixIT_ERS3_,_ZNK16ConstraintMatrix8condenseIfEEvR12SparseMatrixIT_E,_ZNK16ConstraintMatrix8condenseIdEEvRK12SparseMatrixIT_ERS3_,_ZNK16ConstraintMatrix8condenseIdEEvR12SparseMatrixIT_E,_ZNK16ConstraintMatrix8condenseIdEEvR17BlockSparseMatrixIT_E
@@ -262,11 +262,11 @@ DDG_DUMP_PATH ~/ddgs
 
 USE_PARALLEL_BB YES
 
-USE_WORK_STEAL YES
+USE_WORK_STEAL NO
 
 NUMBER_THREADS 10
 
-DDG_SIZE_MIN 20
+DDG_SIZE_MIN 10
 
 MIN_NODES_AS_MULTIPLE_THREADS 5
 
@@ -276,7 +276,7 @@ MAX_SPLITTING_DEPTH 5
 
 LOCAL_POOL_SIZE 50
 
-EXPLOITATION_PERCENT 0.75
+EXPLOITATION_PERCENT 75
 
 # The spill cost function to be used. Valid values are:
 # PERP: peak excess reg pressure
@@ -295,4 +295,3 @@ GLOBAL_POOL_SPILL_COST_FUNCTION PRP
 GLOBAL_POOL_SORT HEURISTIC
 
 
-TIMEOUT_TO_MEMBLOCK_RATIO 100
