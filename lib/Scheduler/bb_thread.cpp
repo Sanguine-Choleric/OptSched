@@ -1834,7 +1834,10 @@ FUNC_RESULT BBWorker::generateAndEnumerate(HalfNode *GlobalPoolNode,
                                  Milliseconds LngthTimeout) {
 
   bool fsbl = generateStateFromNode(GlobalPoolNode);
-  if (!fsbl) delete GlobalPoolNode;
+  if (!fsbl) {
+    Logger::Info("SolverID %d pruned the globalPoolNode",SolverID_);
+    delete GlobalPoolNode;
+  }
   return enumerate_(StartTime, RgnTimeout, LngthTimeout, false, fsbl);
 
 
