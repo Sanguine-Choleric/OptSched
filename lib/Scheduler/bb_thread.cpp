@@ -2127,7 +2127,7 @@ if (isWorkSteal()) {
     if (RegionSched_->GetCost() == Enumrtr_->getStaticCostLwrBound()) {
       Logger::Info("found optimal schedule");
     }
-    else if ((*InactiveThreads_) < NumSolvers_) {
+    else if ((*InactiveThreads_) >= NumSolvers_) {
       Logger::Info("entire problem searched");
     }
     else if (isTimedOut) {
@@ -2135,7 +2135,7 @@ if (isWorkSteal()) {
     }
   }
 
-  //Logger::Info("There are %d inactiveThreads", *InactiveThreads_);
+  Logger::Info("There are %d inactiveThreads", *InactiveThreads_);
   //Logger::Info("there are %d numSolvers", NumSolvers_);
   assert((*InactiveThreads_) < 2 * NumSolvers_);
   if ((*InactiveThreads_) >= NumSolvers_) {
