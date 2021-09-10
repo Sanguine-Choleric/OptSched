@@ -2114,7 +2114,8 @@ if (isWorkSteal()) {
     }
 
     else {
-      if (RgnTimeout != INVALID_VALUE && (Utilities::GetProcessorTime() > StartTime + LngthTimeout || Utilities::GetProcessorTime() > StartTime + RgnTimeout)) {
+      Milliseconds clockTime = Utilities::GetProcessorTime();
+      if ((IsTimeoutPerInst_ && clockTime  > StartTime + LngthTimeout) || (!IsTimeoutPerInst_ && clockTime > StartTime + RgnTimeout)) {
         isTimedOut = true;
         timeout = true;
         break;
