@@ -65,4 +65,3 @@ set(OPTSCHED_EXTRA_DEFINITIONS "-DINSERT_ON_STEPFRWRD -DDUMMY")
 add_definitions(${OPTSCHED_EXTRA_DEFINITIONS})
 
 add_compile_options(-g)
-target_link_libraries(OptSched -L/home/jeff/ROCm/opencl/build/lib/ libamdocl64.so)
