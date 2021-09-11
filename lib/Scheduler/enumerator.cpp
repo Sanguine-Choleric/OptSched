@@ -3014,7 +3014,7 @@ FUNC_RESULT LengthCostEnumerator::FindFeasibleSchedule(InstSchedule *sched,
                                                        Milliseconds deadline) {
   
   bbt_ = bbt;
-  costLwrBound_ = costLwrBound;
+  //costLwrBound_ = costLwrBound;
 
   //if (bbt_->isWorker()) {
   //  nodeAlctr_->setBlockLock(bbt_->getAllocatorLock());

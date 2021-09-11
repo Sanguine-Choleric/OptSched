@@ -1835,7 +1835,7 @@ FUNC_RESULT BBWorker::generateAndEnumerate(HalfNode *GlobalPoolNode,
 
   bool fsbl = generateStateFromNode(GlobalPoolNode);
   if (!fsbl) {
-    Logger::Info("SolverID %d pruned the globalPoolNode",SolverID_);
+    //Logger::Info("SolverID %d pruned the globalPoolNode",SolverID_);
     delete GlobalPoolNode;
   }
   return enumerate_(StartTime, RgnTimeout, LngthTimeout, false, fsbl);
@@ -1921,7 +1921,7 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
             RegionSchedLock_->unlock();
         }
 
-        if (RegionSched_->GetCost() == Enumrtr_->getStaticCostLwrBound() || rslt == RES_ERROR ||
+        if (RegionSched_->GetCost() == 0 || rslt == RES_ERROR ||
           (rslt == RES_TIMEOUT)) {
    
             //TODO -- notify all other threads to stop
@@ -1950,7 +1950,7 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
 
   //if (!(RegionSched_->GetSpillCost() == 0 || rslt == RES_TIMEOUT || rslt == RES_ERROR || rslt == RES_EXIT))
   // Logger::Info("SolverID %d has localPoolSize of %d", SolverID_, getLocalPoolSize(SolverID_ - 2));
-  assert(getLocalPoolSize(SolverID_ - 2) == 0 || RegionSched_->GetCost() == Enumrtr_->getStaticCostLwrBound() || rslt == RES_TIMEOUT || rslt == RES_ERROR || rslt == RES_EXIT);
+  assert(getLocalPoolSize(SolverID_ - 2) == 0 || RegionSched_->GetCost() == 0 || rslt == RES_TIMEOUT || rslt == RES_ERROR || rslt == RES_EXIT);
 
 
   if (true) {
@@ -1977,8 +1977,8 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
   //TODO -- this may be buggy
   if (!GlobalPool_->empty()) {
     //Logger::Info("Solver %d pulling from global pool (%d nodes left)", SolverID_, GlobalPool_->size());
-
-        
+    if (RegionSched_->GetCost() == 0) return RES_SUCCESS;
+    //Logger::Info("RegionSched Cost %d != getCostLwrBound %d, pulling from global pool", RegionSched_->GetCost(), getCostLwrBound());
     HalfNode *temp;
     while (true) {
       GlobalPoolLock_->lock();
@@ -2010,7 +2010,7 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
       assert(temp != NULL);
       //Logger::Info("launching a new globalpool node");
       rslt = generateAndEnumerate(temp, StartTime, RgnTimeout, LngthTimeout);
-      if (RegionSched_->GetCost() == Enumrtr_->getStaticCostLwrBound() || rslt == RES_ERROR || (rslt == RES_TIMEOUT) || rslt == RES_EXIT) {
+      if (RegionSched_->GetCost() == 0 || rslt == RES_ERROR || (rslt == RES_TIMEOUT) || rslt == RES_EXIT) {
         //Enumrtr_->destroy();
         return rslt;
       }
@@ -2041,7 +2041,7 @@ if (isWorkSteal()) {
   bool stoleWork = false;
   bool workStolenFsbl = false;
   bool isTimedOut = false;
-  while (!workStolenFsbl && !(RegionSched_->GetCost() == Enumrtr_->getStaticCostLwrBound()) && !isTimedOut && (*InactiveThreads_) < NumSolvers_) {
+  while (!workStolenFsbl && !(RegionSched_->GetCost() == 0) && !isTimedOut && (*InactiveThreads_) < NumSolvers_) {
     //Logger::Info("SolverID %d in main work stealing loop", SolverID_);
     if (true) {
       SubspaceLwrBound_ = INVALID_VALUE;
@@ -2127,7 +2127,7 @@ if (isWorkSteal()) {
   }
 
   if (!workStolenFsbl) {
-    if (RegionSched_->GetCost() == Enumrtr_->getStaticCostLwrBound()) {
+    if (RegionSched_->GetCost() == 0) {
       Logger::Info("found optimal schedule");
     }
     else if ((*InactiveThreads_) >= NumSolvers_) {
@@ -2152,8 +2152,8 @@ if (isWorkSteal()) {
 
   if (stoleWork && workStolenFsbl && !isTimedOut) {
     rslt = enumerate_(StartTime, RgnTimeout, LngthTimeout, true, true);
-    assert(getLocalPoolSize(SolverID_ - 2) == 0 || RegionSched_->GetCost() == Enumrtr_->getStaticCostLwrBound() || rslt == RES_TIMEOUT || rslt == RES_ERROR || rslt == RES_EXIT);
-    if (RegionSched_->GetCost() == Enumrtr_->getStaticCostLwrBound() || rslt == RES_ERROR || (rslt == RES_TIMEOUT) || rslt == RES_EXIT) {
+    assert(getLocalPoolSize(SolverID_ - 2) == 0 || RegionSched_->GetCost() == 0 || rslt == RES_TIMEOUT || rslt == RES_ERROR || rslt == RES_EXIT);
+    if (RegionSched_->GetCost() == 0 || rslt == RES_ERROR || (rslt == RES_TIMEOUT) || rslt == RES_EXIT) {
       //Enumrtr_->destroy();
       return rslt;
     }
