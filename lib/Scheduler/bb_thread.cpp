@@ -2031,6 +2031,7 @@ if (isWorkSteal()) {
   }
   GlobalPoolLock_->unlock();
   
+
  // Logger::Info("SolverID %d beginning work steal loop", SolverID_);
   IdleTime_[SolverID_ - 2] = Utilities::GetProcessorTime();
   InactiveThreadLock_->lock();
