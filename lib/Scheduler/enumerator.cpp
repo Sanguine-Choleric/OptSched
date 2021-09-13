@@ -3124,9 +3124,9 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
   }
 
   if (IsHistDom()) {
-#ifdef IS_DEBUG_SEARCH_ORDER
-    Logger::Info("Solver %d IN LCE HIST DOM", SolverID_);
-#endif
+//#ifdef IS_DEBUG_SEARCH_ORDER
+//    Logger::Info("Solver %d IN LCE HIST DOM", SolverID_);
+//#endif
     assert(newNode);
     EnumTreeNode *parent = newNode->GetParent();
     if (WasDmnntSubProbExmnd_(inst, newNode)) {
@@ -3638,6 +3638,9 @@ bool LengthCostEnumerator::scheduleIntOrPrune(int instToSchdul,
 
   // shculeding function for state generation
 
+#ifdef IS_DEBUG_SEARCH_ORDER
+    Logger::Log((Logger::LOG_LEVEL)4, false, "SolverID %d probing global pool inst %d", SolverID_, instToSchdul);
+#endif
 
   InstCount i;
   //bool isEmptyNode;
@@ -3671,6 +3674,12 @@ bool LengthCostEnumerator::scheduleIntOrPrune(int instToSchdul,
     }
   }
   //Logger::Info("ending enum schedNodeOrPrune, entryCnt %d", getHistTableEntryCnt());
+
+#ifdef IS_DEBUG_SEARCH_ORDER
+    Logger::Log((Logger::LOG_LEVEL)4, false, "SolverID %d stepping forward global pool inst %d", SolverID_, instToSchdul);
+#endif
+
+
   return true;
   
   // nodes examined? if (fsbl) 
