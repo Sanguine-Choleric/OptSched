@@ -592,6 +592,8 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
           spillCostSum_ % instCnt >= Node->GetSpillCostSum() % instCnt;
     }
   }
+
+  if (ShouldPrune) Logger::Info("History pruning our node->getCostLwrBound() %d with history partialCost_ %d", Node->GetCostLwrBound(), partialCost_);
   return ShouldPrune;
 }
 
