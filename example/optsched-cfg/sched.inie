@@ -67,7 +67,7 @@ SECOND_PASS_LENGTH_TIMEOUT 5
 # INSTR : multiply the time limits in the above fields by the number of
 # instructions in the block
 # BLOCK : use the time limits in the above fields as is
-TIMEOUT_PER BLOCK
+TIMEOUT_PER REGION
 
 # The heuristic used for the list scheduler. Valid values are any combination of:
 # CP: critical path
@@ -292,6 +292,6 @@ GLOBAL_POOL_SPILL_COST_FUNCTION PRP
 # HEURISTIC: prioritize heurstic value of a node as determined by the first pass heuristic function
 GLOBAL_POOL_SORT HEURISTIC
 
-USE_WORK_STEAL YES
+USE_WORK_STEAL NO
 
-TIMEOUT_TO_MEMBLOCK_RATIO 100
+TIMEOUT_TO_MEMBLOCK_RATIO 500
