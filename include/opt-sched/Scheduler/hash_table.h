@@ -165,7 +165,7 @@ public:
   // If the last call to GetFirstMatch() or GetNextMatch() has returned NULL,
   // then GetNextMatch() should not be called again.
   T *GetNextMatch(HashTblEntry<T> *srchPtr, UDT_HASHKEY srchKey, bool skipCollision = true);
-  T *GetLastMatch(HashTblEntry<T> *srchPtr, UDT_HASHKEY srchKey, bool skipCollision = true);
+  T *GetLastMatch(HashTblEntry<T> *&srchPtr, UDT_HASHKEY srchKey, bool skipCollision = true);
   // If the last call to GetLastMatch() or GetPrevMatch() has returned NULL,
   // then GetPrevMatch() should not be called again.
   T *GetPrevMatch(HashTblEntry<T> *srchPtr, UDT_HASHKEY srchKey, bool skipCollision = true);
@@ -812,7 +812,7 @@ template <class T> HashTblEntry<T>  *BinHashTable<T>::FindNextMatch_(HashTblEntr
 }
 
 template <class T>
-T *BinHashTable<T>::GetLastMatch(HashTblEntry<T> *srchPtr, UDT_HASHKEY srchKey, bool skipCollision) {
+T *BinHashTable<T>::GetLastMatch(HashTblEntry<T> *&srchPtr, UDT_HASHKEY srchKey, bool skipCollision) {
   if (this->entryCnt_ == 0)
     return NULL;
 
@@ -850,10 +850,8 @@ template <class T> T *BinHashTable<T>::GetPrevMatch(HashTblEntry<T> *srchPtr, UD
 }
 
 template <class T> HashTblEntry<T> *BinHashTable<T>::FindPrevMatch_(HashTblEntry<T> *srchPtr, UDT_HASHKEY srchKey) {
-  Logger::Log((Logger::LOG_LEVEL)4, false, "in findPrevMatch");
   if (srchPtr == NULL || srchPtr == nullptr) return nullptr;
   for (; srchPtr != NULL; srchPtr = srchPtr->GetPrev()) {
-    Logger::Log((Logger::LOG_LEVEL)4,false, "in findPrevMatch loop");
     if (srchPtr == NULL || srchPtr == nullptr || sizeof(srchPtr) == 0) return nullptr;
     assert(sizeof(srchPtr) > 0);
     if (((BinHashTblEntry<T> *)srchPtr)->GetKey() == srchKey)
