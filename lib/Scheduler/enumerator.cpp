@@ -2338,6 +2338,7 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
   //UDT_HASHVAL key = exmndSubProbs_->HashKey(newNode->GetSig());
   stats::historyListSize.Record(listSize);
   //Logger::Info("bucket has size of %d and key %d", listSize, key);
+  Logger::Log((Logger::LOG_LEVEL)4, false, "there are %d nodes in the history bucket", listSize);
   if (listSize == 0) return false;
   mostRecentMatchingHistNode_ = nullptr;
   bool mostRecentMatchWasSet = false;
@@ -2347,7 +2348,6 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
   // lock table for syncrhonized iterator
   
   //bbt_->histTableLock(key);
-  listSize = exmndSubProbs_->GetListSize(newNode->GetSig());
   //Logger::Info("Solver %d, made it through door %d", SolverID_, key);
   //Logger::Info("Solver %d inside lock key %d, instNum %d", SolverID_, key, newNode->GetInstNum());
   //Logger::Info("histTable has GetEntryCnt of %d", exmndSubProbs_->GetEntryCnt());
