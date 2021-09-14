@@ -60,6 +60,8 @@ public:
 
   void Copy(HistEnumTreeNode *other);
 
+  inline int getInstNum() {return inst_->GetNum();}
+
 protected:
   HistEnumTreeNode *prevNode_;
 
