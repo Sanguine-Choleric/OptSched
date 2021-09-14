@@ -161,14 +161,14 @@ public:
   UDT_HASHVAL HashKey(UDT_HASHKEY key);
   UDT_HASHTBL_CPCTY GetListSize(const UDT_HASHKEY key);
 
-  T *GetFirstMatch(HashTblEntry<T> *srchPtr, UDT_HASHKEY srchKey, bool skipCollision = true);
+  T *GetFirstMatch(HashTblEntry<T> *&srchPtr, UDT_HASHKEY srchKey, bool skipCollision = true);
   // If the last call to GetFirstMatch() or GetNextMatch() has returned NULL,
   // then GetNextMatch() should not be called again.
-  T *GetNextMatch(HashTblEntry<T> *srchPtr, UDT_HASHKEY srchKey, bool skipCollision = true);
+  T *GetNextMatch(HashTblEntry<T> *&srchPtr, UDT_HASHKEY srchKey, bool skipCollision = true);
   T *GetLastMatch(HashTblEntry<T> *&srchPtr, UDT_HASHKEY srchKey, bool skipCollision = true);
   // If the last call to GetLastMatch() or GetPrevMatch() has returned NULL,
   // then GetPrevMatch() should not be called again.
-  T *GetPrevMatch(HashTblEntry<T> *srchPtr, UDT_HASHKEY srchKey, bool skipCollision = true);
+  T *GetPrevMatch(HashTblEntry<T> *&srchPtr, UDT_HASHKEY srchKey, bool skipCollision = true);
   //----------------------------------------------------------------------
   // The following pair of methods work only under perfect hashing
   //,i.e., when hashBitCnt_=keyBitCnt_
@@ -477,8 +477,10 @@ void HashTable<T>::AddNewEntry_(HashTblEntry<T> *newEntry,
 
   if (lastEntry_[hashVal] == NULL) {
     topEntry_[hashVal] = newEntry;
+    Logger::Info("Added top entry to history bucket");
   } else {
     lastEntry_[hashVal]->SetNxt(newEntry);
+    Logger::Info("Added to tail of history bucket");
   }
 
   lastEntry_[hashVal] = newEntry;
@@ -781,7 +783,7 @@ UDT_HASHTBL_CPCTY BinHashTable<T>::GetListSize(const UDT_HASHKEY key) {
 }
 
 template <class T>
-T *BinHashTable<T>::GetFirstMatch(HashTblEntry<T> *srchPtr, UDT_HASHKEY srchKey, bool skipCollision) {
+T *BinHashTable<T>::GetFirstMatch(HashTblEntry<T> *&srchPtr, UDT_HASHKEY srchKey, bool skipCollision) {
   if (this->entryCnt_ == 0)
     return NULL;
 
@@ -794,7 +796,7 @@ T *BinHashTable<T>::GetFirstMatch(HashTblEntry<T> *srchPtr, UDT_HASHKEY srchKey,
   return srchPtr == NULL ? NULL : srchPtr->GetElmnt();
 }
 
-template <class T> T *BinHashTable<T>::GetNextMatch(HashTblEntry<T> *srchPtr, UDT_HASHKEY srchKey, bool skipCollision) {
+template <class T> T *BinHashTable<T>::GetNextMatch(HashTblEntry<T> *&srchPtr, UDT_HASHKEY srchKey, bool skipCollision) {
   assert(srchPtr != NULL);
   srchPtr = srchPtr->GetNxt();
 
@@ -828,7 +830,7 @@ T *BinHashTable<T>::GetLastMatch(HashTblEntry<T> *&srchPtr, UDT_HASHKEY srchKey,
   return srchPtr == NULL ? NULL : srchPtr->GetElmnt();
 }
 
-template <class T> T *BinHashTable<T>::GetPrevMatch(HashTblEntry<T> *srchPtr, UDT_HASHKEY srchKey, bool skipCollision) {
+template <class T> T *BinHashTable<T>::GetPrevMatch(HashTblEntry<T> *&srchPtr, UDT_HASHKEY srchKey, bool skipCollision) {
   
   //TODO whats going on with the srchPtr_ -- shouldnt need if stmt
   if (srchPtr != NULL && srchPtr != nullptr) {
