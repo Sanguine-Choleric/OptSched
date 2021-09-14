@@ -834,11 +834,11 @@ template <class T> T *BinHashTable<T>::GetPrevMatch(HashTblEntry<T> *srchPtr, UD
   if (srchPtr != NULL && srchPtr != nullptr) {
     assert(srchPtr != NULL);
     
-      if (srchPtr == this->topEntry_[HashKey(((BinHashTblEntry<T> *)srchPtr)->GetKey())]) {
+    /*  if (srchPtr == this->topEntry_[HashKey(((BinHashTblEntry<T> *)srchPtr)->GetKey())]) {
       // then there are no previous matches
       srchPtr = NULL;
       return NULL;
-    }
+    }*/
     
     srchPtr = srchPtr->GetPrev();
 
@@ -850,8 +850,10 @@ template <class T> T *BinHashTable<T>::GetPrevMatch(HashTblEntry<T> *srchPtr, UD
 }
 
 template <class T> HashTblEntry<T> *BinHashTable<T>::FindPrevMatch_(HashTblEntry<T> *srchPtr, UDT_HASHKEY srchKey) {
+  Logger::Log((Logger::LOG_LEVEL)4, false, "in findPrevMatch");
   if (srchPtr == NULL || srchPtr == nullptr) return nullptr;
   for (; srchPtr != NULL; srchPtr = srchPtr->GetPrev()) {
+    Logger::Log((Logger::LOG_LEVEL)4,false, "in findPrevMatch loop");
     if (srchPtr == NULL || srchPtr == nullptr || sizeof(srchPtr) == 0) return nullptr;
     assert(sizeof(srchPtr) > 0);
     if (((BinHashTblEntry<T> *)srchPtr)->GetKey() == srchKey)
