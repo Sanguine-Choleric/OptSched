@@ -593,7 +593,7 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
     }
   }
 
-  if (ShouldPrune) Logger::Info("History pruning our node->getCostLwrBound() %d with history partialCost_ %d", Node->GetCostLwrBound(), partialCost_);
+  if (ShouldPrune) Logger::Log((Logger::LOG_LEVEL) 4, false,"History pruning our node->getCostLwrBound() %d with history partialCost_ %d", Node->GetCostLwrBound(), partialCost_);
   return ShouldPrune;
 }
 

@@ -904,6 +904,7 @@ bool BBThread::ChkCostFsblty(InstCount trgtLngth, EnumTreeNode *node, bool isGlo
   }
   crntCost -= getCostLwrBound();
   dynmcCostLwrBound = crntCost;
+  Logger::Log((Logger::LOG_LEVEL) 4, false, "dynmcCostLwrBound %d", dynmcCostLwrBound);
 
   // assert(cost >= 0);
   assert(dynmcCostLwrBound >= 0);
