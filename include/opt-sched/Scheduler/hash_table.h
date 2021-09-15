@@ -823,7 +823,7 @@ T *BinHashTable<T>::GetLastMatch(HashTblEntry<T> *&srchPtr, UDT_HASHKEY srchKey,
   
   srchPtr = this->lastEntry_[srchHash];
 
-  if (skipCollision && srchPtr != nullptr && srchPtr != NULL && srchPtr != this->topEntry_[srchHash]) {
+  if (skipCollision && srchPtr != nullptr && srchPtr != NULL) {
     srchPtr = FindPrevMatch_(srchPtr, srchKey);
   }
     
@@ -853,13 +853,20 @@ template <class T> T *BinHashTable<T>::GetPrevMatch(HashTblEntry<T> *&srchPtr, U
 }
 
 template <class T> HashTblEntry<T> *BinHashTable<T>::FindPrevMatch_(HashTblEntry<T> *srchPtr, UDT_HASHKEY srchKey) {
-  if (srchPtr == NULL || srchPtr == nullptr) return nullptr;
+  if (srchPtr == NULL || srchPtr == nullptr) {
+    //Logger::Log((Logger::LOG_LEVEL)4,false,"unable to find match in findPrevMatch loop");
+    return nullptr;
+  }
   for (; srchPtr != NULL; srchPtr = srchPtr->GetPrev()) {
-    if (srchPtr == NULL || srchPtr == nullptr || sizeof(srchPtr) == 0) return nullptr;
+    if (srchPtr == NULL || srchPtr == nullptr || sizeof(srchPtr) == 0) {
+      //Logger::Log((Logger::LOG_LEVEL)4,false,"unable to find match in findPrevMatch loop");
+      return nullptr;
+    }
     assert(sizeof(srchPtr) > 0);
     if (((BinHashTblEntry<T> *)srchPtr)->GetKey() == srchKey)
       return srchPtr;
   }
+  //Logger::Log((Logger::LOG_LEVEL)4,false,"unable to find match in findPrevMatch loop");
   return nullptr;
 }
 
