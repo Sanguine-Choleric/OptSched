@@ -477,15 +477,15 @@ void HashTable<T>::AddNewEntry_(HashTblEntry<T> *newEntry,
 
   if (lastEntry_[hashVal] == NULL) {
     topEntry_[hashVal] = newEntry;
-    //Logger::Log((Logger::LOG_LEVEL)4,false,"Added top entry to history bucket");
+    Logger::Log((Logger::LOG_LEVEL)4,false,"Added top entry to history bucket");
   } else {
     lastEntry_[hashVal]->SetNxt(newEntry);
-    //Logger::Log((Logger::LOG_LEVEL)4,false,"Added to tail of history bucket");
+    Logger::Log((Logger::LOG_LEVEL)4,false,"Added to tail of history bucket");
   }
 
   lastEntry_[hashVal] = newEntry;
   entryCnts_[hashVal]++;
-  //Logger::Log((Logger::LOG_LEVEL)4,false,"History bucket now has size %d", entryCnts_[hashVal]);
+  Logger::Log((Logger::LOG_LEVEL)4,false,"History bucket now has size %d", entryCnts_[hashVal]);
 
   //TODO -- synch issue
   if (entryCnts_[hashVal] > maxListSize_) {
@@ -854,19 +854,16 @@ template <class T> T *BinHashTable<T>::GetPrevMatch(HashTblEntry<T> *&srchPtr, U
 
 template <class T> HashTblEntry<T> *BinHashTable<T>::FindPrevMatch_(HashTblEntry<T> *srchPtr, UDT_HASHKEY srchKey) {
   if (srchPtr == NULL || srchPtr == nullptr) {
-    //Logger::Log((Logger::LOG_LEVEL)4,false,"unable to find match in findPrevMatch loop");
     return nullptr;
   }
   for (; srchPtr != NULL; srchPtr = srchPtr->GetPrev()) {
     if (srchPtr == NULL || srchPtr == nullptr || sizeof(srchPtr) == 0) {
-      //Logger::Log((Logger::LOG_LEVEL)4,false,"unable to find match in findPrevMatch loop");
       return nullptr;
     }
     assert(sizeof(srchPtr) > 0);
     if (((BinHashTblEntry<T> *)srchPtr)->GetKey() == srchKey)
       return srchPtr;
   }
-  //Logger::Log((Logger::LOG_LEVEL)4,false,"unable to find match in findPrevMatch loop");
   return nullptr;
 }
 
