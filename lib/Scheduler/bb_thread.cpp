@@ -904,7 +904,7 @@ bool BBThread::ChkCostFsblty(InstCount trgtLngth, EnumTreeNode *node, bool isGlo
   }
   crntCost -= getCostLwrBound();
   dynmcCostLwrBound = crntCost;
-  Logger::Log((Logger::LOG_LEVEL) 4, false, "dynmcCostLwrBound %d", dynmcCostLwrBound);
+  //Logger::Log((Logger::LOG_LEVEL) 4, false, "dynmcCostLwrBound %d", dynmcCostLwrBound);
 
   // assert(cost >= 0);
   assert(dynmcCostLwrBound >= 0);
@@ -2476,11 +2476,13 @@ Enumerator *BBMaster::allocEnumHierarchy_(Milliseconds timeout, bool *fsbl) {
   }
 
   if (Enumrtr_->IsHistDom()) {
+    Logger::Info("copying inst sigs");
     for (InstCount i = 0; i < Enumrtr_->totInstCnt_; i++) {
       SchedInstruction *masterInst = Enumrtr_->GetInstByIndx(i);
 
       for (int j = 0; j < NumThreads_; j++) {
         SchedInstruction *temp = Workers[j]->GetInstByIndex(i);
+        assert(masterInst->GetNum() == temp->GetNum());
         temp->SetSig(masterInst->GetSig());
       }
 
