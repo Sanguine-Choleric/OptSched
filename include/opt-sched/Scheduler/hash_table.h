@@ -835,7 +835,7 @@ template <class T> T *BinHashTable<T>::GetPrevMatch(HashTblEntry<T> *&srchPtr, U
   
   //TODO whats going on with the srchPtr_ -- shouldnt need if stmt
   if (srchPtr != NULL && srchPtr != nullptr) {
-    assert(srchPtr != NULL);
+
     
     /*  if (srchPtr == this->topEntry_[HashKey(((BinHashTblEntry<T> *)srchPtr)->GetKey())]) {
       // then there are no previous matches
@@ -848,8 +848,7 @@ template <class T> T *BinHashTable<T>::GetPrevMatch(HashTblEntry<T> *&srchPtr, U
     if (skipCollision)
       srchPtr = FindPrevMatch_(srchPtr, srchKey);
   }
-  if (srchPtr == nullptr) return NULL;
-  return (srchPtr == NULL) ? NULL : srchPtr->GetElmnt();
+  return (srchPtr == NULL || srchPtr == nullptr) ? nullptr : srchPtr->GetElmnt();
 }
 
 template <class T> HashTblEntry<T> *BinHashTable<T>::FindPrevMatch_(HashTblEntry<T> *srchPtr, UDT_HASHKEY srchKey) {

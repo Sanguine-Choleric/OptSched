@@ -3248,6 +3248,9 @@ if (bbt_->isWorkStealOn()) {
 /*****************************************************************************/
 
 void Enumerator::BackTrackRoot_() {
+
+  //TODO JEFF we should be inserting into history here if we insert on backtrack
+
   if (bbt_->isWorkStealOn()) {
   // it is possible that a crntNode becomes infeasible before exploring all its children
   // thus we need to ensure that all children are removed on backtrack
