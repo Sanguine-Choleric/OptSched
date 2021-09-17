@@ -638,6 +638,12 @@ bool HistEnumTreeNode::DoesMatch(EnumTreeNode *node, Enumerator *enumrtr, bool i
   //bool useable = SetBothInstsSchduld_(instsSchduld, othrInstsSchduld, node->hstry_, isWorker);
   // don't preoptimize -- just check;
 
+
+  // when constructing state from work stealing, enumerator will
+  // have partial schedule that is exactly the same as partial schedule that has already been 
+  // visited and entered into history (same is probably true for global pool nodes)
+  // This history should not be used to prune since we are splitting the work in the subspace
+  // thus, we ignore mathces wherein the prefix is exactly the same
   bool isSameSubspace = isGlobalPoolNode ? checkSameSubspace_(node) : false;
 
   if (isGlobalPoolNode) {

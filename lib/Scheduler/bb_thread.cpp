@@ -1635,7 +1635,6 @@ bool BBWorker::generateStateFromNode(HalfNode *GlobalPoolNode){
   //Logger::Info("before huge allocation");
   //  int *temp = (int *)malloc(sizeof(int) * 300);
   //Logger::Info("After huge allocation");
-    Enumrtr_->setIsGenerateState(true);
     int numNodesToSchedule = GlobalPoolNode->getPrefixSize();
     // need to check feasibility
     fsbl = scheduleArtificialRoot(false);
@@ -1643,7 +1642,6 @@ bool BBWorker::generateStateFromNode(HalfNode *GlobalPoolNode){
     //temp[0] = 1;
 
     if (!fsbl) {
-      Enumrtr_->setIsGenerateState(false);
       //delete GlobalPoolNode;
       //Logger::Info("ending BBTHread genStateFromNode, entryCnt %d", Enumrtr_->getHistTableEntryCnt());
       return false;
@@ -1657,7 +1655,6 @@ bool BBWorker::generateStateFromNode(HalfNode *GlobalPoolNode){
         fsbl = Enumrtr_->scheduleIntOrPrune(temp, false); 
         if (!fsbl) {
           //Logger::Info("SolverID %d pruned GlobalPoolNode", SolverID_);
-          Enumrtr_->setIsGenerateState(false);
           //delete GlobalPoolNode;
           //Logger::Info("ending BBTHread genStateFromNode, entryCnt %d", Enumrtr_->getHistTableEntryCnt());
           return false;
@@ -1666,14 +1663,9 @@ bool BBWorker::generateStateFromNode(HalfNode *GlobalPoolNode){
       int temp = GlobalPoolNode->getAndRemoveNextPrefixInst();
       //Logger::Info("scheduling prefix inst %d", temp);
       fsbl = Enumrtr_->scheduleIntOrPrune(temp, true); 
-      if (!fsbl) {
-        Enumrtr_->setIsGenerateState(false);
-        return false;
-      }
+      if (!fsbl) return false;
     }
-    Enumrtr_->setIsGenerateState(false);
-
-    return true;
+  return true;
 }
 
 
@@ -1834,7 +1826,9 @@ FUNC_RESULT BBWorker::generateAndEnumerate(HalfNode *GlobalPoolNode,
                                  Milliseconds RgnTimeout,
                                  Milliseconds LngthTimeout) {
 
+  Enumrtr_->setIsGenerateState(true);
   bool fsbl = generateStateFromNode(GlobalPoolNode);
+  Enumrtr_->setIsGenerateState(false);
   if (!fsbl) {
     //Logger::Info("SolverID %d pruned the globalPoolNode",SolverID_);
     delete GlobalPoolNode;

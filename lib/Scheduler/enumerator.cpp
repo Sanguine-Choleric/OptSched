@@ -2369,9 +2369,6 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
     }
   }*/
   for (; trvrsdListSize < listSize; trvrsdListSize++) {
-    // TODO -- we shouldnt need this, but if we dont include it, infinite loop
-    // first element of exNode is null?
-    // something to do with the way history table is deleted?
     if (exNode == NULL || exNode == nullptr) break;
 
 #ifdef IS_DEBUG_SPD

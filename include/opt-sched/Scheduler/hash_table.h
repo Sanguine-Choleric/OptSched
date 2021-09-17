@@ -823,7 +823,7 @@ T *BinHashTable<T>::GetLastMatch(HashTblEntry<T> *&srchPtr, UDT_HASHKEY srchKey,
   
   srchPtr = this->lastEntry_[srchHash];
 
-  if (skipCollision && srchPtr != nullptr && srchPtr != NULL) {
+  if (skipCollision) {
     srchPtr = FindPrevMatch_(srchPtr, srchKey);
   }
     
@@ -853,14 +853,7 @@ template <class T> T *BinHashTable<T>::GetPrevMatch(HashTblEntry<T> *&srchPtr, U
 }
 
 template <class T> HashTblEntry<T> *BinHashTable<T>::FindPrevMatch_(HashTblEntry<T> *srchPtr, UDT_HASHKEY srchKey) {
-  if (srchPtr == NULL || srchPtr == nullptr) {
-    return nullptr;
-  }
-  for (; srchPtr != NULL; srchPtr = srchPtr->GetPrev()) {
-    if (srchPtr == NULL || srchPtr == nullptr || sizeof(srchPtr) == 0) {
-      return nullptr;
-    }
-    assert(sizeof(srchPtr) > 0);
+  for (; srchPtr != NULL && srchPtr != nullptr; srchPtr = srchPtr->GetPrev()) {
     if (((BinHashTblEntry<T> *)srchPtr)->GetKey() == srchKey)
       return srchPtr;
   }
