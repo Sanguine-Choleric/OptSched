@@ -1952,6 +1952,7 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
       if (Enumrtr_->IsHistDom())
         Enumrtr_->resetEnumHistoryState();
       EnumCrntSched_->Reset();
+      InitForSchdulngBBThread();
       initEnumrtr_();
       
       /* 
@@ -2046,6 +2047,7 @@ if (isWorkSteal()) {
       //if (Enumrtr_->IsHistDom())
       //  Enumrtr_->resetEnumHistoryState();
       EnumCrntSched_->Reset();
+      InitForSchdulngBBThread();
       initEnumrtr_();
     }
 
