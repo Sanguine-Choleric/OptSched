@@ -1603,9 +1603,6 @@ InstCount BBWorker::UpdtOptmlSched(InstSchedule *crntSched,
 
   crntCost = CmputNormCost_(crntSched, CCM_STTC, crntExecCost, false);
 
-  Logger::Info(
-      "Found a feasible sched. of length %d, spill cost %d and tot cost %d",
-      crntSched->GetCrntLngth(), crntSched->GetSpillCost(), crntCost);
 
   if (crntCost < getBestCost()) {
 
@@ -2232,6 +2229,10 @@ void BBWorker::writeBestSchedToMaster(InstSchedule *BestSched, InstCount BestCos
     }
   BestSchedLock_->unlock();
   
+  Logger::Info(
+      "Found a feasible sched. of length %d, spill cost %d and tot cost %d",
+      *MasterLength_, *MasterSpill_, *MasterCost_);
+
 }
 
 void BBWorker::histTableLock(UDT_HASHVAL key) {
