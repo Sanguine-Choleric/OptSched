@@ -167,6 +167,7 @@ void ConstrainedScheduler::SchdulInst_(SchedInstruction *inst, InstCount) {
   }
 
   if (inst->BlocksCycle()) {
+    Logger::Info("setting cycle to blocked!");
     isCrntCycleBlkd_ = true;
   }
 

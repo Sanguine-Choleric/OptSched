@@ -270,12 +270,13 @@ bool HistEnumTreeNode::DoesDominate_(EnumTreeNode *node,
     stats::subsetMatches++;
 #endif
 
-  if (othrCrntCycleBlkd != crntCycleBlkd_)
+  if (othrCrntCycleBlkd != crntCycleBlkd_) 
     return false;
 
   if (rsrvSlots_ != NULL) {
     if (node->rsrvSlots_ == NULL)
       return false;
+
 
     int issuRate = node->enumrtr_->machMdl_->GetIssueRate();
     for (int i = 0; i < issuRate; i++) {
@@ -509,7 +510,10 @@ bool CostHistEnumTreeNode::DoesDominate(EnumTreeNode *node,
     // no feasible sched below the hist node, there cannot be a feasible
     // sched below the current node. So, prune the current node
     if (isLngthFsbl_ == false)
+    {
+      Logger::Info("length infeasible, pruning");
       return true;
+    }
   }
 
   // if the hist node dominates the current node, and the hist node

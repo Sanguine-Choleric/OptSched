@@ -253,6 +253,7 @@ int RegisterFile::GetConflictCnt() {
 }
 
 void RegisterFile::AddConflictsWithLiveRegs(int regNum, int liveRegCnt, int SolverID) {
+  Logger::Info("in addconflict with live regs");
   bool isSpillCnddt = (liveRegCnt + 1) > physRegCnt_;
   int conflictCnt = 0;
   for (int i = 0; i < getCount(); i++) {

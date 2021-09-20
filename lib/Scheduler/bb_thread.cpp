@@ -914,10 +914,11 @@ bool BBThread::ChkCostFsblty(InstCount trgtLngth, EnumTreeNode *node, bool isGlo
     Logger::Info("SolverID %d, dyncCostLB %d, getBestCost %d", SolverID_, dynmcCostLwrBound, getBestCost());
   }*/
 
-
+  if (SolverID_ == 2) Logger::Info("dynSLILLB %d statSLILLB %d crntCost %d bestCost %d", DynamicSlilLowerBound_, StaticSlilLowerBound_, crntCost, getBestCost());
   // GlobalPoolNodes need to store cost information for pruning when distributing to workers
   fsbl = dynmcCostLwrBound < getBestCost(); 
   //Logger::Info("dynmcCostLwrBound %d, getBestCost() %d", dynmcCostLwrBound, getBestCost());
+  if (SolverID_ == 2 && !fsbl) Logger::Info("cost pruning");
 
   // FIXME: RP tracking should be limited to the current SCF. We need RP
   // tracking interface.
@@ -1952,7 +1953,6 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
       if (Enumrtr_->IsHistDom())
         Enumrtr_->resetEnumHistoryState();
       EnumCrntSched_->Reset();
-      InitForSchdulngBBThread();
       initEnumrtr_();
       
       /* 
@@ -1971,7 +1971,7 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
   if (!GlobalPool_->empty()) {
     //Logger::Info("Solver %d pulling from global pool (%d nodes left)", SolverID_, GlobalPool_->size());
     if (RegionSched_->GetCost() == 0) return RES_SUCCESS;
-    Logger::Info("RegionSched Cost %d != 0, pulling from global pool", RegionSched_->GetCost(), getCostLwrBound());
+    if (SolverID_ == 2) Logger::Info("RegionSched Cost %d != 0, pulling from global pool", RegionSched_->GetCost(), getCostLwrBound());
     HalfNode *temp;
     while (true) {
       GlobalPoolLock_->lock();
@@ -2012,7 +2012,7 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
     }
   }
 
-  Logger::Info("Global Pool empty");
+  if (SolverID_ == 2) Logger::Info("Global Pool empty");
 
 #ifdef DEBUG_GP_HISTORY
   Logger::Info("Solver %d bypassed global pool pulling (size = %d)", SolverID_, GlobalPool_->size());
