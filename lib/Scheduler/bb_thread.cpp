@@ -914,11 +914,11 @@ bool BBThread::ChkCostFsblty(InstCount trgtLngth, EnumTreeNode *node, bool isGlo
     Logger::Info("SolverID %d, dyncCostLB %d, getBestCost %d", SolverID_, dynmcCostLwrBound, getBestCost());
   }*/
 
-  if (SolverID_ == 2) Logger::Info("dynSLILLB %d statSLILLB %d crntCost %d bestCost %d", DynamicSlilLowerBound_, StaticSlilLowerBound_, crntCost, getBestCost());
+  //if (SolverID_ == 2) Logger::Info("dynSLILLB %d statSLILLB %d crntCost %d bestCost %d", DynamicSlilLowerBound_, StaticSlilLowerBound_, crntCost, getBestCost());
   // GlobalPoolNodes need to store cost information for pruning when distributing to workers
   fsbl = dynmcCostLwrBound < getBestCost(); 
   //Logger::Info("dynmcCostLwrBound %d, getBestCost() %d", dynmcCostLwrBound, getBestCost());
-  if (SolverID_ == 2 && !fsbl) Logger::Info("cost pruning");
+  //if (SolverID_ == 2 && !fsbl) Logger::Info("cost pruning");
 
   // FIXME: RP tracking should be limited to the current SCF. We need RP
   // tracking interface.

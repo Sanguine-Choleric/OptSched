@@ -1071,6 +1071,9 @@ void AppendAndCheckSuffixSchedules(
     InstSchedule *const crntSched_, InstCount trgtSchedLngth_,
     LengthCostEnumerator *const thisAsLengthCostEnum,
     EnumTreeNode *const crntNode_, DataDepGraph *const dataDepGraph_) {
+
+  Logger::Info("in appendandcheck");
+
   assert(matchingHistNodeWithSuffix != nullptr && "Hist node is null");
   assert(matchingHistNodeWithSuffix->GetSuffix() != nullptr &&
          "Hist node suffix is null");
@@ -1134,6 +1137,8 @@ void AppendAndCheckSuffixSchedules(
                crntNode_->GetInstNum());
 #endif
   if (newCost < oldCost) {
+    Logger::Info("in append and check suffix sched, updating node costs");
+
 #if defined(IS_DEBUG_SUFFIX_SCHED)
     Logger::Info("Suffix Scheduling: Concatenated schedule has better "
                  "cost %d than best schedule %d!",
@@ -1991,6 +1996,9 @@ void Enumerator::SetTotalCostsAndSuffixes(EnumTreeNode *const currentNode,
   // then the total cost either has already been set (if one of its children had
   // a real cost), or hasn't been set, which means the total cost right now is
   // the dynamic lower bound of this node.
+
+
+  Logger::Info("in setTotalCostsAndsuxxi");
 
   if (currentNode->IsLeaf()) {
 #if defined(IS_DEBUG_ARCHIVE)
