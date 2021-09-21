@@ -292,6 +292,7 @@ protected:
   GraphEdge *GetNxtScsrEdge(int SolverID);
   GraphEdge *GetLastScsrEdge(int SolverID);
   GraphEdge *GetPrevScsrEdge(int SolverID);
+  void ResetScsrIterator(int SolverID);
   // Returns a pointer to the edge for the first predecessor of the node. Sets
   // the predecessor iterator.
   GraphEdge *GetFrstPrdcsrEdge(int SolverID);
@@ -301,6 +302,7 @@ protected:
   GraphEdge *GetNxtPrdcsrEdge(int SolverID);
   GraphEdge *GetLastPrdcsrEdge(int SolverID);
   GraphEdge *GetPrevPrdcsrEdge(int SolverID);
+  void ResetPrdcsrIterator(int SolverID);
 };
 
 // TODO(max): Make this class actually useful by providing a way to add nodes
@@ -621,80 +623,113 @@ inline LinkedList<GraphEdge> *GraphNode::GetNghbrLst(DIRECTION dir) {
   return dir == DIR_FRWRD ? prdcsrLst_[0] : scsrLst_[0];
 }
 
-inline GraphEdge *GraphNode::GetFrstScsrEdge(int SolverID = INVALID_VALUE) {
-  if (SolverID == INVALID_VALUE) {
-    for (SolverID = 0; SolverID < (NumSolvers_-1); SolverID++)
-    {
+inline GraphEdge *GraphNode::GetFrstScsrEdge(int SolverID_ = INVALID_VALUE) {
+  if (SolverID_ == INVALID_VALUE) {
+    for (int SolverID = 0; SolverID < (NumSolvers_-2); SolverID++) {
       scsrLst_[SolverID]->GetFrstElmnt();
     }
+    return scsrLst_[NumSolvers_-1]->GetFrstElmnt();
   }
-  return scsrLst_[SolverID]->GetFrstElmnt();
+  return scsrLst_[SolverID_]->GetFrstElmnt();
 }
 
-inline GraphEdge *GraphNode::GetNxtScsrEdge(int SolverID = INVALID_VALUE) {
-  if (SolverID == INVALID_VALUE) {
-    for (SolverID = 0; SolverID < (NumSolvers_-1); SolverID++)
-    {
+inline GraphEdge *GraphNode::GetNxtScsrEdge(int SolverID_ = INVALID_VALUE) {
+  if (SolverID_ == INVALID_VALUE) {
+    for (int SolverID = 0; SolverID < (NumSolvers_-2); SolverID++) {
       scsrLst_[SolverID]->GetNxtElmnt();
     }
+    return scsrLst_[NumSolvers_-1]->GetNxtElmnt();
   }
   
-  return scsrLst_[SolverID]->GetNxtElmnt();
+  return scsrLst_[SolverID_]->GetNxtElmnt();
 }
 
-inline GraphEdge *GraphNode::GetLastScsrEdge(int SolverID = INVALID_VALUE) {
-  if (SolverID == INVALID_VALUE) {
-    for (SolverID = 0; SolverID < (NumSolvers_-1); SolverID++)
-    {
+inline GraphEdge *GraphNode::GetLastScsrEdge(int SolverID_ = INVALID_VALUE) {
+  if (SolverID_ == INVALID_VALUE) {
+    for (int SolverID = 0; SolverID < (NumSolvers_-2); SolverID++) {
       scsrLst_[SolverID]->GetLastElmnt();
     }
-  }  return scsrLst_[SolverID]->GetLastElmnt();
+    return scsrLst_[NumSolvers_-1]->GetLastElmnt();
+  }  
+  return scsrLst_[SolverID_]->GetLastElmnt();
 }
 
-inline GraphEdge *GraphNode::GetPrevScsrEdge(int SolverID = INVALID_VALUE) {
-  if (SolverID == INVALID_VALUE) {
-    for (SolverID = 0; SolverID < (NumSolvers_-1); SolverID++)
-    {
+inline GraphEdge *GraphNode::GetPrevScsrEdge(int SolverID_ = INVALID_VALUE) {
+  if (SolverID_ == INVALID_VALUE) {
+    for (int SolverID = 0; SolverID < (NumSolvers_-2); SolverID++) {
       scsrLst_[SolverID]->GetPrevElmnt();
     }
-  }  return scsrLst_[SolverID]->GetPrevElmnt();
+    return scsrLst_[NumSolvers_-1]->GetPrevElmnt();
+  }  
+  return scsrLst_[SolverID_]->GetPrevElmnt();
 }
 
-inline GraphEdge *GraphNode::GetFrstPrdcsrEdge(int SolverID = INVALID_VALUE) {
-  if (SolverID == INVALID_VALUE) {
-    for (SolverID = 0; SolverID < (NumSolvers_-1); SolverID++)
+inline void GraphNode::ResetScsrIterator(int SolverID_ = INVALID_VALUE) {
+  if (SolverID_ == INVALID_VALUE) {
+    for (int SolverID = 0; SolverID < (NumSolvers_); SolverID++)
     {
+      prdcsrLst_[SolverID]->ResetIterator();
+    }
+  }
+  else {
+    prdcsrLst_[SolverID_]->ResetIterator();
+  }
+}
+
+inline GraphEdge *GraphNode::GetFrstPrdcsrEdge(int SolverID_ = INVALID_VALUE) {
+  if (SolverID_ == INVALID_VALUE) {
+    for (int SolverID = 0; SolverID < (NumSolvers_-2); SolverID++) {
       prdcsrLst_[SolverID]->GetFrstElmnt();
     }
-  }  return prdcsrLst_[SolverID]->GetFrstElmnt();
+    return prdcsrLst_[NumSolvers_-1]->GetFrstElmnt();
+  }  
+  return prdcsrLst_[SolverID_]->GetFrstElmnt();
 }
 
-inline GraphEdge *GraphNode::GetNxtPrdcsrEdge(int SolverID = INVALID_VALUE) {
-  if (SolverID == INVALID_VALUE) {
-    for (SolverID = 0; SolverID < (NumSolvers_-1); SolverID++)
+inline GraphEdge *GraphNode::GetNxtPrdcsrEdge(int SolverID_ = INVALID_VALUE) {
+  if (SolverID_ == INVALID_VALUE) {
+    for (int SolverID = 0; SolverID < (NumSolvers_-2); SolverID++)
     {
       prdcsrLst_[SolverID]->GetNxtElmnt();
     }
-  }  return prdcsrLst_[SolverID]->GetNxtElmnt();
+    return prdcsrLst_[NumSolvers_-1]->GetNxtElmnt();
+  }  
+  return prdcsrLst_[SolverID_]->GetNxtElmnt();
 }
 
-inline GraphEdge *GraphNode::GetLastPrdcsrEdge(int SolverID = INVALID_VALUE) {
-   if (SolverID == INVALID_VALUE) {
-    for (SolverID = 0; SolverID < (NumSolvers_-1); SolverID++)
+inline GraphEdge *GraphNode::GetLastPrdcsrEdge(int SolverID_ = INVALID_VALUE) {
+   if (SolverID_ == INVALID_VALUE) {
+    for (int SolverID = 0; SolverID < (NumSolvers_-2); SolverID++)
     {
       prdcsrLst_[SolverID]->GetLastElmnt();
     }
-  } return prdcsrLst_[SolverID]->GetLastElmnt();
+    return prdcsrLst_[NumSolvers_-1]->GetLastElmnt();
+  } 
+  return prdcsrLst_[SolverID_]->GetLastElmnt();
 }
 
-inline GraphEdge *GraphNode::GetPrevPrdcsrEdge(int SolverID = INVALID_VALUE) {
-  if (SolverID == INVALID_VALUE) {
-    for (SolverID = 0; SolverID < (NumSolvers_-1); SolverID++)
-    {
+inline GraphEdge *GraphNode::GetPrevPrdcsrEdge(int SolverID_ = INVALID_VALUE) {
+  if (SolverID_ == INVALID_VALUE) {
+    for (int SolverID = 0; SolverID < (NumSolvers_-2); SolverID++) {
       prdcsrLst_[SolverID]->GetPrevElmnt();
     }
-  }  return prdcsrLst_[SolverID]->GetPrevElmnt();
+    return prdcsrLst_[NumSolvers_-1]->GetPrevElmnt();
+  }  
+  return prdcsrLst_[SolverID_]->GetPrevElmnt();
 }
+
+inline void GraphNode::ResetPrdcsrIterator(int SolverID_ = INVALID_VALUE) {
+  if (SolverID_ == INVALID_VALUE) {
+    for (int SolverID = 0; SolverID < (NumSolvers_); SolverID++)
+    {
+      prdcsrLst_[SolverID]->ResetIterator();
+    }
+  }
+  else {
+    prdcsrLst_[SolverID_]->ResetIterator();
+  }
+}
+
 
 inline DIRECTION DirAcycGraph::ReverseDirection(DIRECTION dir) {
   return dir == DIR_FRWRD ? DIR_BKWRD : DIR_FRWRD;

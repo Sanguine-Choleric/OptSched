@@ -1998,7 +1998,7 @@ void Enumerator::SetTotalCostsAndSuffixes(EnumTreeNode *const currentNode,
   // the dynamic lower bound of this node.
 
 
-  Logger::Info("in setTotalCostsAndsuxxi");
+  //Logger::Info("in setTotalCostsAndsuxxi");
 
   if (currentNode->IsLeaf()) {
 #if defined(IS_DEBUG_ARCHIVE)
@@ -2345,7 +2345,7 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
 #endif
   HistEnumTreeNode *exNode;
   int listSize = exmndSubProbs_->GetListSize(newNode->GetSig());
-  //UDT_HASHVAL key = exmndSubProbs_->HashKey(newNode->GetSig());
+  UDT_HASHVAL key = exmndSubProbs_->HashKey(newNode->GetSig());
   stats::historyListSize.Record(listSize);
   //Logger::Info("bucket has size of %d and key %d", listSize, key);
   //Logger::Log((Logger::LOG_LEVEL)4, false, "there are %d nodes in the history bucket", listSize);
@@ -2357,7 +2357,7 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
 
   // lock table for syncrhonized iterator
   
-  //bbt_->histTableLock(key);
+  bbt_->histTableLock(key);
   //Logger::Info("Solver %d, made it through door %d", SolverID_, key);
   //Logger::Info("Solver %d inside lock key %d, instNum %d", SolverID_, key, newNode->GetInstNum());
   //Logger::Info("histTable has GetEntryCnt of %d", exmndSubProbs_->GetEntryCnt());
@@ -2427,7 +2427,7 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
   
   // unlock
   //Logger::Info("Solver %d unlocking key %d", SolverID_, key);
-  //bbt_->histTableUnlock(key);  
+  bbt_->histTableUnlock(key);  
 
   stats::traversedHistoryListSize.Record(trvrsdListSize);
   return wasDmntSubProbExmnd;
@@ -3659,6 +3659,7 @@ bool LengthCostEnumerator::scheduleIntOrPrune(int instToSchdul,
   SchedInstruction *inst;
   bool isFsbl = true;
   InstCount brnchCnt = rdyLst_->GetInstCnt();
+  bool flag = false;
 
   // iterate until we find the node
   rdyLst_->ResetIterator();
@@ -3669,6 +3670,7 @@ bool LengthCostEnumerator::scheduleIntOrPrune(int instToSchdul,
   for (i = 0; i < brnchCnt; i++) {
     inst = rdyLst_->GetNextPriorityInst();
     if (inst->GetNum() == instToSchdul) {
+      flag = true;
       // schedule its instruction
       //Logger::Info("SolverID %d attempting to schedule inst #%d", SolverID_, inst->GetNum());
 
@@ -3686,6 +3688,8 @@ bool LengthCostEnumerator::scheduleIntOrPrune(int instToSchdul,
     }
   }
   //Logger::Info("ending enum schedNodeOrPrune, entryCnt %d", getHistTableEntryCnt());
+
+  assert(flag);
 
 #ifdef IS_DEBUG_SEARCH_ORDER
     Logger::Log((Logger::LOG_LEVEL)4, false, "SolverID %d stepping forward global pool inst %d", SolverID_, instToSchdul);

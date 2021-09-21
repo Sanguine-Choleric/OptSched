@@ -1932,6 +1932,7 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
             InactiveThreadLock_->unlock();
 #endif
 */          //Enumrtr_->destroy();
+            Logger::Info("SolverID_ %d finished", SolverID_);
             IdleTime_[SolverID_ - 2] = Utilities::GetProcessorTime();
             //if (rslt == RES_TIMEOUT)
             //  Logger::Info("SolverID_ %d returning timeout from bbw:enum2", SolverID_);
@@ -2232,7 +2233,7 @@ void BBWorker::writeBestSchedToMaster(InstSchedule *BestSched, InstCount BestCos
   BestSchedLock_->unlock();
   
   Logger::Info(
-      "Found a feasible sched. of length %d, spill cost %d and tot cost %d",
+      "SolverID_ %d Found a feasible sched. of length %d, spill cost %d and tot cost %d", SolverID_,
       *MasterLength_, *MasterSpill_, *MasterCost_);
 
 }
