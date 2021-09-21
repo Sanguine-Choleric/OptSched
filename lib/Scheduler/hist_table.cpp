@@ -536,10 +536,13 @@ static bool doesHistorySLILCostDominate(InstCount OtherPrefixCost,
                                         InstCount HistPrefixCost,
                                         InstCount HistTotalCost,
                                         LengthCostEnumerator *LCE) {
+  assert(HistTotalCost > HistPrefixCost);
+  
   auto RequiredImprovement = std::max(HistTotalCost - LCE->GetBestCost(), 0);
   auto ImprovementOnHistory = HistPrefixCost - OtherPrefixCost;
 
-  assert(ImprovementOnHistory > 0);
+  assert(RequiredImprovement >= 0 && ImprovementOnHistory > 0);
+
 
   // If our improvement does not meet the requirement, then prune
   return ImprovementOnHistory <= RequiredImprovement;
@@ -574,6 +577,7 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
     //assert(costInfoSet_);
   #endif
   bool ShouldPrune;
+  assert(partialCost_ != INVALID_VALUE);
   if (Node->GetCostLwrBound() >= partialCost_) {
     ShouldPrune = true;
   }
@@ -591,9 +595,11 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
                                                 partialCost_, totalCost_, LCE);
         }
 
-    else if (SpillCostFunc == SCF_SLIL)
-      ShouldPrune = doesHistorySLILCostDominate(Node->GetCostLwrBound(),
-                                                partialCost_, totalCost_, LCE);
+    else if (SpillCostFunc == SCF_SLIL){
+      
+      ShouldPrune = partialCost_ == totalCost_ ? false : doesHistorySLILCostDominate(Node->GetCostLwrBound(),
+                                                          partialCost_, totalCost_, LCE);
+    }
 
     // If the cost function is peak plus avg, make sure that the fraction lost
     // by integer divsion does not lead to false domination.
