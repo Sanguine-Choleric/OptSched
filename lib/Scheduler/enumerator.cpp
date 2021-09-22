@@ -1878,6 +1878,7 @@ if (!crntNode_->getPushedToLocalPool() || !bbt_->isWorker() || isSecondPass()) {
   InitNewNode_(newNode);
 
 #ifdef INSERT_ON_STEPFRWRD
+  assert(false && "insert on stepfrwrd");
   if (!isSecondPass()) {
     if (IsHistDom()) {
       assert(!crntNode_->IsArchived());
