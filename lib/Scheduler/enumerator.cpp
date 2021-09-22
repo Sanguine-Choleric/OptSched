@@ -1147,6 +1147,7 @@ void AppendAndCheckSuffixSchedules(
     // Don't forget to update the total cost and suffix for this node,
     // because we intentionally backtrack without visiting its
     // children.
+    assert(false && "in append and check suffix");
     crntNode_->SetTotalCost(newCost);
     crntNode_->SetTotalCostIsActualCost(true);
     if (newCost == 0) {
@@ -2015,6 +2016,7 @@ void Enumerator::SetTotalCostsAndSuffixes(EnumTreeNode *const currentNode,
                    "cost to dynamic lower bound %d",
                    currentNode->GetCostLwrBound());
 #endif
+      assert(currentNode->GetCostLwrBound() >= currentNode->GetTotalCost());
       currentNode->SetTotalCost(currentNode->GetCostLwrBound());
     }
   }

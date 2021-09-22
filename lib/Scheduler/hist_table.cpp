@@ -538,6 +538,7 @@ static bool doesHistorySLILCostDominate(InstCount OtherPrefixCost,
                                         LengthCostEnumerator *LCE) {
   assert(HistTotalCost > HistPrefixCost);
 
+
   auto RequiredImprovement = std::max(HistTotalCost - LCE->GetBestCost(), 0);
   auto ImprovementOnHistory = HistPrefixCost - OtherPrefixCost;
 
@@ -598,7 +599,8 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
         }
 
     else if (SpillCostFunc == SCF_SLIL){
-      
+      if (partialCost_ != totalCost_) assert(totalCostIsActualCost_);
+
       ShouldPrune = (partialCost_ == totalCost_ || !fullyExplored_) ? 
                       false : doesHistorySLILCostDominate(Node->GetCostLwrBound(),
                                                           partialCost_, totalCost_, LCE);
