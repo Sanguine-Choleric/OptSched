@@ -160,7 +160,6 @@ bool HistEnumTreeNode::checkSameSubspace_(EnumTreeNode *otherNode) {
 void HistEnumTreeNode::SetInstsSchduld_(BitVector *instsSchduld, bool isWorker, bool isGlobalPoolNode) {
   instsSchduld->Reset(isWorker);
   HistEnumTreeNode *crntNode;
-  if (isGlobalPoolNode)
 
   for (crntNode = this; crntNode != NULL; crntNode = crntNode->GetParent()) {
     SchedInstruction *inst = crntNode->inst_;
