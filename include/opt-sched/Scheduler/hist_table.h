@@ -137,9 +137,7 @@ protected:
   bool totalCostIsActualCost_ = false;
 
   bool isLngthFsbl_;
-#ifdef IS_DEBUG
   bool costInfoSet_;
-#endif
 
   bool ChkCostDmntnForBBSpill_(EnumTreeNode *node, Enumerator *enumrtr);
   bool ChkCostDmntn_(EnumTreeNode *node, Enumerator *enumrtr,

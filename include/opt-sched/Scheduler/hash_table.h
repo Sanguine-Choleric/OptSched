@@ -228,8 +228,8 @@ private:
 
   void Init_();
   void CmputConsts_();
-  HashTblEntry<T> *FindNextMatch_(HashTblEntry<T> *srchPtr, UDT_HASHKEY srchKey);
-  HashTblEntry<T> *FindPrevMatch_(HashTblEntry<T> *srchPtr, UDT_HASHKEY srchKey);
+  HashTblEntry<T> *FindNextMatch_(HashTblEntry<T> *&srchPtr, UDT_HASHKEY srchKey);
+  HashTblEntry<T> *FindPrevMatch_(HashTblEntry<T> *&srchPtr, UDT_HASHKEY srchKey);
   void UpdtLastMax_(HashTblEntry<T> *maxEntry, UDT_HASHVAL maxHash);
 };
 
@@ -807,7 +807,7 @@ template <class T> T *BinHashTable<T>::GetNextMatch(HashTblEntry<T> *&srchPtr, U
   return srchPtr == NULL ? NULL : srchPtr->GetElmnt();
 }
 
-template <class T> HashTblEntry<T>  *BinHashTable<T>::FindNextMatch_(HashTblEntry<T> *srchPtr, UDT_HASHKEY srchKey) {
+template <class T> HashTblEntry<T>  *BinHashTable<T>::FindNextMatch_(HashTblEntry<T> *&srchPtr, UDT_HASHKEY srchKey) {
   for (; srchPtr != NULL; srchPtr = srchPtr->GetNxt()) {
     if (((BinHashTblEntry<T> *)srchPtr)->GetKey() == srchKey)
       return srchPtr;
@@ -851,7 +851,7 @@ template <class T> T *BinHashTable<T>::GetPrevMatch(HashTblEntry<T> *&srchPtr, U
   return (srchPtr == NULL || srchPtr == nullptr) ? nullptr : srchPtr->GetElmnt();
 }
 
-template <class T> HashTblEntry<T> *BinHashTable<T>::FindPrevMatch_(HashTblEntry<T> *srchPtr, UDT_HASHKEY srchKey) {
+template <class T> HashTblEntry<T> *BinHashTable<T>::FindPrevMatch_(HashTblEntry<T> *&srchPtr, UDT_HASHKEY srchKey) {
   for (; srchPtr != NULL && srchPtr != nullptr; srchPtr = srchPtr->GetPrev()) {
     if (((BinHashTblEntry<T> *)srchPtr)->GetKey() == srchKey)
       return srchPtr;

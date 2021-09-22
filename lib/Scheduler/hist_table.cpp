@@ -460,17 +460,13 @@ std::vector<InstCount> HistEnumTreeNode::GetPrefix() const {
 
 CostHistEnumTreeNode::CostHistEnumTreeNode() {
   isLngthFsbl_ = true;
-#ifdef IS_DEBUG
   costInfoSet_ = false;
-#endif
 }
 
 CostHistEnumTreeNode::~CostHistEnumTreeNode() {}
 
 void CostHistEnumTreeNode::Construct(EnumTreeNode *node, bool isTemp, bool isGenerateState) {
-#ifdef IS_DEBUG
   costInfoSet_ = false;
-#endif
   HistEnumTreeNode::Construct(node, isTemp, isGenerateState);
 #ifdef INSERT_ON_STEPFRWRD
   partialCost_ = node->GetCostLwrBound();
@@ -480,9 +476,7 @@ void CostHistEnumTreeNode::Construct(EnumTreeNode *node, bool isTemp, bool isGen
 
 void CostHistEnumTreeNode::Init_() {
   HistEnumTreeNode::Init_();
-#ifdef IS_DEBUG
   costInfoSet_ = false;
-#endif
   cost_ = 0;
 }
 
@@ -576,9 +570,7 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
 
     // If the other node's prefix cost is higher than or equal to the history
   // prefix cost the other node is pruned.
-  #ifdef IS_DEBUG
-    //assert(costInfoSet_);
-  #endif
+  assert(costInfoSet_);
   bool ShouldPrune;
   assert(partialCost_ != INVALID_VALUE);
   if (Node->GetCostLwrBound() >= partialCost_) {
@@ -634,9 +626,7 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *) {
     suffix_ =
         std::make_shared<std::vector<SchedInstruction *>>(node->GetSuffix());
 
-#ifdef IS_DEBUG
   costInfoSet_ = true;
-#endif
 
 #if defined(IS_DEBUG_ARCHIVE)
   Logger::Info(
