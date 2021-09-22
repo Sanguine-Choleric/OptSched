@@ -75,7 +75,7 @@ protected:
 
   SchedInstruction *inst_;
 
-  bool fullyExplored_;
+  bool fullyExplored_ = false;
 
 #ifdef IS_DEBUG
   bool isCnstrctd_;
