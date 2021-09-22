@@ -1624,20 +1624,13 @@ InstCount BBWorker::UpdtOptmlSched(InstSchedule *crntSched,
 
 /*****************************************************************************/
 bool BBWorker::generateStateFromNode(HalfNode *GlobalPoolNode){ 
-  //Logger::Info("beginning BBTHread genStateFromNode, entryCnt %d", Enumrtr_->getHistTableEntryCnt());
-
   //Logger::Info("SolverID %d Generating state from node", SolverID_);
   assert(GlobalPoolNode != NULL);
   bool fsbl = true;
   
-  //Logger::Info("before huge allocation");
-  //  int *temp = (int *)malloc(sizeof(int) * 300);
-  //Logger::Info("After huge allocation");
     int numNodesToSchedule = GlobalPoolNode->getPrefixSize();
     // need to check feasibility
     fsbl = scheduleArtificialRoot(false);
-
-    //temp[0] = 1;
 
     if (!fsbl) {
       //delete GlobalPoolNode;

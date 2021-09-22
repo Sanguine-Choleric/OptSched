@@ -56,6 +56,10 @@ public:
 
   inline SchedInstruction *GetInst() {return inst_;}
 
+  inline void setFullyExplored(bool isFullyExplored) {
+    fullyExplored_ = isFullyExplored;
+  }
+
   bool isTemp_;
 
   void Copy(HistEnumTreeNode *other);
@@ -70,6 +74,8 @@ protected:
   InstCount time_;
 
   SchedInstruction *inst_;
+
+  bool fullyExplored_;
 
 #ifdef IS_DEBUG
   bool isCnstrctd_;
@@ -106,6 +112,7 @@ protected:
   InstCount GetMinTimeToExmn_(InstCount nodeTime, Enumerator *enumrtr);
   InstCount GetLwrBound_(SchedInstruction *inst, int16_t issuRate);
   void SetRsrvSlots_(EnumTreeNode *node);
+
 };
 
 class CostHistEnumTreeNode : public HistEnumTreeNode {

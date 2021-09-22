@@ -2147,6 +2147,7 @@ bool Enumerator::BackTrack_(bool trueState) {
     if (bbt_->isWorker()) {
       bbt_->histTableLock(key);
         HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
+        crntHstry->setFullyExplored(true);
 #ifdef IS_SYNCH_ALLOC
         bbt_->allocatorLock();
 #endif
@@ -2163,6 +2164,7 @@ bool Enumerator::BackTrack_(bool trueState) {
 
     else {
       HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
+      crntHstry->setFullyExplored(true);
       exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                   hashTblEntryAlctr_, bbt_);
       SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
@@ -2184,6 +2186,7 @@ if (isSecondPass()) {
       if (bbt_->isWorker()) {
         bbt_->histTableLock(key);
           HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
+          crntHstry->setFullyExplored(true);
   #ifdef IS_SYNCH_ALLOC
           bbt_->allocatorLock();
   #endif
@@ -2200,6 +2203,7 @@ if (isSecondPass()) {
 
       else {
         HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
+        crntHstry->setFullyExplored(true);
         exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                     hashTblEntryAlctr_, bbt_);
         SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
@@ -3662,18 +3666,17 @@ bool LengthCostEnumerator::scheduleIntOrPrune(int instToSchdul,
 #endif
 
   InstCount i;
-  //bool isEmptyNode;
   SchedInstruction *inst;
   bool isFsbl = true;
   InstCount brnchCnt = rdyLst_->GetInstCnt();
   bool flag = false;
 
-  // iterate until we find the node
   rdyLst_->ResetIterator();
 
   // TODO(JEFF) 6/28
   // changed for (i = crntBrnchNum) to for (i = 0) -- to test work stealing
 
+  // iterate until we find the node
   for (i = 0; i < brnchCnt; i++) {
     inst = rdyLst_->GetNextPriorityInst();
     if (inst->GetNum() == instToSchdul) {
@@ -3681,9 +3684,6 @@ bool LengthCostEnumerator::scheduleIntOrPrune(int instToSchdul,
       // schedule its instruction
       //Logger::Info("SolverID %d attempting to schedule inst #%d", SolverID_, inst->GetNum());
 
-
-      //if (!bbt_->isWorker() || SolverID_ == 3)
-      //  Logger::Info("attempting to schedule inst %d", inst->GetNum());
       scheduleInst_(inst, isPseudoRoot, isFsbl);
       rdyLst_->ResetIterator();
       if (!isFsbl) {

@@ -171,7 +171,7 @@ void HistEnumTreeNode::SetInstsSchduld_(BitVector *instsSchduld, bool isWorker, 
         Logger::Info("instNum %d", crntNode->GetInstNum());
       */
       ///TODO -- hacker hour, whats goin on here
-      if (!isWorker) assert(!instsSchduld->GetBit(inst->GetNum()));
+      assert(!instsSchduld->GetBit(inst->GetNum()));
       instsSchduld->SetBit(inst->GetNum());
     }
   }
@@ -537,7 +537,7 @@ static bool doesHistorySLILCostDominate(InstCount OtherPrefixCost,
                                         InstCount HistTotalCost,
                                         LengthCostEnumerator *LCE) {
   assert(HistTotalCost > HistPrefixCost);
-  
+
   auto RequiredImprovement = std::max(HistTotalCost - LCE->GetBestCost(), 0);
   auto ImprovementOnHistory = HistPrefixCost - OtherPrefixCost;
 
@@ -571,7 +571,9 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
   if (time_ > Node->GetTime())
     return false;
 
-  // If the other node's prefix cost is higher than or equal to the history
+  if (E->IsTwoPass_ && !E->isSecondPass()) assert(time_ == Node->GetTime());
+
+    // If the other node's prefix cost is higher than or equal to the history
   // prefix cost the other node is pruned.
   #ifdef IS_DEBUG
     //assert(costInfoSet_);
@@ -597,7 +599,8 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
 
     else if (SpillCostFunc == SCF_SLIL){
       
-      ShouldPrune = partialCost_ == totalCost_ ? false : doesHistorySLILCostDominate(Node->GetCostLwrBound(),
+      ShouldPrune = (partialCost_ == totalCost_ || !fullyExplored_) ? 
+                      false : doesHistorySLILCostDominate(Node->GetCostLwrBound(),
                                                           partialCost_, totalCost_, LCE);
     }
 
