@@ -261,7 +261,9 @@ bool HistEnumTreeNode::DoesDominate_(EnumTreeNode *node,
   // We cannot make a decision about domination if the candidate dominant
   // node lies deeper in the enumeration tree than the node in question.
   if (thisTime > othrTime) {
-    Logger::Info("cant dominate -- time");
+    if (enumrtr->IsTwoPass_ && !enumrtr->isSecondPass()) {
+      Logger::Info("cant dominate -- time");
+    }
     return false;
   }
     //  if (thisTime != othrTime) return false;
@@ -272,13 +274,17 @@ bool HistEnumTreeNode::DoesDominate_(EnumTreeNode *node,
 #endif
 
   if (othrCrntCycleBlkd != crntCycleBlkd_) {
-    Logger::Info("cant dominate -- blkd");
+    if (enumrtr->IsTwoPass_ && !enumrtr->isSecondPass()) {
+      Logger::Info("cant dominate -- blkd");
+    }
     return false;
   }
 
   if (rsrvSlots_ != NULL) {
     if (node->rsrvSlots_ == NULL) {
-      Logger::Info("cant dominate -- rsrv");
+      if (enumrtr->IsTwoPass_ && !enumrtr->isSecondPass()) {
+        Logger::Info("cant dominate -- rsrv");
+      }
       return false;
     }
 
@@ -288,7 +294,9 @@ bool HistEnumTreeNode::DoesDominate_(EnumTreeNode *node,
       if (rsrvSlots_[i].strtCycle != INVALID_VALUE) {
         if (node->rsrvSlots_[i].strtCycle == INVALID_VALUE ||
             rsrvSlots_[i].endCycle > node->rsrvSlots_[i].endCycle) {
-          Logger::Info("cant dominate -- rsrv");
+          if (enumrtr->IsTwoPass_ && !enumrtr->isSecondPass()) {
+            Logger::Info("cant dominate -- rsrv");
+          }
           return false;
             }
       }
@@ -506,7 +514,9 @@ bool CostHistEnumTreeNode::DoesDominate(EnumTreeNode *node,
   if (!enumrtr->IsSchedForRPOnly()) {
     if (DoesDominate_(node, NULL, ETN_ACTIVE, enumrtr, shft) == false)
     {
-      Logger::Info("cant dominate -- regular hist");
+      if (enumrtr->IsTwoPass_ && !enumrtr->isSecondPass()) {
+        Logger::Info("cant dominate -- regular hist");
+      }
       return false;
     }
 
