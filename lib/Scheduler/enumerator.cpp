@@ -912,8 +912,8 @@ void Enumerator::SetInstSigs_() {
 
   for (i = 0; i < totInstCnt_; i++) {
     SchedInstruction *inst = dataDepGraph_->GetInstByIndx(i);
-    //InstSignature sig = RandomGen::GetRand32();
-    InstSignature sig = inst->GetNum() * 12345678;
+    InstSignature sig = RandomGen::GetRand32();
+    //InstSignature sig = inst->GetNum() * 12345678;
 
     // ensure it is not zero
     if (sig == 0) {
