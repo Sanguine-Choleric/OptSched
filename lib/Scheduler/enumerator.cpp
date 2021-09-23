@@ -2439,6 +2439,10 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
       }
     }
 
+    else {
+      if (exNode->GetTime() == newNode->GetTime()) Logger::Info("found a non matching node with same sig and same depth");
+    }
+
     exNode = exmndSubProbs_->GetPrevMatch(srchPtr, newNode->GetSig());
   }
   
