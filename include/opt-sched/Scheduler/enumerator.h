@@ -475,6 +475,7 @@ protected:
   bool IsTwoPass_;
 
   int NumSolvers_;
+  bool isWorker_;
 
   Pruning prune_;
   bool enblStallEnum_;
@@ -707,6 +708,8 @@ public:
   inline bool IsHistDom();
   inline bool IsRlxdPrnng();
   virtual bool IsCostEnum() = 0;
+
+  inline bool isWorker() {return isWorker_;}
 
   inline InstCount getRootInstNum() { return rootNode_->GetInstNum(); }
   inline BinHashTable<HistEnumTreeNode> *getHistTable() {return exmndSubProbs_; }

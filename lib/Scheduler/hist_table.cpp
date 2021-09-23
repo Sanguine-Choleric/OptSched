@@ -486,6 +486,7 @@ void CostHistEnumTreeNode::Construct(EnumTreeNode *node, bool isTemp, bool isGen
 #ifdef INSERT_ON_STEPFRWRD
   partialCost_ = node->GetCostLwrBound();
   totalCost_ = node->GetCost();
+  costInfoSet_ = true;
 #endif
 }
 
@@ -590,9 +591,8 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
 
     // If the other node's prefix cost is higher than or equal to the history
   // prefix cost the other node is pruned.
-  assert(costInfoSet_);
   bool ShouldPrune;
-  assert(partialCost_ != INVALID_VALUE);
+  assert(costInfoSet_ && partialCost_ != INVALID_VALUE);
   if (Node->GetCostLwrBound() >= partialCost_) {
     ShouldPrune = true;
   }
@@ -613,7 +613,7 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
     else if (SpillCostFunc == SCF_SLIL){
       if (partialCost_ != totalCost_) assert(totalCostIsActualCost_);
 
-      ShouldPrune = (partialCost_ == totalCost_ || !fullyExplored_) ? 
+      ShouldPrune = (partialCost_ == totalCost_ || !fullyExplored_ || LCE->isWorker()) ? 
                       false : doesHistorySLILCostDominate(Node->GetCostLwrBound(),
                                                           partialCost_, totalCost_, LCE);
     }
