@@ -695,6 +695,8 @@ public:
 
   virtual bool WasObjctvMet_() = 0;
 
+  virtual InstCount GetBestCost() = 0;
+
   // Get the number of nodes that have been examined
   inline uint64_t GetNodeCnt();
   inline void setNodeCnt(uint64_t nodeCnt);
@@ -802,6 +804,8 @@ public:
                                    Milliseconds deadline);
   bool IsCostEnum();
 
+  InstCount GetBestCost() override;
+
   void FreeAllocators_();//bool isMaster = false);
 };
 /*****************************************************************************/
@@ -908,7 +912,7 @@ public:
                                    Milliseconds deadline);
   bool IsCostEnum();
   void setLCEElements(BBThread *bbt, InstCount costLwrBound);
-  inline InstCount GetBestCost() { return GetBestCost_(); }
+  inline InstCount GetBestCost() override { return GetBestCost_(); }
   inline SPILL_COST_FUNCTION GetSpillCostFunc() {return spillCostFunc_;}
 
 

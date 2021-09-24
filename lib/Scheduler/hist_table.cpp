@@ -613,7 +613,7 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
     else if (SpillCostFunc == SCF_SLIL){
       if (partialCost_ != totalCost_) assert(totalCostIsActualCost_);
 
-      ShouldPrune = (partialCost_ == totalCost_ || !fullyExplored_ || LCE->isWorker()) ? 
+      ShouldPrune = (partialCost_ == totalCost_ || !fullyExplored_ || !totalCostIsAbsoluteBest_) ? 
                       false : doesHistorySLILCostDominate(Node->GetCostLwrBound(),
                                                           partialCost_, totalCost_, LCE);
     }
@@ -632,7 +632,7 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
   return ShouldPrune;
 }
 
-void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *) {
+void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enumrtr) {
   cost_ = node->GetCost();
   peakSpillCost_ = node->GetPeakSpillCost();
   spillCostSum_ = node->GetSpillCostSum();
@@ -642,6 +642,7 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *) {
   partialCost_ = node->GetCostLwrBound();
   totalCost_ = node->GetTotalCost();
   totalCostIsActualCost_ = node->GetTotalCostIsActualCost();
+  if (totalCost_ == enumrtr->GetBestCost()) totalCostIsAbsoluteBest_ = true;
   if (suffix_ == nullptr && node->GetSuffix().size() > 0)
     suffix_ =
         std::make_shared<std::vector<SchedInstruction *>>(node->GetSuffix());

@@ -940,6 +940,11 @@ SchedInstruction *Enumerator::GetInstByIndx(InstCount index) {
   return dataDepGraph_->GetInstByIndx(index);
 }
 
+/*
+InstCount::GetBestCost() {
+  Logger::Info("in wrong getBestCost");
+  return 0;
+}*/
 
 /*****************************************************************************/
 
@@ -2889,6 +2894,11 @@ void LengthEnumerator::FreeAllocators_(){
 /****************************************************************************/
 
 bool LengthEnumerator::IsCostEnum() { return false; }
+
+InstCount LengthEnumerator::GetBestCost() {
+  assert(false && "wrong getBestCost");
+  return INVALID_VALUE;
+}
 /*****************************************************************************/
 
 FUNC_RESULT LengthEnumerator::FindFeasibleSchedule(InstSchedule *sched,

@@ -135,6 +135,7 @@ protected:
   InstCount totalCost_ = -1;
   InstCount partialCost_ = -1;
   bool totalCostIsActualCost_ = false;
+  bool totalCostIsAbsoluteBest_ = false;
 
   bool isLngthFsbl_;
   bool costInfoSet_;
