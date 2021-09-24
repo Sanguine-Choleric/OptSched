@@ -2223,16 +2223,20 @@ if (isSecondPass()) {
     }
   }
   else {
-    UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
-    if (bbt_->isWorker()) {
-        bbt_->histTableLock(key);
-    }
-    SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
-                           prune_.useSuffixConcatenation);
-    crntNode_->Archive();
+    if (IsHistDom() && trueState) {
+      UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
+      HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
+      if (bbt_->isWorker()) {
+          bbt_->histTableLock(key);
+      }
+      crntHstry->setFullyExplored(true);
+      SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
+                            prune_.useSuffixConcatenation);
+      crntNode_->Archive();
 
-    if (bbt_->isWorker()) {
-        bbt_->histTableUnlock(key);
+      if (bbt_->isWorker()) {
+          bbt_->histTableUnlock(key);
+      }
     }
   }
 #endif
