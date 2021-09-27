@@ -3273,6 +3273,14 @@ bool LengthCostEnumerator::BackTrack_(bool trueState) {
     }
   }
 
+  if (!fsbl) {
+    UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
+    bbt_->histTableLock(key);
+    HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
+    crntHstry->setFullyExplored(true);
+    bbt_->histTableUnlock(key);
+  }
+
 if (bbt_->isWorkStealOn()) {
   // it is possible that a crntNode becomes infeasible before exploring all its children
   // thus we need to ensure that all children are removed on backtrack
@@ -3311,6 +3319,31 @@ if (bbt_->isWorkStealOn()) {
 }
 /*****************************************************************************/
 
+void LengthCostEnumerator::BackTrackRoot_() {
+  Enumerator::BackTrackRoot_();
+  UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
+  bbt_->histTableLock(key);
+  HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
+  crntHstry->setFullyExplored(true);
+  bbt_->histTableUnlock(key);
+  EnumTreeNode *tempNode = crntNode_;
+  propogateExploration_(tempNode);
+}
+
+void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
+  if (propNode->GetParent()) {
+    propNode = propNode->GetParent();
+    propNode->incrementExploredChildren();
+    if (propNode->getExploredChildren() == propNode->getNumChildrn())
+    {
+      propogateExploration_(propNode);
+    }
+  }
+}
+
+
+
+
 void Enumerator::BackTrackRoot_() {
 
   //TODO JEFF we should be inserting into history here if we insert on backtrack
@@ -3343,6 +3376,8 @@ void Enumerator::BackTrackRoot_() {
     }
     bbt_->localPoolUnlock(SolverID_ - 2);
   }
+
+  EnumTreeNode *tempNode = crntNode_;
 }
 
 InstCount LengthCostEnumerator::GetBestCost_() { return bbt_->getBestCost(); }

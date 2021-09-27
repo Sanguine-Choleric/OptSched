@@ -839,6 +839,8 @@ private:
   void FreeHistNode_(HistEnumTreeNode *histNode);
 
   bool BackTrack_(bool trueState = true);
+  void BackTrackRoot_();
+  void propogateExploration_(EnumTreeNode *node);
   InstCount GetBestCost_();
   void CreateRootNode_();
   //void createWorkerRootNode_();
@@ -1190,7 +1192,7 @@ InstCount EnumTreeNode::GetSpillCostSum() { return spillCostSum_; }
 /*****************************************************************************/
 
 void EnumTreeNode::SetMaxCostForSamePrune(InstCount cost) {
-  maxBestCostForSamePrune_ = (cost > maxBestCostForSamePrune_) ? cost : maxBestCostForSamePrune_;
+  maxBestCostForSamePrune_ = (cost < maxBestCostForSamePrune_) ? cost : maxBestCostForSamePrune_;
 }
 /*****************************************************************************/
 InstCount EnumTreeNode::GetMaxCostForSamePrune() {
