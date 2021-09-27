@@ -550,7 +550,8 @@ bool CostHistEnumTreeNode::ChkCostDmntn_(EnumTreeNode *node,
 static bool doesHistorySLILCostDominate(InstCount OtherPrefixCost,
                                         InstCount HistPrefixCost,
                                         InstCount HistTotalCost,
-                                        LengthCostEnumerator *LCE) {
+                                        LengthCostEnumerator *LCE,
+                                        EnumTreeNode *OtherNode) {
   assert(HistTotalCost > HistPrefixCost);
 
 
@@ -559,6 +560,10 @@ static bool doesHistorySLILCostDominate(InstCount OtherPrefixCost,
 
   assert(RequiredImprovement >= 0 && ImprovementOnHistory > 0);
 
+  
+  if (ImprovementOnHistory <= RequiredImprovement) {
+    OtherNode->SetMaxCostForSamePrune(HistTotalCost - ImprovementOnHistory);
+  }
 
   // If our improvement does not meet the requirement, then prune
   return ImprovementOnHistory <= RequiredImprovement;
@@ -615,7 +620,7 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
 
       ShouldPrune = (partialCost_ == totalCost_ || !fullyExplored_ || !totalCostIsAbsoluteBest_) ? 
                       false : doesHistorySLILCostDominate(Node->GetCostLwrBound(),
-                                                          partialCost_, totalCost_, LCE);
+                                                          partialCost_, totalCost_, LCE, Node);
     }
 
     // If the cost function is peak plus avg, make sure that the fraction lost
@@ -642,7 +647,7 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
   partialCost_ = node->GetCostLwrBound();
   totalCost_ = node->GetTotalCost();
   totalCostIsActualCost_ = node->GetTotalCostIsActualCost();
-  if (totalCost_ == enumrtr->GetBestCost()) totalCostIsAbsoluteBest_ = true;
+  totalCostIsAbsoluteBest_ = totalCost_ <= node->GetMaxCostForSamePrune();
   if (suffix_ == nullptr && node->GetSuffix().size() > 0)
     suffix_ =
         std::make_shared<std::vector<SchedInstruction *>>(node->GetSuffix());

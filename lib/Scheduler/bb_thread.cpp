@@ -932,6 +932,10 @@ bool BBThread::ChkCostFsblty(InstCount trgtLngth, EnumTreeNode *node, bool isGlo
     node->SetPeakSpillCost(PeakSpillCost_);
     node->SetSpillCostSum(TotSpillCost_);
   }
+
+  if (!fsbl) {
+    node->SetMaxCostForSamePrune(dynmcCostLwrBound);
+  }
   return fsbl;
 }
 /*****************************************************************************/

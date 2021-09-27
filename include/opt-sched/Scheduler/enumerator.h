@@ -191,7 +191,8 @@ private:
   InstCount costLwrBound_;
   InstCount peakSpillCost_;
   InstCount spillCostSum_;
-  InstCount totalCost_ = -1;
+  InstCount totalCost_ = INVALID_VALUE;
+  InstCount maxBestCostForSamePrune_ = INVALID_VALUE;
   bool totalCostIsActualCost_ = false;
   ReserveSlot *rsrvSlots_;
 
@@ -332,6 +333,9 @@ public:
 
   inline void SetSpillCostSum(InstCount cost);
   inline InstCount GetSpillCostSum();
+
+  inline void SetMaxCostForSamePrune(InstCount maxCost);
+  inline InstCount GetMaxCostForSamePrune();
 
   bool ChkInstRdndncy(SchedInstruction *inst, int brnchNum);
   bool IsNxtSlotStall();
@@ -1159,11 +1163,21 @@ void EnumTreeNode::SetSpillCostSum(InstCount cost) {
   assert(cost >= 0);
   spillCostSum_ = cost;
 }
+
 /*****************************************************************************/
 
 InstCount EnumTreeNode::GetSpillCostSum() { return spillCostSum_; }
 /*****************************************************************************/
 
+void EnumTreeNode::SetMaxCostForSamePrune(InstCount cost) {
+  maxBestCostForSamePrune_ = (cost > maxBestCostForSamePrune_) ? cost : maxBestCostForSamePrune_;
+}
+/*****************************************************************************/
+InstCount EnumTreeNode::GetMaxCostForSamePrune() {
+  return maxBestCostForSamePrune_;
+}
+
+/*****************************************************************************/
 bool EnumTreeNode::IsNxtCycleNew_() {
   if (enumrtr_->issuRate_ == 1) {
     return true;

@@ -2068,6 +2068,8 @@ void Enumerator::SetTotalCostsAndSuffixes(EnumTreeNode *const currentNode,
         parentNode->SetSuffix(std::move(parentSuffix));
       }
     }
+
+    parentNode->SetMaxCostForSamePrune(currentNode->GetMaxCostForSamePrune());
   }
 
 // (Chris): Ensure that the prefix and the suffix of the current node contain
