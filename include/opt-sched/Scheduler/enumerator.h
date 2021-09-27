@@ -19,6 +19,7 @@ Last Update:  Apr. 2020
 #include <mutex>
 #include <queue>
 #include <stack>
+#include <atomic>
 
 namespace llvm {
 namespace opt_sched {
@@ -120,6 +121,8 @@ private:
 
   InstCount fsblBrnchCnt_;
   InstCount lngthFsblBrnchCnt_;
+  InstCount numChildren_ = 0;
+  std::atomic<InstCount> explordChildren_;
 
   // The current time or position (or step number) in the scheduling process
   // This is eqaul to the length of the path from the root node to this node
@@ -321,6 +324,11 @@ public:
   inline bool IsLeaf();
   inline void ChildInfsbl();
   inline void AddChild();
+
+  inline void incrementExploredChildren();
+
+  inline InstCount getExploredChildren();
+  inline InstCount getNumChildrn();
 
   inline void SetCost(InstCount cost);
   inline InstCount GetCost();
@@ -1131,6 +1139,18 @@ inline void EnumTreeNode::SetLngthFsblty(bool value) { isLngthFsbl_ = value; }
 /**************************************************************************/
 
 inline bool EnumTreeNode::IsLeaf() { return isLeaf_; }
+
+void EnumTreeNode::incrementExploredChildren() {
+  explordChildren_++;
+}
+
+InstCount EnumTreeNode::getExploredChildren() {
+  return explordChildren_.load();
+}
+
+InstCount EnumTreeNode::getNumChildrn() {
+  return numChildren_;
+}
 
 void EnumTreeNode::SetCost(InstCount cost) {
   assert(cost >= 0);

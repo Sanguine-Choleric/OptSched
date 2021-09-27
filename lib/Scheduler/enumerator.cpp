@@ -332,6 +332,8 @@ void EnumTreeNode::SetBranchCnt(InstCount rdyLstSize, bool isLeaf) {
 
   fsblBrnchCnt_ = brnchCnt_;
   lngthFsblBrnchCnt_ = brnchCnt_;
+  numChildren_ = rdyLstSize;
+  explordChildren_ = 0;
 }
 /*****************************************************************************/
 
@@ -1910,14 +1912,14 @@ if (!crntNode_->getPushedToLocalPool() || !bbt_->isWorker() || isSecondPass()) {
           //SetTotalCostsAndSuffixes(crntNode_, crntNode_->GetParent(), trgtSchedLngth_, prune_.useSuffixConcatenation);
         bbt_->histTableUnlock(key);
       }
-
+      /*
       else {
         HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
         crntNode_->Archive();
         exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                     hashTblEntryAlctr_, bbt_);
         //SetTotalCostsAndSuffixes(crntNode_, crntNode_->GetParent(), trgtSchedLngth_, prune_.useSuffixConcatenation);
-      }
+      }*/
         
 
     } else {
@@ -1964,6 +1966,7 @@ void Enumerator::InitNewNode_(EnumTreeNode *newNode) {
 
   createdNodeCnt_++;
   crntNode_->SetNum(createdNodeCnt_);
+
 
   /*if (crntNode_->GetParent() == rootNode_) {
     Logger::Info("first level node has time %d", crntNode_->GetTime());
@@ -2139,6 +2142,8 @@ bool Enumerator::BackTrack_(bool trueState) {
   bool fsbl = true;
   SchedInstruction *inst = crntNode_->GetInst();
   EnumTreeNode *trgtNode = crntNode_->GetParent();
+  bool fullyExplored = false;
+
 #ifdef IS_CORRECT_LOCALPOOL
   Logger::Info("SolverID %d backtracking to time %d", SolverID_, trgtNode->GetTime());
 #endif
@@ -2149,6 +2154,11 @@ bool Enumerator::BackTrack_(bool trueState) {
 }
   rdyLst_->RemoveLatestSubList();
 
+  if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn()) {
+    trgtNode->incrementExploredChildren();
+    fullyExplored = true;
+  }
+
 #ifdef INSERT_ON_BACKTRACK
   if (IsHistDom() && trueState) {
     assert(!crntNode_->IsArchived());
@@ -2157,7 +2167,7 @@ bool Enumerator::BackTrack_(bool trueState) {
     if (bbt_->isWorker()) {
       bbt_->histTableLock(key);
         HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
-        crntHstry->setFullyExplored(true);
+        crntHstry->setFullyExplored(fullyExplored);
         SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                              prune_.useSuffixConcatenation);
         crntNode_->Archive();
@@ -3157,6 +3167,7 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
     probeTime += Utilities::GetProcessorTime() - startTime;
     #endif
 
+    crntNode_->incrementExploredChildren();
     return false;
   }
 
@@ -3172,6 +3183,7 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
     #ifdef IS_DEBUG_METADATA
     probeTime += Utilities::GetProcessorTime() - startTime; 
     #endif
+    crntNode_->incrementExploredChildren();
     return false;
   }
 
@@ -3198,6 +3210,7 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
       probeTime += Utilities::GetProcessorTime() - startTime;
 #endif
       isNodeDmntd = true;
+      crntNode_->incrementExploredChildren();
       return false;
     }
   }
