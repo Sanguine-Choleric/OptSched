@@ -125,6 +125,10 @@ public:
   bool DoesDominate(EnumTreeNode *node, Enumerator *enumrtr) override;
   void SetCostInfo(EnumTreeNode *node, bool isTemp, Enumerator *enumrtr) override;
 
+  inline void setCostIsAbsoluteBest(bool isCostAbsoluteBest) {
+    totalCostIsAbsoluteBest_ = isCostAbsoluteBest;
+  }
+
 protected:
   // Why do we need to copy this data from region->tree_node->hist_node
   InstCount cost_;
@@ -136,6 +140,8 @@ protected:
   InstCount partialCost_ = -1;
   bool totalCostIsActualCost_ = false;
   bool totalCostIsAbsoluteBest_ = false;
+
+
 
   bool isLngthFsbl_;
   bool costInfoSet_;

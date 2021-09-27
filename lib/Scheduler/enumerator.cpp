@@ -1893,6 +1893,8 @@ if (!crntNode_->getPushedToLocalPool() || !bbt_->isWorker() || isSecondPass()) {
       if (bbt_->isWorker()) {
         bbt_->histTableLock(key);
           HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
+          crntHstry->setFullyExplored(false);
+          crntHstry->setCostIsAbsoluteBest(false);
           /*if (crntHstry->GetParent() != NULL) {
             Logger::Info("parent inst %d", crntHstry->GetParent()->GetInstNum());
           }*/

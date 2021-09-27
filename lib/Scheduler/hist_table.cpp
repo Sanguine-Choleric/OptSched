@@ -688,6 +688,8 @@ bool HistEnumTreeNode::DoesMatch(EnumTreeNode *node, Enumerator *enumrtr, bool i
       Logger::Info("Found matching node in different subspace");
     }*/
   }
+  return true;
+  /*
 
   SetInstsSchduld_(instsSchduld, isWorker, isGlobalPoolNode);
   node->hstry_->SetInstsSchduld_(othrInstsSchduld, isWorker, isGlobalPoolNode);
@@ -698,7 +700,7 @@ bool HistEnumTreeNode::DoesMatch(EnumTreeNode *node, Enumerator *enumrtr, bool i
       Logger::Info("found a matching history node for global pool node!!!");
     }
   }*/
-  return !isSameSubspace && (*othrInstsSchduld == *instsSchduld);
+  //return !isSameSubspace && (*othrInstsSchduld == *instsSchduld);
 }
 
 bool HistEnumTreeNode::IsDominated(EnumTreeNode *node, Enumerator *enumrtr) {
