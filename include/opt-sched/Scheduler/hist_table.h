@@ -60,6 +60,10 @@ public:
     fullyExplored_ = isFullyExplored;
   }
 
+  inline void setCostIsAbsoluteBest(bool isCostAbsoluteBest) {
+    totalCostIsAbsoluteBest_ = isCostAbsoluteBest;
+  }
+
   bool isTemp_;
 
   void Copy(HistEnumTreeNode *other);
@@ -76,6 +80,7 @@ protected:
   SchedInstruction *inst_;
 
   bool fullyExplored_ = false;
+  bool totalCostIsAbsoluteBest_ = false;
 
 #ifdef IS_DEBUG
   bool isCnstrctd_;
@@ -125,9 +130,7 @@ public:
   bool DoesDominate(EnumTreeNode *node, Enumerator *enumrtr) override;
   void SetCostInfo(EnumTreeNode *node, bool isTemp, Enumerator *enumrtr) override;
 
-  inline void setCostIsAbsoluteBest(bool isCostAbsoluteBest) {
-    totalCostIsAbsoluteBest_ = isCostAbsoluteBest;
-  }
+
 
 protected:
   // Why do we need to copy this data from region->tree_node->hist_node
@@ -139,9 +142,6 @@ protected:
   InstCount totalCost_ = -1;
   InstCount partialCost_ = -1;
   bool totalCostIsActualCost_ = false;
-  bool totalCostIsAbsoluteBest_ = false;
-
-
 
   bool isLngthFsbl_;
   bool costInfoSet_;
