@@ -934,7 +934,7 @@ bool BBThread::ChkCostFsblty(InstCount trgtLngth, EnumTreeNode *node, bool isGlo
   }
 
   if (!fsbl) {
-    node->SetMaxCostForSamePrune(dynmcCostLwrBound);
+    node->SetMaxCostForSamePrune(dynmcCostLwrBound, MBCS_LB);
   }
   return fsbl;
 }

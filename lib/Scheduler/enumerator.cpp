@@ -1,10 +1,10 @@
 #include "opt-sched/Scheduler/enumerator.h"
 #include "opt-sched/Scheduler/bb_thread.h"
-#include "opt-sched/Scheduler/hist_table.h"
 #include "opt-sched/Scheduler/logger.h"
 #include "opt-sched/Scheduler/random.h"
 #include "opt-sched/Scheduler/stats.h"
 #include "opt-sched/Scheduler/utilities.h"
+#include "opt-sched/Scheduler/hist_table.h"
 #include <algorithm>
 #include <iterator>
 #include <memory>
@@ -1896,7 +1896,7 @@ if (!crntNode_->getPushedToLocalPool() || !bbt_->isWorker() || isSecondPass()) {
         bbt_->histTableLock(key);
           HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
           crntHstry->setFullyExplored(false);
-          crntHstry->setCostIsAbsoluteBest(false);
+          crntHstry->setCostIsUseable(false);
           /*if (crntHstry->GetParent() != NULL) {
             Logger::Info("parent inst %d", crntHstry->GetParent()->GetInstNum());
           }*/
@@ -2072,7 +2072,7 @@ void Enumerator::SetTotalCostsAndSuffixes(EnumTreeNode *const currentNode,
       }
     }
 
-    parentNode->SetMaxCostForSamePrune(currentNode->GetMaxCostForSamePrune());
+    parentNode->SetMaxCostForSamePrune(currentNode->GetMaxCostForSamePrune(), currentNode->GetSamePruneCostSource());
   }
 
 // (Chris): Ensure that the prefix and the suffix of the current node contain
@@ -3320,12 +3320,9 @@ if (bbt_->isWorkStealOn()) {
 /*****************************************************************************/
 
 void LengthCostEnumerator::BackTrackRoot_() {
+  Logger::Info("in the correct BTR");
   Enumerator::BackTrackRoot_();
-  UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
-  bbt_->histTableLock(key);
-  HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
-  crntHstry->setFullyExplored(true);
-  bbt_->histTableUnlock(key);
+
   EnumTreeNode *tempNode = crntNode_;
   propogateExploration_(tempNode);
 }
@@ -3334,8 +3331,15 @@ void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
   if (propNode->GetParent()) {
     propNode = propNode->GetParent();
     propNode->incrementExploredChildren();
-    if (propNode->getExploredChildren() == propNode->getNumChildrn())
-    {
+    if (propNode->getExploredChildren() == propNode->getNumChildrn()) {
+      HistEnumTreeNode *crntHstry = propNode->GetHistory();
+      UDT_HASHVAL key = exmndSubProbs_->HashKey(propNode->GetSig());
+      bbt_->histTableLock(key);
+      crntHstry->setFullyExplored(true);
+      // propogate costs
+      // if insertOnBacktrack -- need to check if hsitory node is already inserted
+
+      bbt_->histTableUnlock(key);
       propogateExploration_(propNode);
     }
   }
@@ -3345,6 +3349,53 @@ void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
 
 
 void Enumerator::BackTrackRoot_() {
+  SchedInstruction *inst = crntNode_->GetInst();
+  EnumTreeNode *trgtNode = crntNode_->GetParent();
+  bool fullyExplored = false;
+
+  if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn()) {
+    trgtNode->incrementExploredChildren();
+    fullyExplored = true;
+  }
+
+#ifdef INSERT_ON_BACKTRACK
+  if (IsHistDom()) {
+    assert(!crntNode_->IsArchived());
+    UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
+
+    bbt_->histTableLock(key);
+    HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
+    crntHstry->setFullyExplored(fullyExplored);
+    SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
+                             prune_.useSuffixConcatenation);
+    crntNode_->Archive();
+    exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
+                                  hashTblEntryAlctr_, bbt_);
+    bbt_->histTableUnlock(key);
+    }
+  } else {
+    assert(crntNode_->IsArchived() == false);
+  }
+#endif
+#ifdef INSERT_ON_STEPFRWRD
+  if (IsHistDom()) {
+    UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
+    HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
+    bbt_->histTableLock(key);
+    crntHstry->setFullyExplored(fullyExplored);
+    SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
+                          prune_.useSuffixConcatenation);
+    crntNode_->Archive();
+    bbt_->histTableUnlock(key);
+  }
+}
+#endif
+ 
+  if (!crntNode_->wasChildStolen())
+    nodeAlctr_->Free(crntNode_);
+  else {
+    trgtNode->setChildStolen(true);
+  }
 
   //TODO JEFF we should be inserting into history here if we insert on backtrack
 
@@ -3377,7 +3428,6 @@ void Enumerator::BackTrackRoot_() {
     bbt_->localPoolUnlock(SolverID_ - 2);
   }
 
-  EnumTreeNode *tempNode = crntNode_;
 }
 
 InstCount LengthCostEnumerator::GetBestCost_() { return bbt_->getBestCost(); }

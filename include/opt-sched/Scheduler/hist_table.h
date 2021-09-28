@@ -23,6 +23,7 @@ Last Update:  Mar. 2011
 namespace llvm {
 namespace opt_sched {
 
+
 class EnumTreeNode;
 class Enumerator;
 
@@ -60,8 +61,8 @@ public:
     fullyExplored_ = isFullyExplored;
   }
 
-  inline void setCostIsAbsoluteBest(bool isCostAbsoluteBest) {
-    totalCostIsAbsoluteBest_ = isCostAbsoluteBest;
+  inline void setCostIsUseable(bool isCostAbsoluteBest) {
+    totalCostIsUseable_ = isCostAbsoluteBest;
   }
 
   bool isTemp_;
@@ -80,7 +81,7 @@ protected:
   SchedInstruction *inst_;
 
   bool fullyExplored_ = false;
-  bool totalCostIsAbsoluteBest_ = false;
+  bool totalCostIsUseable_ = false;
 
 #ifdef IS_DEBUG
   bool isCnstrctd_;

@@ -58,6 +58,13 @@ class HalfNode {
     int getAndRemoveNextPrefixInst();
 };
 
+enum MAX_BEST_COST_SOURCE {
+  MBCS_INVALID,
+  MBCS_LB,
+  MBCS_HIST
+};
+
+
 // A pruning strategy.
 struct Pruning {
   // Whether to apply relaxed pruning.
@@ -196,6 +203,7 @@ private:
   InstCount spillCostSum_;
   InstCount totalCost_ = INVALID_VALUE;
   InstCount maxBestCostForSamePrune_ = INVALID_VALUE;
+  MAX_BEST_COST_SOURCE samePruneCostSource = MBCS_INVALID;
   bool totalCostIsActualCost_ = false;
   ReserveSlot *rsrvSlots_;
 
@@ -342,8 +350,9 @@ public:
   inline void SetSpillCostSum(InstCount cost);
   inline InstCount GetSpillCostSum();
 
-  inline void SetMaxCostForSamePrune(InstCount maxCost);
+  inline void SetMaxCostForSamePrune(InstCount maxCost, MAX_BEST_COST_SOURCE source);
   inline InstCount GetMaxCostForSamePrune();
+  inline MAX_BEST_COST_SOURCE GetSamePruneCostSource();
 
   bool ChkInstRdndncy(SchedInstruction *inst, int brnchNum);
   bool IsNxtSlotStall();
@@ -1191,12 +1200,20 @@ void EnumTreeNode::SetSpillCostSum(InstCount cost) {
 InstCount EnumTreeNode::GetSpillCostSum() { return spillCostSum_; }
 /*****************************************************************************/
 
-void EnumTreeNode::SetMaxCostForSamePrune(InstCount cost) {
-  maxBestCostForSamePrune_ = (cost < maxBestCostForSamePrune_) ? cost : maxBestCostForSamePrune_;
+void EnumTreeNode::SetMaxCostForSamePrune(InstCount cost, MAX_BEST_COST_SOURCE source) {
+  if (cost < maxBestCostForSamePrune_ || maxBestCostForSamePrune_ == -1) {
+    maxBestCostForSamePrune_ = cost;
+    samePruneCostSource = source;
+  }
+
 }
 /*****************************************************************************/
 InstCount EnumTreeNode::GetMaxCostForSamePrune() {
   return maxBestCostForSamePrune_;
+}
+
+MAX_BEST_COST_SOURCE EnumTreeNode::GetSamePruneCostSource() {
+  return samePruneCostSource;
 }
 
 /*****************************************************************************/

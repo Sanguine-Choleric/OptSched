@@ -562,7 +562,7 @@ static bool doesHistorySLILCostDominate(InstCount OtherPrefixCost,
 
   
   if (ImprovementOnHistory <= RequiredImprovement) {
-    OtherNode->SetMaxCostForSamePrune(HistTotalCost - ImprovementOnHistory);
+    OtherNode->SetMaxCostForSamePrune(HistTotalCost - ImprovementOnHistory, MBCS_HIST);
   }
 
   // If our improvement does not meet the requirement, then prune
@@ -616,9 +616,9 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
         }
 
     else if (SpillCostFunc == SCF_SLIL){
-      if (partialCost_ != totalCost_) assert(totalCostIsActualCost_);
+      //if (partialCost_ != totalCost_) assert(totalCostIsActualCost_);
 
-      ShouldPrune = (partialCost_ == totalCost_ || !fullyExplored_ || !totalCostIsAbsoluteBest_) ? 
+      ShouldPrune = (partialCost_ == totalCost_ || !fullyExplored_ || !totalCostIsUseable_) ? 
                       false : doesHistorySLILCostDominate(Node->GetCostLwrBound(),
                                                           partialCost_, totalCost_, LCE, Node);
     }
@@ -638,6 +638,8 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
 }
 
 void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enumrtr) {
+  LengthCostEnumerator *LCE = static_cast<LengthCostEnumerator *>(enumrtr);
+
   cost_ = node->GetCost();
   peakSpillCost_ = node->GetPeakSpillCost();
   spillCostSum_ = node->GetSpillCostSum();
@@ -647,7 +649,20 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
   partialCost_ = node->GetCostLwrBound();
   totalCost_ = node->GetTotalCost();
   totalCostIsActualCost_ = node->GetTotalCostIsActualCost();
-  totalCostIsAbsoluteBest_ = totalCost_ <= node->GetMaxCostForSamePrune();
+
+  // the cost used to prune the subspace can be updated by another thread during exploration
+  // so the totalcost associated with the subspace is only useable if we would do all the same
+  // cost based prunings using both the total cost found and the global best. Or, if the
+  // most restrictive cost based on all prunings is also a lower bound on the cost, we can use
+  // this value for history pruning using the SLIL cost function as we only need a LB for
+  // correctness
+  totalCostIsUseable_ = (totalCost_ <= node->GetMaxCostForSamePrune() || node->GetSamePruneCostSource() == MBCS_LB) && fullyExplored_;
+
+
+  if (fullyExplored_ && node->GetSamePruneCostSource() == MBCS_LB && LCE->GetSpillCostFunc() == SCF_SLIL && totalCost_ > node->GetMaxCostForSamePrune()) {
+    totalCost_ = node->GetMaxCostForSamePrune();
+  }
+
   if (suffix_ == nullptr && node->GetSuffix().size() > 0)
     suffix_ =
         std::make_shared<std::vector<SchedInstruction *>>(node->GetSuffix());
@@ -693,8 +708,7 @@ bool HistEnumTreeNode::DoesMatch(EnumTreeNode *node, Enumerator *enumrtr, bool i
       Logger::Info("Found matching node in different subspace");
     }*/
   }
-  return true;
-  /*
+
 
   SetInstsSchduld_(instsSchduld, isWorker, isGlobalPoolNode);
   node->hstry_->SetInstsSchduld_(othrInstsSchduld, isWorker, isGlobalPoolNode);
@@ -705,7 +719,8 @@ bool HistEnumTreeNode::DoesMatch(EnumTreeNode *node, Enumerator *enumrtr, bool i
       Logger::Info("found a matching history node for global pool node!!!");
     }
   }*/
-  //return !isSameSubspace && (*othrInstsSchduld == *instsSchduld);
+  return !isSameSubspace && (*othrInstsSchduld == *instsSchduld);
+  // return node->GetTime() != time_;
 }
 
 bool HistEnumTreeNode::IsDominated(EnumTreeNode *node, Enumerator *enumrtr) {
