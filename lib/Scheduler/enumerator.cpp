@@ -73,9 +73,6 @@ EnumTreeNode::~EnumTreeNode() {
       delete rdyLst_;
     if (rsrvSlots_ != NULL)
       delete[] rsrvSlots_;
-#ifdef INSTPREFIX    
-    delete prefixInstNums_;
-#endif
   } else {
     assert(isClean_);
   }
@@ -1912,11 +1909,6 @@ if (!crntNode_->getPushedToLocalPool() || !bbt_->isWorker() || isSecondPass()) {
 /*****************************************************************************/
 
 void Enumerator::InitNewNode_(EnumTreeNode *newNode) {
-#ifdef INSTPREFIX
-  LinkedList<int> *temp = crntNode_->getInstPrefix();
-  newNode->copyInstPrefix(temp);
-  newNode->pushToInstPrefix(crntNode_->GetInstNum());
-#endif
   crntNode_ = newNode;
 
   crntNode_->SetCrntCycleBlkd(isCrntCycleBlkd_);
@@ -4112,9 +4104,6 @@ bool LengthCostEnumerator::scheduleArtificialRoot(bool setAsRoot)
   bool isFsbl = true;
 
   scheduleInst_(inst, setAsRoot, isFsbl, true, false);
-#ifdef INSTPREFIX
-  crntNode_->allocateInstPrefix();
-#endif
 
   return isFsbl;
 
