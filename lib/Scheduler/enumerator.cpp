@@ -542,10 +542,6 @@ Enumerator::Enumerator(DataDepGraph *dataDepGraph, MachineModel *machMdl,
   //  #define IS_DEBUG_METADATA
   //#endif
 
-  //#ifndef IS_SYNCH_ALLOC
-  //  #define IS_SYNCH_ALLOC
-  //#endif
-
   NumSolvers_ = NumSolvers;
   
   timeoutToMemblock_ = timeoutToMemblock;
@@ -952,13 +948,7 @@ InstCount::GetBestCost() {
 
 void Enumerator::CreateRootNode_() {
   //Logger::Info("creating enum root");
-#ifdef IS_SYNCH_ALLOC
-  bbt_->allocatorLock();
-#endif
   rootNode_ = nodeAlctr_->Alloc(NULL, NULL, this);
-#ifdef IS_SYNCH_ALLOC
-  bbt_->allocatorUnlock();
-#endif
   
   CreateNewRdyLst_();
   rootNode_->SetRdyLst(rdyLst_);
@@ -1612,19 +1602,9 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
 
   state_.instFxd = true;
 
-  //startTime = Utilities::GetProcessorTime();
-#ifdef IS_SYNCH_ALLOC
-  bbt_->allocatorLock();
-#endif
   newNode = nodeAlctr_->Alloc(crntNode_, inst, this);
-#ifdef IS_SYNCH_ALLOC
-  bbt_->allocatorUnlock();
-#endif
   newNode->SetLwrBounds(DIR_FRWRD);
   newNode->SetRsrvSlots(rsrvSlotCnt_, rsrvSlots_);
-  //endTime = Utilities::GetProcessorTime();
-
-  //nodeAllocTime += endTime - startTime;
 
   // If a node (sub-problem) that dominates the candidate node (sub-problem)
   // has been examined already and found infeasible
@@ -1794,13 +1774,8 @@ if (bbt_->isWorkStealOn()) {
           SchedInstruction *temp = fillList.GetFrstElmnt();
           bbt_->localPoolLock(SolverID_ - 2);
           while (temp != NULL) {
-  #ifdef IS_SYNCH_ALLOC
-            bbt_->allocatorLock();
-  #endif
             pushNode = nodeAlctr_->Alloc(crntNode_, temp, this, false);
-  #ifdef IS_SYNCH_ALLOC
-            bbt_->allocatorUnlock();
-  #endif
+
           //rdyLst_->RemoveNextPriorityInst();
 
             bbt_->localPoolPushFront(SolverID_ - 2, pushNode);
@@ -1901,14 +1876,9 @@ if (!crntNode_->getPushedToLocalPool() || !bbt_->isWorker() || isSecondPass()) {
             Logger::Info("parent inst %d", crntHstry->GetParent()->GetInstNum());
           }*/
           //crntHstry->Copy(crntNode_->GetHistory());
-  #ifdef IS_SYNCH_ALLOC
-          bbt_->allocatorLock();
-  #endif
+
           exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                     hashTblEntryAlctr_, bbt_);
-  #ifdef IS_SYNCH_ALLOC
-          bbt_->allocatorUnlock();
-  #endif
           //SetTotalCostsAndSuffixes(crntNode_, crntNode_->GetParent(), trgtSchedLngth_, prune_.useSuffixConcatenation);
         bbt_->histTableUnlock(key);
       }
@@ -2171,14 +2141,8 @@ bool Enumerator::BackTrack_(bool trueState) {
         SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                              prune_.useSuffixConcatenation);
         crntNode_->Archive();
-#ifdef IS_SYNCH_ALLOC
-        bbt_->allocatorLock();
-#endif
         exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                   hashTblEntryAlctr_, bbt_);
-#ifdef IS_SYNCH_ALLOC
-        bbt_->allocatorUnlock();
-#endif
       bbt_->histTableUnlock(key);
     }
 
@@ -2207,14 +2171,8 @@ if (isSecondPass()) {
         bbt_->histTableLock(key);
           HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
           crntHstry->setFullyExplored(true);
-  #ifdef IS_SYNCH_ALLOC
-          bbt_->allocatorLock();
-  #endif
           exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                     hashTblEntryAlctr_, bbt_);
-  #ifdef IS_SYNCH_ALLOC
-          bbt_->allocatorUnlock();
-  #endif
           SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                               prune_.useSuffixConcatenation);
           crntNode_->Archive();
@@ -3435,13 +3393,7 @@ InstCount LengthCostEnumerator::GetBestCost_() { return bbt_->getBestCost(); }
 
 void LengthCostEnumerator::CreateRootNode_() {
   //Logger::Info("creating LCE root");
-#ifdef IS_SYNCH_ALLOC
-  bbt_->allocatorLock();
-#endif
   rootNode_ = nodeAlctr_->Alloc(NULL, NULL, this);
-#ifdef IS_SYNCH_ALLOC
-  bbt_->allocatorUnlock();
-#endif
   CreateNewRdyLst_();
   rootNode_->SetRdyLst(rdyLst_);
   rootNode_->SetLwrBounds(DIR_FRWRD);
@@ -3560,13 +3512,7 @@ void LengthCostEnumerator::scheduleInt(int instNum, EnumTreeNode *newNode, bool 
     state_.lwrBoundsTightnd = true;
   }
 
-#ifdef IS_SYNCH_ALLOC
-  bbt_->allocatorLock();
-#endif
   newNode = nodeAlctr_->Alloc(crntNode_, inst, this);
-#ifdef IS_SYNCH_ALLOC
-  bbt_->allocatorUnlock();
-#endif
   newNode->SetLwrBounds(DIR_FRWRD);
   newNode->SetRsrvSlots(rsrvSlotCnt_, rsrvSlots_);
 
@@ -3667,13 +3613,7 @@ void LengthCostEnumerator::scheduleNode(EnumTreeNode *node, bool isPseudoRoot, b
     state_.lwrBoundsTightnd = true;
   }
 
-#ifdef IS_SYNCH_ALLOC
-  bbt_->allocatorLock();
-#endif
   newNode = nodeAlctr_->Alloc(crntNode_, inst, this, false);
-#ifdef IS_SYNCH_ALLOC
-  bbt_->allocatorUnlock();
-#endif
   newNode->SetLwrBounds(DIR_FRWRD);
   newNode->SetRsrvSlots(rsrvSlotCnt_, rsrvSlots_);
 
@@ -4078,44 +4018,6 @@ EnumTreeNode *LengthCostEnumerator::scheduleInst_(SchedInstruction *inst, bool i
   if (!isFsbl)
     return nullptr;
 
-  /*
-  if (inst != NULL) {
-    inst->Schedule(crntCycleNum_, crntSlotNum_, SolverID_);
-    DoRsrvSlots_(inst);
-    state_.instSchduld = true;
-  }
-
-  ProbeIssuSlotFsblty_(inst);
-  state_.issuSlotsProbed = true;
-
-  TightnLwrBounds_(inst);
-  state_.lwrBoundsTightnd = true;
-  state_.instFxd = true;
-
-#ifdef IS_SYNCH_ALLOC
-  bbt_->allocatorLock();
-#endif
-  newNode = nodeAlctr_->Alloc(crntNode_, inst, this);
-#ifdef IS_SYNCH_ALLOC
-  bbt_->allocatorUnlock();
-#endif
-  newNode->SetLwrBounds(DIR_FRWRD);
-  newNode->SetRsrvSlots(rsrvSlotCnt_, rsrvSlots_);
-
-  // Try to find a relaxed schedule for the unscheduled instructions
-  if (prune_.rlxd) {
-    RlxdSchdul_(newNode);
-    state_.rlxSchduld = true;
-  }
-  
-  //potentially will be refactored
-  bbt_->SchdulInstBBThread(inst, crntCycleNum_, crntSlotNum_, false);
-  //Logger::Info("about to chkCostFsblty for inst %d", inst->GetNum());
-  
-  bool costFsbl = bbt_->ChkCostFsblty(trgtSchedLngth_, newNode);
-
-  if (isFsbl != nullptr)
-    *isFsbl = costFsbl;*/
 
   //START OF STEPFRWRD
   InstCount instNumToSchdul;
@@ -4166,14 +4068,10 @@ EnumTreeNode *LengthCostEnumerator::scheduleInst_(SchedInstruction *inst, bool i
       if (bbt_->isWorker()) {
         bbt_->histTableLock(key);
           HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
-  #ifdef IS_SYNCH_ALLOC
-          bbt_->allocatorLock();
-  #endif
+          crntHstry->setFullyExplored(false);
+          crntHstry->setCostIsAbsoluteBest(false);
           exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                     hashTblEntryAlctr_, bbt_);
-  #ifdef IS_SYNCH_ALLOC
-          bbt_->allocatorUnlock();
-  #endif
           //SetTotalCostsAndSuffixes(crntNode_, crntNode_->GetParent(), trgtSchedLngth_, prune_.useSuffixConcatenation);
         bbt_->histTableUnlock(key);
       }
@@ -4220,73 +4118,6 @@ bool LengthCostEnumerator::scheduleArtificialRoot(bool setAsRoot)
 
   return isFsbl;
 
-
-
-  //old function
-  /*
-  SchedInstruction *inst = rdyLst_->GetNextPriorityInst();
-
-  if (inst != NULL) {
-    inst->Schedule(crntCycleNum_, crntSlotNum_, SolverID_);
-    DoRsrvSlots_(inst);
-    state_.instSchduld = true;
-  }
-
-  ProbeIssuSlotFsblty_(inst);
-  state_.issuSlotsProbed = true;
-
-  TightnLwrBounds_(inst);
-  state_.lwrBoundsTightnd = true;
-  state_.instFxd = true;
-
-
-#ifdef IS_SYNCH_ALLOC
-  bbt_->allocatorLock();
-#endif
-  EnumTreeNode *newNode = nodeAlctr_->Alloc(crntNode_, inst, this);
-#ifdef IS_SYNCH_ALLOC
-  bbt_->allocatorUnlock();
-#endif
-  newNode->SetLwrBounds(DIR_FRWRD);
-  newNode->SetRsrvSlots(rsrvSlotCnt_, rsrvSlots_);
-
-  bbt_->SchdulInstBBThread(inst, crntCycleNum_, crntSlotNum_, false);
-  bbt_->ChkCostFsblty(trgtSchedLngth_, newNode);
-
-  SchedInstruction *instToSchdul = newNode->GetInst();
-    InstCount instNumToSchdul;
-  instNumToSchdul = instToSchdul->GetNum();
-
-  CreateNewRdyLst_();
-
-  newNode->SetRdyLst(rdyLst_);
-
-
-  SchdulInst_(instToSchdul, crntCycleNum_);
-
-  rdyLst_->RemoveNextPriorityInst();
-
-
-  if (instToSchdul->GetTplgclOrdr() == minUnschduldTplgclOrdr_) {
-    minUnschduldTplgclOrdr_++;
-  }
-
-  crntSched_->AppendInst(instNumToSchdul);
-
-  
-  MovToNxtSlot_(instToSchdul);
-  assert(crntCycleNum_ <= trgtSchedLngth_);
-
-  if (crntSlotNum_ == 0) {
-    InitNewCycle_();
-  }
-
-  InitNewNode_(newNode);
-
-  CmtLwrBoundTightnng_();
-  ClearState_();
-  */
-
 }
 /*****************************************************************************/
 void LengthCostEnumerator::scheduleAndSetAsRoot_(SchedInstruction *rootInst,
@@ -4309,67 +4140,9 @@ void LengthCostEnumerator::scheduleAndSetAsRoot_(SchedInstruction *rootInst,
 /*****************************************************************************/
 EnumTreeNode *LengthCostEnumerator::checkTreeFsblty(bool &fsbl) {
   assert(rootNode_ != NULL);
-
   SchedInstruction *inst = rdyLst_->GetNextPriorityInst();
-  // can probably just call scheduleInst
   EnumTreeNode *newNode = scheduleInst_(inst, true, fsbl);
   return newNode;
-
-  /*
-  if (inst != NULL) {
-    inst->Schedule(crntCycleNum_, crntSlotNum_, SolverID_);
-    Logger::Info("scheduling inst %d", inst->GetNum());
-    DoRsrvSlots_(inst);
-    state_.instSchduld = true;
-  }
-
-  ProbeIssuSlotFsblty_(inst);
-  state_.issuSlotsProbed = true;
-
-
-  TightnLwrBounds_(inst);
-  state_.lwrBoundsTightnd = true;
-
-  // schedule the artificial root
-  EnumTreeNode *newNode;
-
-#ifdef IS_SYNCH_ALLOC
-  bbt_->allocatorLock();
-#endif
-  newNode = nodeAlctr_->Alloc(crntNode_, inst, this);
-#ifdef IS_SYNCH_ALLOC
-  bbt_->allocatorUnlock();
-#endif
-
-
-
-  newNode->SetLwrBounds(DIR_FRWRD);
-  newNode->SetRsrvSlots(rsrvSlotCnt_, rsrvSlots_);
-
-  if (prune_.rlxd) {
-    RlxdSchdul_(newNode);
-    state_.rlxSchduld = true;
-  }
-  
-  //potentially will be refactored
-  bbt_->SchdulInstBBThread(inst, crntCycleNum_, crntSlotNum_, false);
-  //Logger::Info("about to chkCostFsblty for inst %d", inst->GetNum());
-  *fsbl = bbt_->ChkCostFsblty(trgtSchedLngth_, newNode);
-
-  //Logger::Info("Master artificial root cost %d", newNode->GetCost());
-  
-  // test code 4/14
-  rootNode_ = newNode;
-
-  // Test code 4/26
-  rdyLst_->RemoveNextPriorityInst();
-  CreateNewRdyLst_();
-  // Let the new node inherit its parent's ready list before we update it
-  newNode->SetRdyLst(rdyLst_);
-
-
-  return newNode;
-  */
 
 }
 
@@ -4797,13 +4570,8 @@ EnumTreeNode *LengthCostEnumerator::allocAndInitNextNode(std::pair<SchedInstruct
     parent = crntNode_;
   }
 
-#ifdef IS_SYNCH_ALLOC
-  bbt_->allocatorLock();
-#endif
   InitNode = nodeAlctr_->Alloc(parent, inst, this, false);
-#ifdef IS_SYNCH_ALLOC
-  bbt_->allocatorUnlock();
-#endif
+
   InitNode->setPrefix(subPrefix);
   InitNode->setPrevNode(parent);
 
@@ -4924,156 +4692,6 @@ EnumTreeNode *LengthCostEnumerator::allocAndInitNextNode(std::pair<SchedInstruct
   */
 
   return InitNode;
-
-  //ENDOFBACKTRACK
-
-  /*
-  // ProbeBranch  -- generate Inst state
-  if (InstNode.first != NULL) {
-    InstNode.first->Schedule(crntCycleNum_, crntSlotNum_, SolverID_);
-    DoRsrvSlots_(InstNode.first);
-    state_.instSchduld = true;
-  }
-  
-
-  //Logger::Info("AllocAndInit for inst %d", InstNode.first);
-
-
-  ProbeIssuSlotFsblty_(InstNode.first);
-  state_.issuSlotsProbed = true;
-
-  TightnLwrBounds_(InstNode.first);
-  state_.lwrBoundsTightnd = true;
-
-  state_.instFxd = true;
-
-  // settting InitNode enumrtr to nullptr
-#ifdef IS_SYNCH_ALLOC
-  bbt_->allocatorLock();
-#endif
-
-  // 4/30 passing the enumerator object to TreeNode could result in 
-  // subtle synchronization issues between master and worker
-  InitNode = nodeAlctr_->Alloc(Prev, InstNode.first, this, totInstCnt_);
-#ifdef IS_SYNCH_ALLOC
-  bbt_->allocatorUnlock();
-#endif
-  
-  // these need enumrtr 
-  //InitNode->SetLwrBounds(DIR_FRWRD);
-  //InitNode->SetRsrvSlots(rsrvSlotCnt_, rsrvSlots_); 
-
-  if (prune_.rlxd) {
-    RlxdSchdul_(InitNode);
-    state_.rlxSchduld = true;
-
-  }
-
-  //potentially will be refactored
-  bbt_->SchdulInstBBThread(InstNode.first, crntCycleNum_, crntSlotNum_, false);
-  bbt_->ChkCostFsblty(trgtSchedLngth_, InitNode, true); // stores the cost LB
-
-
-  // StepFrwrd    -- generate Node state and init
-  // Let the new node inherit its parent's ready list before we update it
-  
-  //InitNode->SetRdyLst(new ReadyList(dataDepGraph_, prirts_, SolverID_));
-  //InitNode->cpyRdyLst(prevLst);
-
-  // test code
-  CreateNewRdyLst_();
-  InitNode->SetRdyLst(rdyLst_);
-  
-
-  if (!InstNode.first) Logger::Info("scheduling a null isnt");
-  SchdulInst_(InstNode.first, crntCycleNum_);
-  if (InstNode.first->GetTplgclOrdr() == minUnschduldTplgclOrdr_) {
-      minUnschduldTplgclOrdr_++;
-  }
-
-  MovToNxtSlot_(InstNode.first);
-
-
-  if (crntSlotNum_ == 0) {
-    InitNewCycle_();
-  }
-  //Logger::Info("before call to initNode");
-  //printRdyLst();
-  InitNewGlobalPoolNode_(InitNode);
-  //Logger::Info("after call to initNode");
-  //printRdyLst();
-  InitNode->setPriorityKey(InstNode.second);
-  
-
-
-
-  CmtLwrBoundTightnng_();
-  ClearState_();
-
-
-  //Logger::Info("\n\nNode has Rdy Lst");
-  //InitNode->printRdyLst();
-
-
-  // Backtrack    -- undo state generation
-  bbt_->UnschdulInstBBThread(InstNode.first, crntCycleNum_, crntSlotNum_, crntNode_->GetParent());
-  rdyLst_->RemoveLatestSubList();
-
-
-  crntNode_ = InitNode->GetParent();
-  //rdyLst_ = crntNode_->GetRdyLst();
-  rdyLst_ = crntNode_->GetRdyLst();
-
-  MovToPrevSlot_(crntNode_->GetRealSlotNum());
-
-  //Logger::Info("from crnt Node %d", crntNode_->getEnumerator()->getIssuTypeCnt());
-  //Logger::Info("allocAndInit backtrack");
-  //Logger::Info("target node %d", crntNode_->GetInstNum());
-  //Logger::Info("before updating slot avlblty\navlblSlots_ for issue type 0: %d", avlblSlots_[0]);
-  
-  
-  //crntNode_->GetSlotAvlblty(avlblSlots_, avlblSlotsInCrntCycle_);
-  
-  //TESTCODE
-  IssueType issuType = InstNode.first->GetIssueType();
-  ++avlblSlots_[issuType];
-  ++avlblSlotsInCrntCycle_[issuType];
-  //bool endOfCycle = crntSlotNum_ == issuRate_ - 1;
-  //avlblSlots_[issuType] += endOfCycle ? 
-
-
-
-  //Logger::Info("after call to getSlotAvlblty: %d", avlblSlots_[0]);
-  isCrntCycleBlkd_ = crntNode_->GetCrntCycleBlkd();
-
-  if (InstNode.first != NULL) {
-    IssueType issuType = InstNode.first->GetIssueType();
-    neededSlots_[issuType]++;
-  }
-
-  RestoreCrntLwrBounds_(InstNode.first);
-
-  if (InstNode.first != NULL) {
-    // int hitCnt;
-    // assert(rdyLst_->FindInst(inst, hitCnt) && hitCnt == 1);
-
-    UndoRsrvSlots_(InstNode.first);
-    UnSchdulInst_(InstNode.first);
-    InstNode.first->UnSchedule(SolverID_);
-
-    if (InstNode.first->GetTplgclOrdr() == minUnschduldTplgclOrdr_ - 1) {
-      minUnschduldTplgclOrdr_--;
-    }
-  }
-
-  //if (crntNode_->GetInst()) {
-  //  Logger::Info("backtracked to noide with inst %d", crntNode_->GetInstNum());
-  //}
-
-  assert(InitNode != NULL);
-  return InitNode;
-  */
-
 }
 
 
