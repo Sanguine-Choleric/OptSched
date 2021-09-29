@@ -1196,7 +1196,6 @@ void EnumTreeNode::SetLocalBestCost(InstCount cost) {
   if (cost < localBestCost_ || localBestCost_ == INVALID_VALUE) {
     assert(cost != INVALID_VALUE);
     localBestCost_ = cost;
-    Logger::Info("set maxCostForSamePrune to %d", localBestCost_);
   }
 
 }

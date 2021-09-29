@@ -3328,7 +3328,7 @@ void Enumerator::BackTrackRoot_() {
                                   hashTblEntryAlctr_, bbt_);
     bbt_->histTableUnlock(key);
     }
-  } else {
+  else {
     assert(crntNode_->IsArchived() == false);
   }
 #endif
