@@ -343,7 +343,7 @@ public:
   inline void SetSpillCostSum(InstCount cost);
   inline InstCount GetSpillCostSum();
 
-  inline void SetLocalBestCost(InstCount localBestCost);
+  inline bool SetLocalBestCost(InstCount localBestCost);
   inline InstCount GetLocalBestCost();
 
   bool ChkInstRdndncy(SchedInstruction *inst, int brnchNum);
@@ -669,7 +669,7 @@ protected:
 
   virtual void ResetAllocators_();
 
-  void SetTotalCostsAndSuffixes(EnumTreeNode *const, EnumTreeNode *const, const InstCount, const bool);
+  bool SetTotalCostsAndSuffixes(EnumTreeNode *const, EnumTreeNode *const, const InstCount, const bool);
 
   void PrintLog_();
 
@@ -1192,11 +1192,14 @@ void EnumTreeNode::SetSpillCostSum(InstCount cost) {
 InstCount EnumTreeNode::GetSpillCostSum() { return spillCostSum_; }
 /*****************************************************************************/
 
-void EnumTreeNode::SetLocalBestCost(InstCount cost) {
+bool EnumTreeNode::SetLocalBestCost(InstCount cost) {
+  bool changeMade = false;
   if (cost < localBestCost_ || localBestCost_ == INVALID_VALUE) {
     assert(cost != INVALID_VALUE);
     localBestCost_ = cost;
+    changeMade = true;
   }
+  return changeMade;
 
 }
 /*****************************************************************************/

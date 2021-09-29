@@ -1959,7 +1959,7 @@ void Enumerator::InitNewGlobalPoolNode_(EnumTreeNode *newNode) {
 
 /*****************************************************************************/
 
-void Enumerator::SetTotalCostsAndSuffixes(EnumTreeNode *const currentNode,
+bool Enumerator::SetTotalCostsAndSuffixes(EnumTreeNode *const currentNode,
                               EnumTreeNode *const parentNode,
                               const InstCount targetLength,
                               const bool suffixConcatenationEnabled) {
@@ -1971,6 +1971,7 @@ void Enumerator::SetTotalCostsAndSuffixes(EnumTreeNode *const currentNode,
 
 
   //Logger::Info("in setTotalCostsAndsuxxi");
+  bool changeMade = false;
 
   if (currentNode->IsLeaf()) {
 #if defined(IS_DEBUG_ARCHIVE)
@@ -2023,6 +2024,7 @@ void Enumerator::SetTotalCostsAndSuffixes(EnumTreeNode *const currentNode,
         parentNode->SetTotalCost(currentNode->GetTotalCost());
         parentNode->SetTotalCostIsActualCost(true);
         parentNode->SetSuffix(std::move(parentSuffix));
+        changeMade = true;
       } else if (currentNode->GetTotalCost() < parentNode->GetTotalCost()) {
 #if defined(IS_DEBUG_ARCHIVE)
         Logger::Info(
@@ -2031,10 +2033,11 @@ void Enumerator::SetTotalCostsAndSuffixes(EnumTreeNode *const currentNode,
 #endif
         parentNode->SetTotalCost(currentNode->GetTotalCost());
         parentNode->SetSuffix(std::move(parentSuffix));
+        changeMade = true;
       }
     }
     if (currentNode->GetLocalBestCost() != INVALID_VALUE) {
-      parentNode->SetLocalBestCost(currentNode->GetLocalBestCost());
+      changeMade |= parentNode->SetLocalBestCost(currentNode->GetLocalBestCost());
     }
   }
 
@@ -3285,15 +3288,44 @@ void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
   if (propNode->GetParent()) {
     propNode = propNode->GetParent();
     propNode->incrementExploredChildren();
+    UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
+    bool needsPropogation = false;
+
+
+
+    if (IsHistDom()) {
+      assert(!crntNode_->IsArchived());
+        
+      bbt_->histTableLock(key);
+      HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
+      // set fully explored to fullyExplored when work stealing
+      needsPropogation |= SetTotalCostsAndSuffixes(crntNode_, propNode, trgtSchedLngth_,
+                          prune_.useSuffixConcatenation);
+      crntNode_->Archive();
+  #ifdef INSERT_ON_BACKTRACK    
+      exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
+                                hashTblEntryAlctr_, bbt_);
+  #endif
+      bbt_->histTableUnlock(key);
+    }
+
+
+      
+
+
     if (propNode->getExploredChildren() == propNode->getNumChildrn()) {
       HistEnumTreeNode *crntHstry = propNode->GetHistory();
-      UDT_HASHVAL key = exmndSubProbs_->HashKey(propNode->GetSig());
       bbt_->histTableLock(key);
       crntHstry->setFullyExplored(true);
+
       // propogate costs
       // if insertOnBacktrack -- need to check if hsitory node is already inserted
 
       bbt_->histTableUnlock(key);
+      needsPropogation = true;
+    }
+
+    if (needsPropogation) {
       propogateExploration_(propNode);
     }
   }
