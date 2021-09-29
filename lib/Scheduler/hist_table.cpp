@@ -562,7 +562,7 @@ static bool doesHistorySLILCostDominate(InstCount OtherPrefixCost,
 
   
   if (ImprovementOnHistory <= RequiredImprovement) {
-    OtherNode->SetMaxCostForSamePrune(HistTotalCost - ImprovementOnHistory, MBCS_HIST);
+    OtherNode->SetLocalBestCost(HistTotalCost - ImprovementOnHistory);
   }
 
   // If our improvement does not meet the requirement, then prune
@@ -656,12 +656,15 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
   // most restrictive cost based on all prunings is also a lower bound on the cost, we can use
   // this value for history pruning using the SLIL cost function as we only need a LB for
   // correctness
-  totalCostIsUseable_ = (totalCost_ <= node->GetMaxCostForSamePrune() || node->GetSamePruneCostSource() == MBCS_LB) && fullyExplored_;
+  totalCostIsUseable_ = (totalCost_ <= node->GetLocalBestCost() || node->GetLocalBestCost() == INVALID_VALUE) && fullyExplored_;
+  //if (totalCostIsUseable_) {
+  //  Logger::Info("totalCostIsUseable, totalCost_ %d node->GetLocalBestCost() %d", totalCost_, node->GetLocalBestCost());
+  //}
 
-
-  if (fullyExplored_ && node->GetSamePruneCostSource() == MBCS_LB && LCE->GetSpillCostFunc() == SCF_SLIL && totalCost_ > node->GetMaxCostForSamePrune()) {
-    totalCost_ = node->GetMaxCostForSamePrune();
-  }
+  /*
+  if (fullyExplored_ && LCE->GetSpillCostFunc() == SCF_SLIL && totalCost_ > node->GetLocalBestCost() && node->GetLocalBestCost() != INVALID_VALUE) {
+    totalCost_ = node->GetLocalBestCost();
+  }*/
 
   if (suffix_ == nullptr && node->GetSuffix().size() > 0)
     suffix_ =

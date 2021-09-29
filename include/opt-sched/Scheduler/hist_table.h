@@ -64,7 +64,6 @@ public:
   inline void setCostIsUseable(bool isCostAbsoluteBest) {
     totalCostIsUseable_ = isCostAbsoluteBest;
   }
-
   bool isTemp_;
 
   void Copy(HistEnumTreeNode *other);
@@ -131,6 +130,11 @@ public:
   bool DoesDominate(EnumTreeNode *node, Enumerator *enumrtr) override;
   void SetCostInfo(EnumTreeNode *node, bool isTemp, Enumerator *enumrtr) override;
 
+
+  inline void setTotalCostFromLB(InstCount totalCost) {
+    totalCost_ = totalCost;
+    totalCostIsUseable_ = true;
+  }
 
 
 protected:

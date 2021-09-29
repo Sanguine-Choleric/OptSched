@@ -58,12 +58,6 @@ class HalfNode {
     int getAndRemoveNextPrefixInst();
 };
 
-enum MAX_BEST_COST_SOURCE {
-  MBCS_INVALID,
-  MBCS_LB,
-  MBCS_HIST
-};
-
 
 // A pruning strategy.
 struct Pruning {
@@ -202,8 +196,7 @@ private:
   InstCount peakSpillCost_;
   InstCount spillCostSum_;
   InstCount totalCost_ = INVALID_VALUE;
-  InstCount maxBestCostForSamePrune_ = INVALID_VALUE;
-  MAX_BEST_COST_SOURCE samePruneCostSource = MBCS_INVALID;
+  InstCount localBestCost_ = INVALID_VALUE;
   bool totalCostIsActualCost_ = false;
   ReserveSlot *rsrvSlots_;
 
@@ -350,9 +343,8 @@ public:
   inline void SetSpillCostSum(InstCount cost);
   inline InstCount GetSpillCostSum();
 
-  inline void SetMaxCostForSamePrune(InstCount maxCost, MAX_BEST_COST_SOURCE source);
-  inline InstCount GetMaxCostForSamePrune();
-  inline MAX_BEST_COST_SOURCE GetSamePruneCostSource();
+  inline void SetLocalBestCost(InstCount localBestCost);
+  inline InstCount GetLocalBestCost();
 
   bool ChkInstRdndncy(SchedInstruction *inst, int brnchNum);
   bool IsNxtSlotStall();
@@ -1200,21 +1192,19 @@ void EnumTreeNode::SetSpillCostSum(InstCount cost) {
 InstCount EnumTreeNode::GetSpillCostSum() { return spillCostSum_; }
 /*****************************************************************************/
 
-void EnumTreeNode::SetMaxCostForSamePrune(InstCount cost, MAX_BEST_COST_SOURCE source) {
-  if (cost < maxBestCostForSamePrune_ || maxBestCostForSamePrune_ == -1) {
-    maxBestCostForSamePrune_ = cost;
-    samePruneCostSource = source;
+void EnumTreeNode::SetLocalBestCost(InstCount cost) {
+  if (cost < localBestCost_ || localBestCost_ == INVALID_VALUE) {
+    assert(cost != INVALID_VALUE);
+    localBestCost_ = cost;
+    Logger::Info("set maxCostForSamePrune to %d", localBestCost_);
   }
 
 }
 /*****************************************************************************/
-InstCount EnumTreeNode::GetMaxCostForSamePrune() {
-  return maxBestCostForSamePrune_;
+InstCount EnumTreeNode::GetLocalBestCost() {
+  return localBestCost_;
 }
 
-MAX_BEST_COST_SOURCE EnumTreeNode::GetSamePruneCostSource() {
-  return samePruneCostSource;
-}
 
 /*****************************************************************************/
 bool EnumTreeNode::IsNxtCycleNew_() {
