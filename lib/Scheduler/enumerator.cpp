@@ -2036,7 +2036,7 @@ bool Enumerator::SetTotalCostsAndSuffixes(EnumTreeNode *const currentNode,
         changeMade = true;
       }
     }
-    
+
     if (currentNode->GetLocalBestCost() != INVALID_VALUE) {
       changeMade |= parentNode->SetLocalBestCost(currentNode->GetLocalBestCost());
     }
@@ -2102,6 +2102,7 @@ bool Enumerator::SetTotalCostsAndSuffixes(EnumTreeNode *const currentNode,
                          "SetTotalCostsAndSuffixes: CheckHistNodeMatches");
   }
 #endif
+  return changeMade;
 }
 
 
@@ -3286,6 +3287,7 @@ void LengthCostEnumerator::BackTrackRoot_() {
 }
 
 void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
+  assert(false);
   if (propNode->GetParent()) {
     propNode = propNode->GetParent();
     propNode->incrementExploredChildren();
@@ -3339,7 +3341,7 @@ void Enumerator::BackTrackRoot_() {
   SchedInstruction *inst = crntNode_->GetInst();
   EnumTreeNode *trgtNode = crntNode_->GetParent();
   bool fullyExplored = false;
-
+/*
   if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn()) {
     trgtNode->incrementExploredChildren();
     fullyExplored = true;
@@ -3384,7 +3386,7 @@ void Enumerator::BackTrackRoot_() {
   else {
     trgtNode->setChildStolen(true);
   }
-
+*/
   //TODO JEFF we should be inserting into history here if we insert on backtrack
 
   if (bbt_->isWorkStealOn()) {
