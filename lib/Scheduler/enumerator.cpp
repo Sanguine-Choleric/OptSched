@@ -3232,6 +3232,7 @@ bool LengthCostEnumerator::BackTrack_(bool trueState) {
     CostHistEnumTreeNode *crntHstry = static_cast<CostHistEnumTreeNode *>(crntNode_->GetHistory());
     crntHstry->setFullyExplored(true);
     bbt_->histTableUnlock(key);
+    crntNode_->SetLocalBestCost(crntNode_->GetCostLwrBound());
   }
 
 if (bbt_->isWorkStealOn()) {
