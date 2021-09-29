@@ -656,7 +656,7 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
   // most restrictive cost based on all prunings is also a lower bound on the cost, we can use
   // this value for history pruning using the SLIL cost function as we only need a LB for
   // correctness
-  totalCostIsUseable_ = (totalCost_ <= node->GetLocalBestCost() || node->GetLocalBestCost() == INVALID_VALUE) && fullyExplored_;
+  totalCostIsUseable_ = (totalCost_ <= node->GetLocalBestCost() || node->GetLocalBestCost() == INVALID_VALUE) && fullyExplored_ && totalCostIsActualCost_;
   //if (totalCostIsUseable_) {
   //  Logger::Info("totalCostIsUseable, totalCost_ %d node->GetLocalBestCost() %d", totalCost_, node->GetLocalBestCost());
   //}

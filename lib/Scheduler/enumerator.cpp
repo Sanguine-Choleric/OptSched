@@ -2036,6 +2036,7 @@ bool Enumerator::SetTotalCostsAndSuffixes(EnumTreeNode *const currentNode,
         changeMade = true;
       }
     }
+    
     if (currentNode->GetLocalBestCost() != INVALID_VALUE) {
       changeMade |= parentNode->SetLocalBestCost(currentNode->GetLocalBestCost());
     }

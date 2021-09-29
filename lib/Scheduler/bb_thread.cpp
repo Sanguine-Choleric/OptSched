@@ -934,7 +934,6 @@ bool BBThread::ChkCostFsblty(InstCount trgtLngth, EnumTreeNode *node, bool isGlo
   }
 
   if (!fsbl) {
-    if (dynmcCostLwrBound == INVALID_VALUE) Logger::Info("globalPoolNode %d", isGlobalPoolNode);
     node->SetLocalBestCost(dynmcCostLwrBound);
   }
   return fsbl;
