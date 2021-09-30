@@ -600,6 +600,11 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
   assert(costInfoSet_ && partialCost_ != INVALID_VALUE);
   if (Node->GetCostLwrBound() >= partialCost_) {
     ShouldPrune = true;
+    if (totalCost_ != INVALID_VALUE)
+      Node->SetLocalBestCost(totalCost_ + (Node->GetCostLwrBound() - partialCost_));
+    else 
+      assert(false && "hist has an invalid totalCost_");
+
   }
   else {
     ShouldPrune = false;
@@ -656,15 +661,16 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
   // most restrictive cost based on all prunings is also a lower bound on the cost, we can use
   // this value for history pruning using the SLIL cost function as we only need a LB for
   // correctness
-  totalCostIsUseable_ = (totalCost_ <= node->GetLocalBestCost()) && fullyExplored_ && totalCostIsActualCost_;
-  //if (totalCostIsUseable_) {
-  //  Logger::Info("totalCostIsUseable, totalCost_ %d node->GetLocalBestCost() %d", totalCost_, node->GetLocalBestCost());
-  //}
+  if (fullyExplored_) {
+    if (totalCostIsActualCost_) {
+      totalCostIsUseable_ = totalCost_ <= node->GetLocalBestCost();
+    }
+    else {
+      assert(totalCost_ <= node->GetLocalBestCost()); //totalcost is DLB of prefix if not actual cost
+      totalCost_ = node->GetLocalBestCost();
+    }
+  }
 
-  /*
-  if (fullyExplored_ && LCE->GetSpillCostFunc() == SCF_SLIL && totalCost_ > node->GetLocalBestCost() && node->GetLocalBestCost() != INVALID_VALUE) {
-    totalCost_ = node->GetLocalBestCost();
-  }*/
 
   if (suffix_ == nullptr && node->GetSuffix().size() > 0)
     suffix_ =
