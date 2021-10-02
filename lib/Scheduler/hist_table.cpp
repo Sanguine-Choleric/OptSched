@@ -563,6 +563,7 @@ static bool doesHistorySLILCostDominate(InstCount OtherPrefixCost,
   
   if (ImprovementOnHistory <= RequiredImprovement) {
     OtherNode->SetLocalBestCost(HistTotalCost - ImprovementOnHistory);
+    OtherNode->GetParent()->SetLocalBestCost(OtherNode->GetLocalBestCost());
   }
 
   // If our improvement does not meet the requirement, then prune
@@ -600,11 +601,11 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
   assert(costInfoSet_ && partialCost_ != INVALID_VALUE);
   if (Node->GetCostLwrBound() >= partialCost_) {
     ShouldPrune = true;
-    if (totalCost_ != INVALID_VALUE)
+    if (totalCost_ != INVALID_VALUE && fullyExplored_) {
       Node->SetLocalBestCost(totalCost_ + (Node->GetCostLwrBound() - partialCost_));
+    }
     else 
       assert(false && "hist has an invalid totalCost_");
-
   }
   else {
     ShouldPrune = false;

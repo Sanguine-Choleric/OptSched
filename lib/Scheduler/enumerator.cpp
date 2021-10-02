@@ -1622,6 +1622,8 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
 #endif
   //endTime = Utilities::GetProcessorTime();
   //histDomTime += endTime - startTime;
+        nodeAlctr_->Free(newNode);
+        newNode = NULL;
         return false;
       }
       //endTime = Utilities::GetProcessorTime();
@@ -1979,6 +1981,7 @@ bool Enumerator::SetTotalCostsAndSuffixes(EnumTreeNode *const currentNode,
 #endif
     currentNode->SetTotalCost(currentNode->GetCost());
     currentNode->SetTotalCostIsActualCost(true);
+    currentNode->SetLocalBestCost(currentNode->GetCost());
   } else {
     if (!currentNode->GetTotalCostIsActualCost() &&
         (currentNode->GetTotalCost() == -1 ||
@@ -2404,8 +2407,6 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
         exNode->PrntPartialSched(Logger::GetLogStream());
 #endif
 
-        nodeAlctr_->Free(newNode);
-        newNode = NULL;
         stats::positiveDominationHits++;
 #ifdef IS_DEBUG_SPD
         stats::positiveDominationHits++;
@@ -3126,6 +3127,7 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
     #endif
 
     crntNode_->incrementExploredChildren();
+    crntNode_->SetLocalBestCost(newNode->GetLocalBestCost());
     return false;
   }
 
@@ -3142,6 +3144,7 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
     probeTime += Utilities::GetProcessorTime() - startTime; 
     #endif
     crntNode_->incrementExploredChildren();
+    crntNode_->SetLocalBestCost(newNode->GetLocalBestCost());
     return false;
   }
 
@@ -3169,6 +3172,9 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
 #endif
       isNodeDmntd = true;
       crntNode_->incrementExploredChildren();
+      crntNode_->SetLocalBestCost(newNode->GetLocalBestCost());
+      nodeAlctr_->Free(newNode);
+      newNode = NULL;
       return false;
     }
   }
@@ -4113,7 +4119,6 @@ EnumTreeNode *LengthCostEnumerator::scheduleInst_(SchedInstruction *inst, bool i
         exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                     hashTblEntryAlctr_, bbt_);
         //SetTotalCostsAndSuffixes(crntNode_, crntNode_->GetParent(), trgtSchedLngth_, prune_.useSuffixConcatenation);
-        crntNode_->Archive();
       }
         
 
