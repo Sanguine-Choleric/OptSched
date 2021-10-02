@@ -113,9 +113,11 @@ void EnumTreeNode::Construct(EnumTreeNode *prevNode, SchedInstruction *inst,
   }
 
   Init_();
-
-  prevNode_ = prevNode;
   
+  isFirstPass_ = enumrtr->IsTwoPass_ && !enumrtr->IsSecondPass_;
+  
+  prevNode_ = prevNode;
+    
   inst_ = inst;
   enumrtr_ = enumrtr;
   time_ = prevNode_ == NULL ? 0 : prevNode_->time_ + 1;
@@ -3085,7 +3087,7 @@ bool LengthCostEnumerator::WasObjctvMet_() {
   //Logger::Info("crntCost = %d", crntCost);
   InstCount newCost = bbt_->UpdtOptmlSched(crntSched_, this);
   //Logger::Info("newCost %d", newCost);
-  assert(newCost <= GetBestCost_());
+  if (!bbt_->isWorker()) assert(newCost <= GetBestCost_());
 
   if (newCost < crntCost) {
     imprvmntCnt_++;
@@ -3127,7 +3129,6 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
     #endif
 
     crntNode_->incrementExploredChildren();
-    crntNode_->SetLocalBestCost(newNode->GetLocalBestCost());
     return false;
   }
 
