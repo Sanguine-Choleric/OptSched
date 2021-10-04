@@ -487,13 +487,16 @@ void CostHistEnumTreeNode::Construct(EnumTreeNode *node, bool isTemp, bool isGen
   partialCost_ = node->GetCostLwrBound();
   totalCost_ = node->GetCost();
   costInfoSet_ = true;
+  totalCostIsUseable_ = false;
+  totalCostIsActualCost_ = false;
 #endif
 }
 
 void CostHistEnumTreeNode::Init_() {
   HistEnumTreeNode::Init_();
-  costInfoSet_ = false;
+  costInfoSet_ = totalCostIsActualCost_ = archived_ = totalCostIsUseable_ = fullyExplored_ =  false;
   cost_ = 0;
+  totalCost_ = partialCost_ = INVALID_VALUE;
 }
 
 bool CostHistEnumTreeNode::DoesDominate(EnumTreeNode *node,
@@ -551,8 +554,9 @@ static bool doesHistorySLILCostDominate(InstCount OtherPrefixCost,
                                         InstCount HistPrefixCost,
                                         InstCount HistTotalCost,
                                         LengthCostEnumerator *LCE,
-                                        EnumTreeNode *OtherNode) {
-  assert(HistTotalCost > HistPrefixCost);
+                                        EnumTreeNode *OtherNode,
+                                        bool archived) {
+  assert(HistTotalCost > HistPrefixCost && archived);
 
 
   auto RequiredImprovement = std::max(HistTotalCost - LCE->GetBestCost(), 0);
@@ -626,7 +630,7 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
 
       ShouldPrune = (partialCost_ == totalCost_ || !fullyExplored_ || !totalCostIsUseable_) ? 
                       false : doesHistorySLILCostDominate(Node->GetCostLwrBound(),
-                                                          partialCost_, totalCost_, LCE, Node);
+                                                          partialCost_, totalCost_, LCE, Node, archived_);
     }
 
     // If the cost function is peak plus avg, make sure that the fraction lost
@@ -668,7 +672,7 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
 
   InstCount localBest = node->GetLocalBestCost();
 
-  /* complete method
+  // complete method
   if (fullyExplored_ && enumrtr->IsTwoPass_ && !enumrtr->isSecondPass()) {
     if (localBest != INVALID_VALUE) {
       totalCostIsUseable_ = true;
@@ -679,9 +683,9 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
     else {
       totalCostIsUseable_ = false;
     }
-  }*/
+  }
 
-  // simple method
+  /* simple method
   if (fullyExplored_ && enumrtr->IsTwoPass_ && !enumrtr->isSecondPass() ) {
     if (totalCostIsActualCost_) {
       totalCostIsUseable_ = totalCost_ <= node->GetLocalBestCost();
@@ -692,8 +696,8 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
       }
     }
   }
-
-  if (enumrtr->isSecondPass() || enumrtr->IsTwoPass_) totalCostIsUseable_ = true;
+  */
+  if (enumrtr->isSecondPass() || !enumrtr->IsTwoPass_) totalCostIsUseable_ = true;
 
 
   if (suffix_ == nullptr && node->GetSuffix().size() > 0)
@@ -701,6 +705,7 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
         std::make_shared<std::vector<SchedInstruction *>>(node->GetSuffix());
 
   costInfoSet_ = true;
+  archived_ = true;
 
 #if defined(IS_DEBUG_ARCHIVE)
   Logger::Info(

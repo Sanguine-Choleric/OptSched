@@ -81,6 +81,7 @@ protected:
 
   bool fullyExplored_ = false;
   bool totalCostIsUseable_ = false;
+  bool archived_ = false;
 
 #ifdef IS_DEBUG
   bool isCnstrctd_;
@@ -144,12 +145,12 @@ protected:
   InstCount spillCostSum_;
 
   // (Chris)
-  InstCount totalCost_ = -1;
-  InstCount partialCost_ = -1;
+  InstCount totalCost_ = INVALID_VALUE;
+  InstCount partialCost_ = INVALID_VALUE;
   bool totalCostIsActualCost_ = false;
 
   bool isLngthFsbl_;
-  bool costInfoSet_;
+  bool costInfoSet_ = false;
 
   bool ChkCostDmntnForBBSpill_(EnumTreeNode *node, Enumerator *enumrtr);
   bool ChkCostDmntn_(EnumTreeNode *node, Enumerator *enumrtr,
