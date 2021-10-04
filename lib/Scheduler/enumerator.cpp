@@ -3347,7 +3347,7 @@ void Enumerator::BackTrackRoot_() {
   SchedInstruction *inst = crntNode_->GetInst();
   EnumTreeNode *trgtNode = crntNode_->GetParent();
   bool fullyExplored = false;
-/*
+
   if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn()) {
     trgtNode->incrementExploredChildren();
     fullyExplored = true;
@@ -3392,7 +3392,7 @@ void Enumerator::BackTrackRoot_() {
   else {
     trgtNode->setChildStolen(true);
   }
-*/
+
   //TODO JEFF we should be inserting into history here if we insert on backtrack
 
   if (bbt_->isWorkStealOn()) {
