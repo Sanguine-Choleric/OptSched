@@ -608,8 +608,11 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
     ShouldPrune = true;
     if (totalCost_ != INVALID_VALUE && fullyExplored_) {
       Node->SetLocalBestCost(totalCost_ + (Node->GetCostLwrBound() - partialCost_));
+      if (Node->GetParent()) {
+        Node->GetParent()->SetLocalBestCost(Node->GetLocalBestCost());
+      }
     }
-    else 
+    else if (fullyExplored_)
       assert(false && "hist has an invalid totalCost_");
   }
   else {

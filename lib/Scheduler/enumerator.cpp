@@ -3073,7 +3073,6 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
 #endif
       isNodeDmntd = true;
       crntNode_->incrementExploredChildren();
-      crntNode_->SetLocalBestCost(newNode->GetLocalBestCost());
       nodeAlctr_->Free(newNode);
       newNode = NULL;
       return false;
