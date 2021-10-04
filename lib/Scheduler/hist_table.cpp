@@ -668,6 +668,7 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
 
   InstCount localBest = node->GetLocalBestCost();
 
+  /* complete method
   if (fullyExplored_ && enumrtr->IsTwoPass_ && !enumrtr->isSecondPass()) {
     if (localBest != INVALID_VALUE) {
       totalCostIsUseable_ = true;
@@ -677,6 +678,18 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
     }
     else {
       totalCostIsUseable_ = false;
+    }
+  }*/
+
+  // simple method
+  if (fullyExplored_ && enumrtr->IsTwoPass_ && !enumrtr->isSecondPass() ) {
+    if (totalCostIsActualCost_) {
+      totalCostIsUseable_ = totalCost_ <= node->GetLocalBestCost();
+    }
+    else {
+      if (node->GetLocalBestCost() != INVALID_VALUE) {
+        totalCost_ = node->GetLocalBestCost();
+      }
     }
   }
 

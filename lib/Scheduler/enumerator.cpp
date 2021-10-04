@@ -1418,7 +1418,6 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
 #endif
 
 
-  //startTime = Utilities::GetProcessorTime();
   // If this instruction is prefixed, it cannot be scheduled earlier than its
   // prefixed cycle
   if (inst != NULL)
@@ -1427,15 +1426,10 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
 #ifdef IS_DEBUG_SEARCH_ORDER
         Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: prefix fail");
 #endif
-        //endTime = Utilities::GetProcessorTime();
-        //prefixTime += endTime - startTime;
+
         return false;
       }
-  //endTime = Utilities::GetProcessorTime();
-  //prefixTime += endTime - startTime;
 
-
-  //startTime = Utilities::GetProcessorTime();
   if (inst != NULL) {
     if (inst->GetCrntLwrBound(DIR_FRWRD, SolverID_) > crntCycleNum_) {
 #ifdef IS_DEBUG_INFSBLTY_TESTS
@@ -1445,8 +1439,6 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
 #ifdef IS_DEBUG_SEARCH_ORDER
       Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: LB fail");
 #endif
-      //endTime = Utilities::GetProcessorTime();
-      //lbTime += endTime - startTime;
       return false;
     }
     if (inst->GetCrntDeadline(SolverID_) < crntCycleNum_) {
@@ -1458,30 +1450,20 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
 #ifdef IS_DEBUG_SEARCH_ORDER
       Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: deadline fail");
 #endif
-      //endTime = Utilities::GetProcessorTime();
-      //lbTime += endTime - startTime;
       return false;
     }
   }
-  //endTime = Utilities::GetProcessorTime();
-  //lbTime += endTime - startTime;
 
-  //startTime = Utilities::GetProcessorTime();
   // If we are scheduling for register pressure only, and this branch
   // defines a register but does not use any, we can prune this branch
   // if another instruction in the ready list does use a register.
   if (SchedForRPOnly_) {
     if (inst != NULL && crntNode_->FoundInstWithUse() &&
         inst->GetAdjustedUseCnt() == 0 && !dataDepGraph_->DoesFeedUser(inst)) { 
-          //endTime = Utilities::GetProcessorTime();
-          //useCntTime += endTime - startTime;
           return false;
         }
   }
-  //endTime = Utilities::GetProcessorTime();
-  //useCntTime += endTime - startTime;
 
-  //startTime = Utilities::GetProcessorTime();
   if (prune_.nodeSup) {
     if (inst != NULL) {
       if (crntNode_->WasSprirNodeExmnd(inst)) {
@@ -1492,26 +1474,17 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
         Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: history fail");
 #endif
 
-        //endTime = Utilities::GetProcessorTime();
-        //nodeSupTime += endTime - startTime;
         return false;
       }
     }
   }
-  //endTime = Utilities::GetProcessorTime();
-  //nodeSupTime += endTime - startTime;
-
-  //startTime = Utilities::GetProcessorTime();
 
   if (inst != NULL) {
     inst->Schedule(crntCycleNum_, crntSlotNum_, SolverID_);
     DoRsrvSlots_(inst);
     state_.instSchduld = true;
   }
-  //endTime = Utilities::GetProcessorTime();
-  //instSchedulingTime += endTime - startTime;
 
-  //startTime = Utilities::GetProcessorTime();
   fsbl = ProbeIssuSlotFsblty_(inst);
   state_.issuSlotsProbed = true;
 
@@ -1525,8 +1498,6 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
 #endif
     return false;
   }
-  //endTime = Utilities::GetProcessorTime();
-  //issueSlotTime += endTime - startTime;
 
   if (bbt_->isSecondPass()) {
     fsbl = TightnLwrBounds_(inst);
@@ -1554,12 +1525,9 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
   // If a node (sub-problem) that dominates the candidate node (sub-problem)
   // has been examined already and found infeasible
 
-  //startTime = Utilities::GetProcessorTime();
-  //if (inst != NULL)
-    //Logger::Info("Solver %d checking HistDom for inst %d", SolverID_, inst->GetNum());
+
   if (prune_.histDom && IsHistDom()) {
     if (isEarlySubProbDom_) {
-      //Logger::Info("calling wasdmntSubProb from reg Enum");
       if (WasDmnntSubProbExmnd_(inst, newNode)) {
 #ifdef IS_DEBUG_INFSBLTY_TESTS
         stats::historyDominationInfeasibilityHits++;
@@ -1568,23 +1536,17 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
 #ifdef IS_DEBUG_SEARCH_ORDER
         Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: histDom fail");
 #endif
-  //endTime = Utilities::GetProcessorTime();
-  //histDomTime += endTime - startTime;
         nodeAlctr_->Free(newNode);
         newNode = NULL;
         return false;
       }
-      //endTime = Utilities::GetProcessorTime();
-      //histDomTime += endTime - startTime;
     }
   }
 
-  //Milliseconds startTime = Utilities::GetProcessorTime();
   // Try to find a relaxed schedule for the unscheduled instructions
   if (prune_.rlxd && bbt_->isSecondPass()) {
     fsbl = RlxdSchdul_(newNode);
     state_.rlxSchduld = true;
-  //relaxedTime += Utilities::GetProcessorTime() - startTime;
 
     if (fsbl == false) {
 #ifdef IS_DEBUG_INFSBLTY_TESTS
@@ -1698,8 +1660,6 @@ void Enumerator::StepFrwrd_(EnumTreeNode *&newNode) {
   if (instToSchdul)
     Logger::Log((Logger::LOG_LEVEL) 4, false, "Stepping forward to inst %d", instToSchdul->GetNum());
 #endif
-
-  // TODO: toggle work stealing on-off
 
 if (bbt_->isWorkStealOn()) {
   if (bbt_->isWorker()) {
@@ -1879,11 +1839,6 @@ void Enumerator::InitNewNode_(EnumTreeNode *newNode) {
   createdNodeCnt_++;
   crntNode_->SetNum(createdNodeCnt_);
 
-
-  /*if (crntNode_->GetParent() == rootNode_) {
-    Logger::Info("first level node has time %d", crntNode_->GetTime());
-    Logger::Info("zeroth level node has time %d", rootNode_->GetTime());
-  }*/
 }
 
 /*****************************************************************************/
@@ -1920,7 +1875,6 @@ bool Enumerator::SetTotalCostsAndSuffixes(EnumTreeNode *const currentNode,
   // the dynamic lower bound of this node.
 
 
-  //Logger::Info("in setTotalCostsAndsuxxi");
   bool changeMade = false;
 
   if (currentNode->IsLeaf()) {
@@ -3246,6 +3200,7 @@ void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
     propNode->incrementExploredChildren();
     UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
     bool needsPropogation = false;
+    bool fullyExplored = false;
 
 
 
@@ -3254,7 +3209,14 @@ void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
         
       bbt_->histTableLock(key);
       HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
-      // set fully explored to fullyExplored when work stealing
+
+
+      if (propNode->getExploredChildren() == propNode->getNumChildrn()) {
+        fullyExplored = true;
+        needsPropogation = true;
+      }
+
+      crntHstry->setFullyExplored(fullyExplored);
       needsPropogation |= SetTotalCostsAndSuffixes(crntNode_, propNode, trgtSchedLngth_,
                           prune_.useSuffixConcatenation);
       crntNode_->Archive();
@@ -3265,21 +3227,6 @@ void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
       bbt_->histTableUnlock(key);
     }
 
-
-      
-
-
-    if (propNode->getExploredChildren() == propNode->getNumChildrn()) {
-      HistEnumTreeNode *crntHstry = propNode->GetHistory();
-      bbt_->histTableLock(key);
-      crntHstry->setFullyExplored(true);
-
-      // propogate costs
-      // if insertOnBacktrack -- need to check if hsitory node is already inserted
-
-      bbt_->histTableUnlock(key);
-      needsPropogation = true;
-    }
 
     if (needsPropogation) {
       propogateExploration_(propNode);
