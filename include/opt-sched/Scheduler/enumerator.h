@@ -691,7 +691,6 @@ protected:
   virtual bool Initialize_(InstSchedule *preSched, InstCount trgtLngth,
                            int SolverID = 0, bool scheduleRoot = false);
   virtual void CreateRootNode_();
-  //virtual void createWorkerRootNode_();
   virtual bool EnumStall_();
   virtual void InitNewNode_(EnumTreeNode *newNode);
   virtual void InitNewGlobalPoolNode_(EnumTreeNode *newNode);
@@ -846,7 +845,6 @@ private:
   void propogateExploration_(EnumTreeNode *node);
   InstCount GetBestCost_();
   void CreateRootNode_();
-  //void createWorkerRootNode_();
 
   // Check if branching from the current node by scheduling this instruction
   // in the current slot is feasible or not
@@ -934,8 +932,6 @@ public:
 
 
   inline InstCount getStaticCostLwrBound() {return costLwrBound_;}
-
-  bool isFsbl(EnumTreeNode *node, bool checkHistory = true);
 
 };
 /*****************************************************************************/

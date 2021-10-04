@@ -656,6 +656,16 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
   totalCost_ = node->GetTotalCost();
   totalCostIsActualCost_ = node->GetTotalCostIsActualCost();
 
+
+  // the cost used to prune the subspace can be updated by another thread during exploration
+  // If this occurs, the total cost associated with a subspace is no longer the minimum in the  
+  // subspace as we are only updating it if the cost found is less than the global best
+  // aka we are not only comparing to other costs within the subspace. Thus, we track
+  // a lower bound on the totalcost for the subspace (localBest -- will be the exact best 
+  // total cost if there is a complete schedule found in this subspace, and no other thread
+  // updates) and use that for history based cost prunings as it is a lower bound on the
+  // best cost for a subspace
+
   InstCount localBest = node->GetLocalBestCost();
 
   if (fullyExplored_ && enumrtr->IsTwoPass_ && !enumrtr->isSecondPass()) {
@@ -672,23 +682,6 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
 
   if (enumrtr->isSecondPass() || enumrtr->IsTwoPass_) totalCostIsUseable_ = true;
 
-  // the cost used to prune the subspace can be updated by another thread during exploration
-  // so the totalcost associated with the subspace is only useable if we would do all the same
-  // cost based prunings using both the total cost found and the global best. Or, if the
-  // most restrictive cost based on all prunings is also a lower bound on the cost, we can use
-  // this value for history pruning using the SLIL cost function as we only need a LB for
-  // correctness
-  /*
-  if (fullyExplored_) {
-    if (totalCostIsActualCost_) {
-      totalCostIsUseable_ = totalCost_ <= node->GetLocalBestCost();
-    }
-    else {
-      assert(totalCost_ <= node->GetLocalBestCost()); //totalcost is DLB of prefix if not actual cost
-      totalCost_ = node->GetLocalBestCost();
-    }
-  }
-  */
 
   if (suffix_ == nullptr && node->GetSuffix().size() > 0)
     suffix_ =
