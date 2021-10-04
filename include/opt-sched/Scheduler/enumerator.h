@@ -143,6 +143,8 @@ private:
 
   bool wasChildStolen_;
 
+  bool isFirstPass_ = false;
+
   ENUMTREE_NODEMODE mode_;
 
   // Array of instructions' forward lower bounds tightened up to this node
@@ -1195,7 +1197,7 @@ InstCount EnumTreeNode::GetSpillCostSum() { return spillCostSum_; }
 bool EnumTreeNode::SetLocalBestCost(InstCount cost) {
   bool changeMade = false;
   if (cost < localBestCost_ || localBestCost_ == INVALID_VALUE) {
-    assert(cost != INVALID_VALUE);
+    assert(cost != INVALID_VALUE || !isFirstPass_);
     localBestCost_ = cost;
     changeMade = true;
   }
