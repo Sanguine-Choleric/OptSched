@@ -484,9 +484,7 @@ void CostHistEnumTreeNode::Construct(EnumTreeNode *node, bool isTemp, bool isGen
   costInfoSet_ = false;
   HistEnumTreeNode::Construct(node, isTemp, isGenerateState);
 #ifdef INSERT_ON_STEPFRWRD
-  costInfoSet_ = false;
   if (setCost) {
-    Logger::Info("Settring cost for hist node");
     partialCost_ = node->GetCostLwrBound();
     totalCost_ = node->GetCost();
   
@@ -684,6 +682,7 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
   InstCount localBest = node->GetLocalBestCost();
 
   // complete method
+  
   if (fullyExplored_ && enumrtr->IsTwoPass_ && !enumrtr->isSecondPass()) {
     if (localBest != INVALID_VALUE) {
       totalCostIsUseable_ = true;

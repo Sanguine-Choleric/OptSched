@@ -3244,10 +3244,11 @@ void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
 
 
 void Enumerator::BackTrackRoot_() {
+  
   SchedInstruction *inst = crntNode_->GetInst();
   EnumTreeNode *trgtNode = crntNode_->GetParent();
   bool fullyExplored = false;
-
+  /*
   if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn()) {
     trgtNode->incrementExploredChildren();
     fullyExplored = true;
@@ -3287,13 +3288,13 @@ void Enumerator::BackTrackRoot_() {
     bbt_->histTableUnlock(key);
   }
 #endif
- 
+  */
   if (!crntNode_->wasChildStolen())
     nodeAlctr_->Free(crntNode_);
   else {
     trgtNode->setChildStolen(true);
   }
-
+  
   //TODO JEFF we should be inserting into history here if we insert on backtrack
 
   if (bbt_->isWorkStealOn()) {
