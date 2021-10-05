@@ -2046,7 +2046,7 @@ bool Enumerator::BackTrack_(bool trueState) {
       bbt_->histTableLock(key);
         HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
         // set fully explored to fullyExplored when work stealing
-        crntHstry->setFullyExplored(fullyExplored);
+        crntHstry->setFullyExplored(true);
         SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                              prune_.useSuffixConcatenation);
         crntNode_->Archive();
@@ -2079,7 +2079,8 @@ if (isSecondPass()) {
       if (bbt_->isWorker()) {
         bbt_->histTableLock(key);
           HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
-          crntHstry->setFullyExplored(fullyExplored);
+          // set fully explored to fullyExplored when work stealing
+          crntHstry->setFullyExplored(true);
           exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                     hashTblEntryAlctr_, bbt_);
           SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
@@ -2109,7 +2110,8 @@ if (isSecondPass()) {
       HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
       if (bbt_->isWorker()) {
           bbt_->histTableLock(key);
-          crntHstry->setFullyExplored(fullyExplored);
+          // set fully explored to fullyExplored when work stealing
+          crntHstry->setFullyExplored(true);
       }
       else {
         crntHstry->setFullyExplored(true);
@@ -3194,10 +3196,11 @@ void LengthCostEnumerator::BackTrackRoot_() {
 
   // should be set to the stolenNode's parent
   EnumTreeNode *tempNode = crntNode_->GetParent();
-  propogateExploration_(tempNode);
+  //propogateExploration_(tempNode);
 }
 
 void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
+  assert(false);
   if (propNode->GetParent()) {
     EnumTreeNode *trgtNode = propNode->GetParent();
 
@@ -3217,6 +3220,7 @@ void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
         Logger::Info("fully explored node when propogating past root, numChildrn of fully explored = %d", trgtNode->getNumChildrn());
       }
       bbt_->histTableLock(key);
+      // set fully explored to fullyExplored when work stealing
       crntHstry->setFullyExplored(fullyExplored);
       needsPropogation |= SetTotalCostsAndSuffixes(propNode, trgtNode, trgtSchedLngth_,
                           prune_.useSuffixConcatenation);
@@ -3254,7 +3258,7 @@ void Enumerator::BackTrackRoot_() {
     bbt_->histTableLock(key);
     HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
     // set fully explored to fullyExplored when work stealing
-    crntHstry->setFullyExplored(fullyExplored);
+    crntHstry->setFullyExplored(true);
     SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                              prune_.useSuffixConcatenation);
     crntNode_->Archive();
@@ -3272,7 +3276,7 @@ void Enumerator::BackTrackRoot_() {
     HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
     bbt_->histTableLock(key);
     // set fully explored to fullyExplored when work stealing
-    crntHstry->setFullyExplored(fullyExplored);
+    crntHstry->setFullyExplored(true);
     SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                           prune_.useSuffixConcatenation);
     crntNode_->Archive();

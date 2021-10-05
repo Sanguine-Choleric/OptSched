@@ -571,8 +571,8 @@ static bool doesHistorySLILCostDominate(InstCount OtherPrefixCost,
   }
 
   // If our improvement does not meet the requirement, then prune
-  //return ImprovementOnHistory <= RequiredImprovement;
-  return false;
+  return ImprovementOnHistory <= RequiredImprovement;
+  //return false;
 }
 
 // For peak cost functions (PERP, PRP, Occupancy) the suffix cost does not
@@ -625,7 +625,7 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
     if (SpillCostFunc == SCF_TARGET || SpillCostFunc == SCF_PRP ||
         SpillCostFunc == SCF_PERP) {
           assert(false && "incorrect hist cost func");
-      ShouldPrune = doesHistoryPeakCostDominate(Node->GetCostLwrBound(),
+      ShouldPrune = (!fullyExplored_) ? false : doesHistoryPeakCostDominate(Node->GetCostLwrBound(),
                                                 partialCost_, totalCost_, LCE);
         }
 
