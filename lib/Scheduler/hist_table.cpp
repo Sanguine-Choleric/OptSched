@@ -701,6 +701,8 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
     }
   }
   */
+
+  // second and non-two pass are not parallelized
   if (enumrtr->isSecondPass() || !enumrtr->IsTwoPass_) totalCostIsUseable_ = true;
 
 

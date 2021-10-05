@@ -1929,7 +1929,7 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
             InactiveThreadLock_->unlock();
 #endif
 */          //Enumrtr_->destroy();
-            Logger::Info("SolverID_ %d finished", SolverID_);
+            //Logger::Info("SolverID_ %d finished", SolverID_);
             IdleTime_[SolverID_ - 2] = Utilities::GetProcessorTime();
             //if (rslt == RES_TIMEOUT)
             //  Logger::Info("SolverID_ %d returning timeout from bbw:enum2", SolverID_);
@@ -2071,7 +2071,7 @@ if (isWorkSteal()) {
     if (victimID != -1) {
       localPoolLock(victimID);
       if (getLocalPoolSize(victimID) < 1) {
-        Logger::Info("VictimID %d has empty pool (SolverID %d, size = %d)", victimID + 2, SolverID_, getLocalPoolSize(victimID));
+        //Logger::Info("VictimID %d has empty pool (SolverID %d, size = %d)", victimID + 2, SolverID_, getLocalPoolSize(victimID));
         localPoolUnlock(victimID);
       }
 
