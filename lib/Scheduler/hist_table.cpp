@@ -556,8 +556,8 @@ static bool doesHistorySLILCostDominate(InstCount OtherPrefixCost,
                                         LengthCostEnumerator *LCE,
                                         EnumTreeNode *OtherNode,
                                         bool archived) {
-  assert(HistTotalCost > HistPrefixCost && archived);
-
+  assert(HistTotalCost > HistPrefixCost);
+  //assert(archived);
 
   auto RequiredImprovement = std::max(HistTotalCost - LCE->GetBestCost(), 0);
   auto ImprovementOnHistory = HistPrefixCost - OtherPrefixCost;
@@ -612,7 +612,7 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
         Node->GetParent()->SetLocalBestCost(Node->GetLocalBestCost());
       }
     }
-    else if (fullyExplored_)
+    else if (fullyExplored_) //totalCost_ == INVALID_VALUE
       assert(false && "hist has an invalid totalCost_");
   }
   else {

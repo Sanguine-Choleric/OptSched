@@ -615,7 +615,7 @@ protected:
 
   void StepFrwrd_(EnumTreeNode *&newNode);
   virtual bool BackTrack_(bool trueState = true);
-  void BackTrackRoot_();
+  virtual void BackTrackRoot_();
   inline bool WasSolnFound_();
 
   void SetInstSigs_();

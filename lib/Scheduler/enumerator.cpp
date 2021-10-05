@@ -441,7 +441,7 @@ bool EnumTreeNode::IsBranchDominated(SchedInstruction *cnddtInst) {
 /*****************************************************************************/
 
 void EnumTreeNode::Archive() {
-  assert(isArchivd_ == false);
+  //assert(isArchivd_ == false);
 
   if (enumrtr_->IsCostEnum()) {
     hstry_->SetCostInfo(this, false, enumrtr_);
@@ -2115,10 +2115,13 @@ if (isSecondPass()) {
       }
       SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                             prune_.useSuffixConcatenation);
-      crntNode_->Archive();
 
       if (bbt_->isWorker()) {
-          bbt_->histTableUnlock(key);
+        crntNode_->Archive();
+        bbt_->histTableUnlock(key);
+      }
+      else {
+        crntNode_->Archive();
       }
     }
   }
@@ -3185,15 +3188,14 @@ if (bbt_->isWorkStealOn()) {
 /*****************************************************************************/
 
 void LengthCostEnumerator::BackTrackRoot_() {
-  Logger::Info("in the correct BTR");
+  //Logger::Info("in the correct BTR");
   Enumerator::BackTrackRoot_();
 
-  //EnumTreeNode *tempNode = crntNode_;
-  //propogateExploration_(tempNode);
+  EnumTreeNode *tempNode = crntNode_;
+  propogateExploration_(tempNode);
 }
 
 void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
-  assert(false);
   if (propNode->GetParent()) {
     propNode = propNode->GetParent();
     propNode->incrementExploredChildren();
@@ -3204,17 +3206,13 @@ void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
 
 
     if (IsHistDom()) {
-      assert(!crntNode_->IsArchived());
-        
-      bbt_->histTableLock(key);
+      //assert(!crntNode_->IsArchived());
       HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
-
-
       if (propNode->getExploredChildren() == propNode->getNumChildrn()) {
         fullyExplored = true;
         needsPropogation = true;
       }
-
+      bbt_->histTableLock(key);
       crntHstry->setFullyExplored(fullyExplored);
       needsPropogation |= SetTotalCostsAndSuffixes(crntNode_, propNode, trgtSchedLngth_,
                           prune_.useSuffixConcatenation);
@@ -3226,14 +3224,11 @@ void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
       bbt_->histTableUnlock(key);
     }
 
-
     if (needsPropogation) {
       propogateExploration_(propNode);
     }
   }
 }
-
-
 
 
 void Enumerator::BackTrackRoot_() {
