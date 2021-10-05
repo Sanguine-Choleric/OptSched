@@ -136,6 +136,7 @@ private:
   bool isEmpty_;
 
   bool isFsbl_;
+  bool isInfsblFromBacktrack_ = false;
 
   bool isLngthFsbl_;
 
@@ -429,6 +430,9 @@ public:
     }
     return false;
   }
+
+  inline void setIsInfsblFromBacktrack_(bool infsbl) {isInfsblFromBacktrack_ = infsbl;}
+  inline bool getIsInfsblFromBacktrack_() {return isInfsblFromBacktrack_;} 
 };
 /*****************************************************************************/
 

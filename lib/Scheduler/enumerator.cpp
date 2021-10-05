@@ -1839,6 +1839,8 @@ void Enumerator::InitNewNode_(EnumTreeNode *newNode) {
   createdNodeCnt_++;
   crntNode_->SetNum(createdNodeCnt_);
 
+  crntNode_->setIsInfsblFromBacktrack_(false);
+
 }
 
 /*****************************************************************************/
@@ -2029,7 +2031,7 @@ bool Enumerator::BackTrack_(bool trueState) {
 
   // It is posible we are falling to this backtrack directly from another backtrack
   // in which case, the exploredChild != numChildren but it should be labeled as fully explored
-  if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn()) {
+  if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn() || crntNode_->getIsInfsblFromBacktrack_()) {
     trgtNode->incrementExploredChildren();
     fullyExplored = true;
   }
@@ -2043,7 +2045,7 @@ bool Enumerator::BackTrack_(bool trueState) {
       bbt_->histTableLock(key);
         HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
         // set fully explored to fullyExplored when work stealing
-        crntHstry->setFullyExplored(true);
+        crntHstry->setFullyExplored(fullyExplored);
         SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                              prune_.useSuffixConcatenation);
         crntNode_->Archive();
@@ -2076,7 +2078,7 @@ if (isSecondPass()) {
       if (bbt_->isWorker()) {
         bbt_->histTableLock(key);
           HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
-          crntHstry->setFullyExplored(true);
+          crntHstry->setFullyExplored(fullyExplored);
           exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                     hashTblEntryAlctr_, bbt_);
           SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
@@ -2106,9 +2108,11 @@ if (isSecondPass()) {
       HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
       if (bbt_->isWorker()) {
           bbt_->histTableLock(key);
+          crntHstry->setFullyExplored(fullyExplored);
       }
-      // set fully explored to fullyExplored when work stealing
-      crntHstry->setFullyExplored(true);
+      else {
+        crntHstry->setFullyExplored(true);
+      }
       SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                             prune_.useSuffixConcatenation);
       crntNode_->Archive();
@@ -3138,11 +3142,7 @@ bool LengthCostEnumerator::BackTrack_(bool trueState) {
   }
 
   if (!fsbl) {
-    UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
-    bbt_->histTableLock(key);
-    CostHistEnumTreeNode *crntHstry = static_cast<CostHistEnumTreeNode *>(crntNode_->GetHistory());
-    crntHstry->setFullyExplored(true);
-    bbt_->histTableUnlock(key);
+    crntNode_->setIsInfsblFromBacktrack_(true);
     crntNode_->SetLocalBestCost(crntNode_->GetCostLwrBound());
   }
 
@@ -3254,7 +3254,7 @@ void Enumerator::BackTrackRoot_() {
     bbt_->histTableLock(key);
     HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
     // set fully explored to fullyExplored when work stealing
-    crntHstry->setFullyExplored(true);
+    crntHstry->setFullyExplored(fullyExplored);
     SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                              prune_.useSuffixConcatenation);
     crntNode_->Archive();
@@ -3272,7 +3272,7 @@ void Enumerator::BackTrackRoot_() {
     HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
     bbt_->histTableLock(key);
     // set fully explored to fullyExplored when work stealing
-    crntHstry->setFullyExplored(true);
+    crntHstry->setFullyExplored(fullyExplored);
     SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                           prune_.useSuffixConcatenation);
     crntNode_->Archive();
