@@ -47,7 +47,7 @@ public:
   bool IsDominated(EnumTreeNode *node, Enumerator *enumrtr);
   // Does the sub-problem at this node dominate the given node's?
   virtual bool DoesDominate(EnumTreeNode *node, Enumerator *enumrtr);
-  virtual void Construct(EnumTreeNode *node, bool isTemp, bool isGenerateState);
+  virtual void Construct(EnumTreeNode *node, bool isTemp, bool isGenerateState, bool setCost = true);
   virtual void SetCostInfo(EnumTreeNode *node, bool isTemp,
                            Enumerator *enumrtr);
   const std::shared_ptr<std::vector<SchedInstruction *>> &GetSuffix() const;
@@ -128,7 +128,7 @@ public:
   CostHistEnumTreeNode();
   virtual ~CostHistEnumTreeNode();
 
-  void Construct(EnumTreeNode *node, bool isTemp, bool isGenerateState) override;
+  void Construct(EnumTreeNode *node, bool isTemp, bool isGenerateState, bool setCost = true) override;
   // Does the sub-problem at this node dominate the given node's?
   bool DoesDominate(EnumTreeNode *node, Enumerator *enumrtr) override;
   void SetCostInfo(EnumTreeNode *node, bool isTemp, Enumerator *enumrtr) override;

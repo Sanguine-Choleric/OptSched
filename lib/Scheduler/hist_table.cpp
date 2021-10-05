@@ -14,7 +14,7 @@ HistEnumTreeNode::~HistEnumTreeNode() {
     delete[] rsrvSlots_;
 }
 
-void HistEnumTreeNode::Construct(EnumTreeNode *node, bool isTemp, bool isGenerateState) {
+void HistEnumTreeNode::Construct(EnumTreeNode *node, bool isTemp, bool isGenerateState, bool) {
 
   isTemp_ = isTemp;
   prevNode_ = node->prevNode_ == NULL ? NULL : node->prevNode_->hstry_;
@@ -480,13 +480,20 @@ CostHistEnumTreeNode::CostHistEnumTreeNode() {
 
 CostHistEnumTreeNode::~CostHistEnumTreeNode() {}
 
-void CostHistEnumTreeNode::Construct(EnumTreeNode *node, bool isTemp, bool isGenerateState) {
+void CostHistEnumTreeNode::Construct(EnumTreeNode *node, bool isTemp, bool isGenerateState, bool setCost) {
   costInfoSet_ = false;
   HistEnumTreeNode::Construct(node, isTemp, isGenerateState);
 #ifdef INSERT_ON_STEPFRWRD
-  partialCost_ = node->GetCostLwrBound();
-  totalCost_ = node->GetCost();
-  costInfoSet_ = true;
+  costInfoSet_ = false;
+  if (setCost) {
+    Logger::Info("Settring cost for hist node");
+    partialCost_ = node->GetCostLwrBound();
+    totalCost_ = node->GetCost();
+  
+    assert(partialCost_ != INVALID_VALUE);
+    assert(totalCost_ != INVALID_VALUE);
+    costInfoSet_ = true;
+  }
   totalCostIsUseable_ = false;
   totalCostIsActualCost_ = false;
 #endif

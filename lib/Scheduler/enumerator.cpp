@@ -944,7 +944,9 @@ void Enumerator::CreateRootNode_() {
   rootNode_->SetLwrBounds(DIR_FRWRD);
   assert(rsrvSlotCnt_ == 0);
   rootNode_->SetRsrvSlots(rsrvSlotCnt_, rsrvSlots_);
-  InitNewNode_(rootNode_);
+  bool setCost = true;
+  if (SolverID_ == 1) setCost = false;
+  InitNewNode_(rootNode_, setCost);
   CmtLwrBoundTightnng_();
 }
 /*****************************************************************************/
@@ -1818,14 +1820,16 @@ if (!crntNode_->getPushedToLocalPool() || !bbt_->isWorker() || isSecondPass()) {
 }
 /*****************************************************************************/
 
-void Enumerator::InitNewNode_(EnumTreeNode *newNode) {
+void Enumerator::InitNewNode_(EnumTreeNode *newNode, bool setCost) {
   crntNode_ = newNode;
 
   crntNode_->SetCrntCycleBlkd(isCrntCycleBlkd_);
   crntNode_->SetRealSlotNum(crntRealSlotNum_);
 
   if (IsHistDom()) {
-    crntNode_->CreateHistory();
+    bool setCost = true;
+    if (SolverID_ < 2) setCost = false;
+    crntNode_->CreateHistory(setCost);
     assert(crntNode_->GetHistory() != tmpHstryNode_);
   }
 
@@ -2807,7 +2811,7 @@ bool LengthEnumerator::WasObjctvMet_() {
 }
 /*****************************************************************************/
 
-HistEnumTreeNode *LengthEnumerator::AllocHistNode_(EnumTreeNode *node) {
+HistEnumTreeNode *LengthEnumerator::AllocHistNode_(EnumTreeNode *node, bool setCost) {
   HistEnumTreeNode *histNode = histNodeAlctr_->GetObject();
   histNode->Construct(node, false, isGenerateState_);
   return histNode;
@@ -2816,7 +2820,7 @@ HistEnumTreeNode *LengthEnumerator::AllocHistNode_(EnumTreeNode *node) {
 
 HistEnumTreeNode *LengthEnumerator::AllocTempHistNode_(EnumTreeNode *node) {
   HistEnumTreeNode *histNode = tmpHstryNode_;
-  histNode->Construct(node, true, isGenerateState_);
+  histNode->Construct(node, true, isGenerateState_,false);
   return histNode;
 }
 /*****************************************************************************/
@@ -4287,8 +4291,8 @@ bool LengthCostEnumerator::EnumStall_() {
 }
 /*****************************************************************************/
 
-void LengthCostEnumerator::InitNewNode_(EnumTreeNode *newNode) {
-  Enumerator::InitNewNode_(newNode);
+void LengthCostEnumerator::InitNewNode_(EnumTreeNode *newNode, bool setCost) {
+  Enumerator::InitNewNode_(newNode, setCost);
 }
 /*****************************************************************************/
 
@@ -4296,16 +4300,17 @@ void LengthCostEnumerator::InitNewGlobalPoolNode_(EnumTreeNode *newNode) {
   Enumerator::InitNewGlobalPoolNode_(newNode);
 }
 
-HistEnumTreeNode *LengthCostEnumerator::AllocHistNode_(EnumTreeNode *node) {
+HistEnumTreeNode *LengthCostEnumerator::AllocHistNode_(EnumTreeNode *node, bool setCost) {
   CostHistEnumTreeNode *histNode = histNodeAlctr_->GetObject();
-  histNode->Construct(node, false, isGenerateState_);
+
+  histNode->Construct(node, false, isGenerateState_, setCost);
   return histNode;
 }
 /*****************************************************************************/
 
 HistEnumTreeNode *LengthCostEnumerator::AllocTempHistNode_(EnumTreeNode *node) {
   HistEnumTreeNode *histNode = tmpHstryNode_;
-  histNode->Construct(node, true, isGenerateState_);
+  histNode->Construct(node, true, isGenerateState_, false);
   return histNode;
 }
 /*****************************************************************************/

@@ -312,7 +312,7 @@ public:
   inline void LegalInstFound();
   inline InstCount GetChldrnCnt();
 
-  inline void CreateHistory();
+  inline void CreateHistory(bool setCost = true);
   inline void ReplaceHistory(HistEnumTreeNode *node);
   inline void SetHistory(HistEnumTreeNode *hstry);
   inline HistEnumTreeNode *GetHistory();
@@ -666,7 +666,7 @@ protected:
   inline InstCount GetCycleNumFrmTime_(InstCount time);
   inline int GetSlotNumFrmTime_(InstCount time);
   
-  virtual HistEnumTreeNode *AllocHistNode_(EnumTreeNode *node) = 0;
+  virtual HistEnumTreeNode *AllocHistNode_(EnumTreeNode *node, bool setCost = true) = 0;
   virtual HistEnumTreeNode *AllocTempHistNode_(EnumTreeNode *node) = 0;
   virtual void FreeHistNode_(HistEnumTreeNode *histNode) = 0;
 
@@ -698,7 +698,7 @@ protected:
                            int SolverID = 0, bool scheduleRoot = false);
   virtual void CreateRootNode_();
   virtual bool EnumStall_();
-  virtual void InitNewNode_(EnumTreeNode *newNode);
+  virtual void InitNewNode_(EnumTreeNode *newNode, bool setCost = true);
   virtual void InitNewGlobalPoolNode_(EnumTreeNode *newNode);
 
   virtual void deleteNodeAlctr(); 
@@ -804,7 +804,7 @@ private:
   
   void ResetAllocators_();
 
-  HistEnumTreeNode *AllocHistNode_(EnumTreeNode *node);
+  HistEnumTreeNode *AllocHistNode_(EnumTreeNode *node, bool setCost = true);
   HistEnumTreeNode *AllocTempHistNode_(EnumTreeNode *node);
   void FreeHistNode_(HistEnumTreeNode *histNode);
 
@@ -842,7 +842,7 @@ private:
   void SetupAllocators_();
   void ResetAllocators_();
 
-  HistEnumTreeNode *AllocHistNode_(EnumTreeNode *node);
+  HistEnumTreeNode *AllocHistNode_(EnumTreeNode *node, bool setCost = true);
   HistEnumTreeNode *AllocTempHistNode_(EnumTreeNode *node);
   void FreeHistNode_(HistEnumTreeNode *histNode);
 
@@ -859,7 +859,7 @@ private:
 
   bool ChkCostFsblty_(SchedInstruction *inst, EnumTreeNode *&newNode, bool trueState = true);
   bool EnumStall_();
-  void InitNewNode_(EnumTreeNode *newNode);
+  void InitNewNode_(EnumTreeNode *newNode, bool setCost = true);
   void InitNewGlobalPoolNode_(EnumTreeNode *newNode);
 
 public:
@@ -1103,8 +1103,8 @@ inline InstCount EnumTreeNode::GetLegalInstCnt() { return legalInstCnt_; }
 inline SchedInstruction *ExaminedInst::GetInst() { return inst_; }
 /**************************************************************************/
 
-inline void EnumTreeNode::CreateHistory() {
-  hstry_ = enumrtr_->AllocHistNode_(this);
+inline void EnumTreeNode::CreateHistory(bool setCost) {
+  hstry_ = enumrtr_->AllocHistNode_(this, setCost);
   //hstry_->isTemp = false;
 }
 /**************************************************************************/

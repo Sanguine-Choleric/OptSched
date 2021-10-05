@@ -2484,6 +2484,7 @@ Enumerator *BBMaster::allocEnumHierarchy_(Milliseconds timeout, bool *fsbl) {
       }
 
     }
+    Logger::Info("finish copying inst sigs");
   }
 
   *fsbl = init();
@@ -2929,7 +2930,6 @@ bool BBMaster::init() {
   for (int i = 0; i < NumThreads_; i++) {
     Workers[i]->initEnumrtr_();
   }
-
 
   return initGlobalPool() == false ? false : true;
 }
