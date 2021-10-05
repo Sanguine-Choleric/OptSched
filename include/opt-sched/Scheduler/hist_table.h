@@ -61,6 +61,8 @@ public:
     fullyExplored_ = isFullyExplored;
   }
 
+  inline bool getFullyExplored() {return fullyExplored_;}
+
   inline void setCostIsUseable(bool isCostAbsoluteBest) {
     totalCostIsUseable_ = isCostAbsoluteBest;
   }

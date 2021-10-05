@@ -441,7 +441,7 @@ bool EnumTreeNode::IsBranchDominated(SchedInstruction *cnddtInst) {
 /*****************************************************************************/
 
 void EnumTreeNode::Archive() {
-  //assert(isArchivd_ == false);
+  assert(isArchivd_ == false);
 
   if (enumrtr_->IsCostEnum()) {
     hstry_->SetCostInfo(this, false, enumrtr_);
@@ -3197,35 +3197,36 @@ void LengthCostEnumerator::BackTrackRoot_() {
 
 void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
   if (propNode->GetParent()) {
-    propNode = propNode->GetParent();
-    propNode->incrementExploredChildren();
-    UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
+    EnumTreeNode *trgtNode = propNode->GetParent();
+
+    if (IsHistDom()) assert(!trgtNode->IsArchived());
+    if (propNode->GetHistory()->getFullyExplored()) trgtNode->incrementExploredChildren();
+    UDT_HASHVAL key = exmndSubProbs_->HashKey(trgtNode->GetSig());
     bool needsPropogation = false;
     bool fullyExplored = false;
 
 
 
     if (IsHistDom()) {
-      //assert(!crntNode_->IsArchived());
-      HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
-      if (propNode->getExploredChildren() == propNode->getNumChildrn()) {
+      HistEnumTreeNode *crntHstry = trgtNode->GetHistory();
+      if (trgtNode->getExploredChildren() == trgtNode->getNumChildrn()) {
         fullyExplored = true;
         needsPropogation = true;
       }
       bbt_->histTableLock(key);
       crntHstry->setFullyExplored(fullyExplored);
-      needsPropogation |= SetTotalCostsAndSuffixes(crntNode_, propNode, trgtSchedLngth_,
+      needsPropogation |= SetTotalCostsAndSuffixes(propNode, trgtNode, trgtSchedLngth_,
                           prune_.useSuffixConcatenation);
-      crntNode_->Archive();
+      trgtNode->Archive();
   #ifdef INSERT_ON_BACKTRACK    
-      exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
+      exmndSubProbs_->InsertElement(trgtNode->GetSig(), crntHstry,
                                 hashTblEntryAlctr_, bbt_);
   #endif
       bbt_->histTableUnlock(key);
     }
 
     if (needsPropogation) {
-      propogateExploration_(propNode);
+      propogateExploration_(trgtNode);
     }
   }
 }
