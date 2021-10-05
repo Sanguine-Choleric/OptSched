@@ -2034,6 +2034,7 @@ bool Enumerator::BackTrack_(bool trueState) {
   if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn() || crntNode_->getIsInfsblFromBacktrack_()) {
     trgtNode->incrementExploredChildren();
     fullyExplored = true;
+    assert(!crntNode_->wasChildStolen());
   }
 
 #ifdef INSERT_ON_BACKTRACK
@@ -3191,7 +3192,8 @@ void LengthCostEnumerator::BackTrackRoot_() {
   //Logger::Info("in the correct BTR");
   Enumerator::BackTrackRoot_();
 
-  EnumTreeNode *tempNode = crntNode_;
+  // should be set to the stolenNode's parent
+  EnumTreeNode *tempNode = crntNode_->GetParent();
   propogateExploration_(tempNode);
 }
 
@@ -3212,6 +3214,7 @@ void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
       if (trgtNode->getExploredChildren() == trgtNode->getNumChildrn()) {
         fullyExplored = true;
         needsPropogation = true;
+        Logger::Info("fully explored node when propogating past root, numChildrn of fully explored = %d", trgtNode->getNumChildrn());
       }
       bbt_->histTableLock(key);
       crntHstry->setFullyExplored(fullyExplored);
@@ -3240,6 +3243,7 @@ void Enumerator::BackTrackRoot_() {
   if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn()) {
     trgtNode->incrementExploredChildren();
     fullyExplored = true;
+    assert(!crntNode_->wasChildStolen());
   }
 
 #ifdef INSERT_ON_BACKTRACK
