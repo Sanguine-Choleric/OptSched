@@ -2259,7 +2259,7 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
   HistEnumTreeNode *exNode;
   int listSize = exmndSubProbs_->GetListSize(newNode->GetSig());
 
-  //UDT_HASHVAL key = exmndSubProbs_->HashKey(newNode->GetSig());
+  UDT_HASHVAL key = exmndSubProbs_->HashKey(newNode->GetSig());
   stats::historyListSize.Record(listSize);
   //Logger::Info("bucket has size of %d and key %d", listSize, key);
   //Logger::Log((Logger::LOG_LEVEL)4, false, "there are %d nodes in the history bucket", listSize);
@@ -2271,7 +2271,7 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
 
   // lock table for syncrhonized iterator
   
-  //bbt_->histTableLock(key);
+  bbt_->histTableLock(key);
   //Logger::Info("Solver %d, made it through door %d", SolverID_, key);
   //Logger::Info("Solver %d inside lock key %d, instNum %d", SolverID_, key, newNode->GetInstNum());
   //Logger::Info("histTable has GetEntryCnt of %d", exmndSubProbs_->GetEntryCnt());
@@ -2343,7 +2343,7 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
   
   // unlock
   //Logger::Info("Solver %d unlocking key %d", SolverID_, key);
-  //bbt_->histTableUnlock(key);  
+  bbt_->histTableUnlock(key);  
 
   stats::traversedHistoryListSize.Record(trvrsdListSize);
   return wasDmntSubProbExmnd;

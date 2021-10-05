@@ -358,7 +358,9 @@ public:
   void SetRealSlotNum(int num) { realSlotNum_ = num; }
 
   inline InstCount GetTotalCost() const { return totalCost_; }
-  inline void SetTotalCost(InstCount totalCost) { totalCost_ = totalCost; }
+  inline void SetTotalCost(InstCount totalCost) { 
+    assert(totalCost != INVALID_VALUE);
+    totalCost_ = totalCost; }
 
   inline InstCount GetTotalCostIsActualCost() const {
     return totalCostIsActualCost_;
