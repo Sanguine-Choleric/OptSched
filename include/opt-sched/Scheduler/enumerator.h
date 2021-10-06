@@ -195,7 +195,7 @@ private:
   bool foundInstWithUse_;
 
   InstCount cost_;
-  InstCount costLwrBound_;
+  InstCount costLwrBound_ = INVALID_VALUE;
   InstCount peakSpillCost_;
   InstCount spillCostSum_;
   InstCount totalCost_ = INVALID_VALUE;

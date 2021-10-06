@@ -893,7 +893,7 @@ void BBThread::SetupForSchdulngBBThread_() {
 }
 /*****************************************************************************/
 
-bool BBThread::ChkCostFsblty(InstCount trgtLngth, EnumTreeNode *node, bool isGlobalPoolNode) {
+bool BBThread::ChkCostFsblty(InstCount trgtLngth, EnumTreeNode *&node, bool isGlobalPoolNode) {
   
   bool fsbl = true;
   InstCount crntCost, dynmcCostLwrBound;
@@ -929,6 +929,7 @@ bool BBThread::ChkCostFsblty(InstCount trgtLngth, EnumTreeNode *node, bool isGlo
     node->SetCost(crntCost);
     //Logger::Info("setting cost LwrBound for inst %d to %d", node->GetInstNum(), dynmcCostLwrBound);
     node->SetCostLwrBound(dynmcCostLwrBound);
+    node->SetTotalCost(dynmcCostLwrBound);
     node->SetPeakSpillCost(PeakSpillCost_);
     node->SetSpillCostSum(TotSpillCost_);
   }

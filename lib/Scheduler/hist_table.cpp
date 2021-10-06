@@ -486,7 +486,9 @@ void CostHistEnumTreeNode::Construct(EnumTreeNode *node, bool isTemp, bool isGen
 #ifdef INSERT_ON_STEPFRWRD
   if (setCost) {
     partialCost_ = node->GetCostLwrBound();
-    totalCost_ = node->GetCost();
+    totalCost_ = node->GetTotalCost();
+    if (totalCost_ != partialCost_) Logger::Info("about to fire from setting cost in construct, totalCost_ %d partialCost %d", totalCost_, partialCost_);
+    assert(totalCost_ == partialCost_);
   
     assert(partialCost_ != INVALID_VALUE);
     assert(totalCost_ != INVALID_VALUE);
@@ -641,6 +643,9 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
         }
 
     else if (SpillCostFunc == SCF_SLIL){
+      if (Node->getIsFirstPass()) {
+        assert(fullyExplored_ || partialCost_ == totalCost_ || totalCostIsActualCost_);
+      }
       //if (partialCost_ != totalCost_) assert(totalCostIsActualCost_);
 
       ShouldPrune = (partialCost_ == totalCost_ || !fullyExplored_ || !totalCostIsUseable_) ? 
@@ -672,9 +677,16 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
 
   // (Chris)
   partialCost_ = node->GetCostLwrBound();
-  totalCost_ = node->GetTotalCost();
   totalCostIsActualCost_ = node->GetTotalCostIsActualCost();
+  totalCost_ = node->GetTotalCost();
 
+
+    if (node->getIsFirstPass()) {
+      if (!(fullyExplored_ && (totalCostIsActualCost_ || totalCost_ == partialCost_))) {
+        Logger::Info("node %p about to fire assert -- fully explored %d\ttotalCostIsActualCost %d\ttotalCost_ (%d) == partialCost (%d) %d", node, fullyExplored_, totalCostIsActualCost_, totalCost_, partialCost_, totalCost_ == partialCost_);
+      }
+      assert(fullyExplored_ && (totalCostIsActualCost_ || totalCost_ == partialCost_));
+    }
 
   // the cost used to prune the subspace can be updated by another thread during exploration
   // If this occurs, the total cost associated with a subspace is no longer the minimum in the  
@@ -700,6 +712,8 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
       }
     }
   }
+
+
   // simple method
   /*
   if (fullyExplored_) {

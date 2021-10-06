@@ -97,7 +97,7 @@ void EnumTreeNode::Init_() {
   crntCycleBlkd_ = false;
   rsrvSlots_ = NULL;
   totalCostIsActualCost_ = false;
-  totalCost_ = -1;
+  totalCost_ = INVALID_VALUE;
   suffix_.clear();
 }
 /*****************************************************************************/
@@ -185,6 +185,8 @@ void EnumTreeNode::Clean() {
     delete[] rsrvSlots_;
     rsrvSlots_ = NULL;
   }
+
+  cost_= costLwrBound_ = peakSpillCost_ = spillCostSum_ = totalCost_ = localBestCost_ = INVALID_VALUE;
 
   isClean_ = true;
 }
@@ -1892,7 +1894,7 @@ bool Enumerator::SetTotalCostsAndSuffixes(EnumTreeNode *const currentNode,
     currentNode->SetLocalBestCost(currentNode->GetCost());
   } else {
     if (!currentNode->GetTotalCostIsActualCost() &&
-        (currentNode->GetTotalCost() == -1 ||
+        (currentNode->GetTotalCost() == INVALID_VALUE ||
          currentNode->GetCostLwrBound() < currentNode->GetTotalCost())) {
 #if defined(IS_DEBUG_ARCHIVE)
       Logger::Info("Inner node doesn't have a real cost yet. Setting total "
@@ -1942,6 +1944,7 @@ bool Enumerator::SetTotalCostsAndSuffixes(EnumTreeNode *const currentNode,
             "Current node has a real cost (%d), and so does parent. (%d)",
             currentNode->GetTotalCost(), parentNode->GetTotalCost());
 #endif
+        assert(parentNode->GetTotalCostIsActualCost());
         parentNode->SetTotalCost(currentNode->GetTotalCost());
         parentNode->SetSuffix(std::move(parentSuffix));
         changeMade = true;
@@ -2095,6 +2098,7 @@ if (isSecondPass()) {
 
       else {
         HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
+        assert(!crntHstry->getFullyExplored());
         crntHstry->setFullyExplored(true);
         exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                     hashTblEntryAlctr_, bbt_);
@@ -2115,6 +2119,7 @@ if (isSecondPass()) {
       if (bbt_->isWorker()) {
           bbt_->histTableLock(key);
           // set fully explored to fullyExplored when work stealing
+          assert(!crntHstry->getFullyExplored());
           crntHstry->setFullyExplored(true);
       }
       else {
@@ -3346,6 +3351,7 @@ void LengthCostEnumerator::CreateRootNode_() {
 
   rootNode_->SetCost(0);
   rootNode_->SetCostLwrBound(0);
+  rootNode_->SetTotalCost(0);
 
   InitNewNode_(rootNode_);
   CmtLwrBoundTightnng_();
