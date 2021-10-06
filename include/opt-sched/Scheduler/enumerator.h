@@ -369,6 +369,8 @@ public:
     totalCostIsActualCost_ = totalCostIsActualCost;
   }
 
+  inline bool getIsFirstPass() {return isFirstPass_;}
+
   inline const SuffixType &GetSuffix() const { return suffix_; }
   inline void SetSuffix(const SuffixType &suffix) { suffix_ = suffix; }
   inline void SetSuffix(SuffixType &&suffix) { suffix_ = std::move(suffix); }

@@ -561,8 +561,11 @@ static bool doesHistorySLILCostDominate(InstCount OtherPrefixCost,
                                         LengthCostEnumerator *LCE,
                                         EnumTreeNode *OtherNode,
                                         bool archived) {
-  assert(HistTotalCost > HistPrefixCost);
-  assert(archived);
+  if (OtherNode->getIsFirstPass()) {                                        
+    assert(HistTotalCost > HistPrefixCost);
+    assert(archived);
+  }
+  if (HistTotalCost <= HistPrefixCost) {Logger::Info("weird condition, histTotal %d, histPrefix %d", HistTotalCost, HistPrefixCost);}
 
   auto RequiredImprovement = std::max(HistTotalCost - LCE->GetBestCost(), 0);
   auto ImprovementOnHistory = HistPrefixCost - OtherPrefixCost;
@@ -701,10 +704,10 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
   // simple method
   if (fullyExplored_) {
     if (totalCostIsActualCost_) {
-      totalCostIsUseable_ = totalCost_ <= node->GetLocalBestCost();
+      totalCostIsUseable_ = totalCost_ <= node->GetLocalBestCost() && totalCost_ != INVALID_VALUE;
     }
     else {
-      assert(totalCost_ <= node->GetLocalBestCost()); //totalcost is DLB of prefix if not actual cost
+      if (node->getIsFirstPass()) (totalCost_ <= node->GetLocalBestCost()); //totalcost is DLB of prefix if not actual cost
       totalCost_ = node->GetLocalBestCost();
     }
   }

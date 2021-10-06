@@ -3730,7 +3730,7 @@ EnumTreeNode *LengthCostEnumerator::scheduleInst_(SchedInstruction *inst, bool i
   // stepFrwrd calls initNewNode which updates the insts in readyList
   //Logger::Info("initializing new node for inst %d", inst->GetNum());
   InitNewNode_(newNode);
-
+/*
 #ifdef INSERT_ON_STEPFRWRD
   if (!isSecondPass()) {
     if (IsHistDom()) {
@@ -3761,7 +3761,7 @@ EnumTreeNode *LengthCostEnumerator::scheduleInst_(SchedInstruction *inst, bool i
     }
   }
 #endif
-
+*/
   if (isPseudoRoot) {
     rootNode_ = newNode;
     //Logger::Info("rootNode_ has inst num %d", rootNode_->GetInstNum());
