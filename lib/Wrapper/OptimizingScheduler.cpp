@@ -459,7 +459,8 @@ void ScheduleDAGOptSched::schedule() {
     auto region = llvm::make_unique<BBWithSpill>(
         OST.get(), dataDepGraph_, 0, HistTableHashBits,
         LowerBoundAlgorithm, HeuristicPriorities, EnumPriorities, VerifySchedule,
-        PruningStrategy, SchedForRPOnly, EnumStalls, SCW, SCF, HeurSchedType, TimeoutToMemblock);
+        PruningStrategy, SchedForRPOnly, EnumStalls, SCW, SCF, HeurSchedType, TimeoutToMemblock,
+        TwoPassEnabled);
 
       // Used for two-pass-optsched to alter upper bound value.
     if (SecondPass)
@@ -504,7 +505,7 @@ void ScheduleDAGOptSched::schedule() {
         LowerBoundAlgorithm, HeuristicPriorities, EnumPriorities, VerifySchedule,
         PruningStrategy, SchedForRPOnly, EnumStalls, SCW, SCF, HeurSchedType, 
         NumThreads, MinNodesAsMultiple, MinSplittingDepth, MaxSplittingDepth, NumSolvers, LocalPoolSize, ExploitationPercent, GlobalPoolSCF,
-        GlobalPoolSort, WorkSteal, IsTimeoutPerInst, TimeoutToMemblock);
+        GlobalPoolSort, WorkSteal, IsTimeoutPerInst, TimeoutToMemblock, TwoPassEnabled);
 
       // Used for two-pass-optsched to alter upper bound value.
     if (SecondPass)

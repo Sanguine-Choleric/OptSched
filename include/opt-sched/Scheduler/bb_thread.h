@@ -132,7 +132,7 @@ private:
   int ExitInstCnt_;
   int NumberOfInsts_;
 
-  
+
 
   // A bit vector indexed by register number indicating whether that
   // register is live
@@ -215,6 +215,8 @@ public:
 
   inline InstCount getCrntSpillCost() {return CrntSpillCost_;}
   inline InstCount getCrntPeakSpillCost() {return PeakSpillCost_;}
+
+  inline bool getIsTwoPass() {return twoPassEnabled_;}
   // virtuals
   virtual InstCount getBestCost() = 0;
 
@@ -297,6 +299,8 @@ protected:
   InstCount StaticLowerBound_ = 0;
   
   int64_t SubspaceLwrBound_ = INVALID_VALUE;
+  bool twoPassEnabled_;
+  
 
   // Needed to override SchedRegion virtuals
   bool EnableEnumBBThread_();
@@ -454,7 +458,7 @@ public:
                 SchedPriorities hurstcPrirts, SchedPriorities enumPrirts,
                 bool vrfySched, Pruning PruningStrategy, bool SchedForRPOnly,
                 bool enblStallEnum, int SCW, SPILL_COST_FUNCTION spillCostFunc,
-                SchedulerType HeurSchedType, int timeoutToMemblock);
+                SchedulerType HeurSchedType, int timeoutToMemblock, bool isTwoPass);
 
     
     FUNC_RESULT Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout,
@@ -571,7 +575,7 @@ public:
               long rgnNum, int16_t sigHashSize, LB_ALG lbAlg,
               SchedPriorities hurstcPrirts, SchedPriorities enumPrirts,
               bool vrfySched, Pruning PruningStrategy, bool SchedForRPOnly,
-              bool enblStallEnum, int SCW, SPILL_COST_FUNCTION spillCostFunc,
+              bool enblStallEnum, int SCW, SPILL_COST_FUNCTION spillCostFunc, bool twoPassEnabled,
               SchedulerType HeurSchedType, bool IsSecondPass, 
               InstSchedule *MasterSched, InstCount *MasterCost, 
               InstCount *MasterSpill, InstCount *MasterLength, 
@@ -754,7 +758,7 @@ private:
              long rgnNum, int16_t sigHashSize, LB_ALG lbAlg,
              SchedPriorities hurstcPrirts, SchedPriorities enumPrirts,
              bool vrfySched, Pruning PruningStrategy, bool SchedForRPOnly,
-             bool enblStallEnum, int SCW, SPILL_COST_FUNCTION spillCostFunc,
+             bool enblStallEnum, int SCW, SPILL_COST_FUNCTION spillCostFunc, bool twoPassEnabled,
              SchedulerType HeurSchedType, InstCount *BestCost, InstCount SchedLwrBound,
              InstSchedule *BestSched, InstCount *BestSpill, 
              InstCount *BestLength, InstPool4 *GlobalPool, 
@@ -785,7 +789,7 @@ public:
              int MinSplittingDepth,
              int MaxSplittingDepth, int NumSolvers, int LocalPoolSize, float ExploitationPercent,
              SPILL_COST_FUNCTION GlobalPoolSCF, int GlobalPoolSort, bool WorkSteal, bool IsTimeoutPerInst,
-             int timeoutToMemblock);
+             int timeoutToMemblock, bool isTwoPass);
 
     ~BBMaster();
     

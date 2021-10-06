@@ -1418,12 +1418,13 @@ BBWithSpill::BBWithSpill(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
               SchedPriorities hurstcPrirts, SchedPriorities enumPrirts,
               bool vrfySched, Pruning PruningStrategy, bool SchedForRPOnly,
               bool enblStallEnum, int SCW, SPILL_COST_FUNCTION spillCostFunc,
-              SchedulerType HeurSchedType, int timeoutToMemblock)
+              SchedulerType HeurSchedType, int timeoutToMemblock, bool twoPassEnabled)
               : BBInterfacer(OST_, dataDepGraph, rgnNum, sigHashSize, lbAlg, hurstcPrirts,
                              enumPrirts, vrfySched, PruningStrategy, SchedForRPOnly, 
                              enblStallEnum, SCW, spillCostFunc, HeurSchedType) {
     SolverID_ = 0;
     NumSolvers_ = 1;
+    twoPassEnabled_ = twoPassEnabled;
 
     timeoutToMemblock_ = timeoutToMemblock;
 }
@@ -1452,7 +1453,7 @@ BBWorker::BBWorker(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
               long rgnNum, int16_t sigHashSize, LB_ALG lbAlg,
               SchedPriorities hurstcPrirts, SchedPriorities enumPrirts,
               bool vrfySched, Pruning PruningStrategy, bool SchedForRPOnly,
-              bool enblStallEnum, int SCW, SPILL_COST_FUNCTION spillCostFunc,
+              bool enblStallEnum, int SCW, SPILL_COST_FUNCTION spillCostFunc, bool twoPassEnabled,
               SchedulerType HeurSchedType, bool IsSecondPass, InstSchedule *MasterSched, 
               InstCount *MasterCost, InstCount *MasterSpill, InstCount *MasterLength, 
               InstPool4 *GlobalPool, 
@@ -1477,6 +1478,7 @@ BBWorker::BBWorker(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
   SigHashSize_ = sigHashSize;
 
   IsSecondPass_ = IsSecondPass;
+  twoPassEnabled_ = twoPassEnabled;
   NumSolvers_ = NumSolvers; // how many threads
 
   // shared
@@ -2323,7 +2325,7 @@ BBMaster::BBMaster(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
              int MinSplittingDepth, 
              int MaxSplittingDepth, int NumSolvers, int LocalPoolSize, float ExploitationPercent, 
              SPILL_COST_FUNCTION GlobalPoolSCF, int GlobalPoolSort, bool WorkSteal, bool IsTimeoutPerInst,
-             int timeoutToMemblock)
+             int timeoutToMemblock, bool twoPassEnabled)
              : BBInterfacer(OST_, dataDepGraph, rgnNum, sigHashSize, lbAlg, hurstcPrirts,
              enumPrirts, vrfySched, PruningStrategy, SchedForRPOnly, 
              enblStallEnum, SCW, spillCostFunc, HeurSchedType) {
@@ -2344,9 +2346,12 @@ BBMaster::BBMaster(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
   WorkSteal_ = WorkSteal;
   WorkStealOn_ = false;
 
+  twoPassEnabled_ = twoPassEnabled;
+
   HistTableSize_ = 1 + (UDT_HASHVAL)(((int64_t)(1) << sigHashSize) - 1);
   HistTableLock = new std::mutex*[HistTableSize_];
   localPoolLocks = new std::mutex*[NumThreads_];
+ 
 
   idleTimes = new int[NumThreads_];
   nodeCounts = new uint64_t[NumThreads_];
@@ -2376,7 +2381,7 @@ BBMaster::BBMaster(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
   // assert(PoolSize_ >= NumThreads_);
 
   initWorkers(OST_, dataDepGraph, rgnNum, sigHashSize, lbAlg, hurstcPrirts, enumPrirts,
-              vrfySched, PruningStrategy, SchedForRPOnly, enblStallEnum, SCW, spillCostFunc,
+              vrfySched, PruningStrategy, SchedForRPOnly, enblStallEnum, SCW, spillCostFunc, twoPassEnabled_,
               HeurSchedType, BestCost_, schedLwrBound_, enumBestSched_, &OptmlSpillCost_, 
               &bestSchedLngth_, GlobalPool, &MasterNodeCount_, HistTableLock, &GlobalPoolLock, &BestSchedLock, 
               &NodeCountLock, &ImprvCountLock, &RegionSchedLock, &AllocatorLock, &results, idleTimes,
@@ -2411,7 +2416,7 @@ void BBMaster::initWorkers(const OptSchedTarget *OST_, DataDepGraph *dataDepGrap
              long rgnNum, int16_t sigHashSize, LB_ALG lbAlg,
              SchedPriorities hurstcPrirts, SchedPriorities enumPrirts,
              bool vrfySched, Pruning PruningStrategy, bool SchedForRPOnly,
-             bool enblStallEnum, int SCW, SPILL_COST_FUNCTION spillCostFunc,
+             bool enblStallEnum, int SCW, SPILL_COST_FUNCTION spillCostFunc, bool twoPassEnabled,
              SchedulerType HeurSchedType, InstCount *BestCost, InstCount schedLwrBound,
              InstSchedule *BestSched, InstCount *BestSpill, 
              InstCount *BestLength, InstPool4 *GlobalPool, 
@@ -2427,7 +2432,7 @@ void BBMaster::initWorkers(const OptSchedTarget *OST_, DataDepGraph *dataDepGrap
   for (int i = 0; i < NumThreads_; i++) {
     Workers[i] = new BBWorker(OST_, dataDepGraph, rgnNum, sigHashSize, lbAlg, hurstcPrirts,
                                    enumPrirts, vrfySched, PruningStrategy, SchedForRPOnly, enblStallEnum, 
-                                   SCW, spillCostFunc, HeurSchedType, isSecondPass_, BestSched, BestCost, 
+                                   SCW, spillCostFunc, twoPassEnabled, HeurSchedType, isSecondPass_, BestSched, BestCost, 
                                    BestSpill, BestLength, GlobalPool, NodeCount, i+2, HistTableLock, 
                                    GlobalPoolLock, BestSchedLock, NodeCountLock, ImprvCountLock, RegionSchedLock, 
                                    AllocatorLock, results, idleTimes, NumThreads_, localPools, localPoolLocks,

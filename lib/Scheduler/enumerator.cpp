@@ -2951,6 +2951,7 @@ FUNC_RESULT LengthCostEnumerator::FindFeasibleSchedule(InstSchedule *sched,
                                                        Milliseconds deadline) {
   
   bbt_ = bbt;
+  IsTwoPass_ = bbt_->getIsTwoPass();
   //costLwrBound_ = costLwrBound;
 
   //if (bbt_->isWorker()) {

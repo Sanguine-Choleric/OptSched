@@ -679,10 +679,13 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
   // updates) and use that for history based cost prunings as it is a lower bound on the
   // best cost for a subspace
 
+  // second and non-two pass are not parallelized
+  if (enumrtr->isSecondPass() || !enumrtr->IsTwoPass_) totalCostIsUseable_ = true;
+
   InstCount localBest = node->GetLocalBestCost();
 
   // complete method
-  
+  /*
   if (fullyExplored_ && enumrtr->IsTwoPass_ && !enumrtr->isSecondPass()) {
     if (localBest != INVALID_VALUE) {
       totalCostIsUseable_ = true;
@@ -694,22 +697,18 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
       totalCostIsUseable_ = false;
     }
   }
-
-  /* simple method
-  if (fullyExplored_ && enumrtr->IsTwoPass_ && !enumrtr->isSecondPass() ) {
+  */
+  // simple method
+  if (fullyExplored_) {
     if (totalCostIsActualCost_) {
       totalCostIsUseable_ = totalCost_ <= node->GetLocalBestCost();
     }
     else {
-      if (node->GetLocalBestCost() != INVALID_VALUE) {
-        totalCost_ = node->GetLocalBestCost();
-      }
+      assert(totalCost_ <= node->GetLocalBestCost()); //totalcost is DLB of prefix if not actual cost
+      totalCost_ = node->GetLocalBestCost();
     }
   }
-  */
-
-  // second and non-two pass are not parallelized
-  if (enumrtr->isSecondPass() || !enumrtr->IsTwoPass_) totalCostIsUseable_ = true;
+  
 
 
   if (suffix_ == nullptr && node->GetSuffix().size() > 0)
