@@ -691,7 +691,7 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
   InstCount localBest = node->GetLocalBestCost();
 
   // complete method
-  /*
+  totalCostIsUseable_ = false;
   if (fullyExplored_ && enumrtr->IsTwoPass_ && !enumrtr->isSecondPass()) {
     if (localBest != INVALID_VALUE) {
       totalCostIsUseable_ = true;
@@ -699,12 +699,9 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
         totalCost_ = partialCost_ > localBest ? partialCost_ : localBest;
       }
     }
-    else {
-      totalCostIsUseable_ = false;
-    }
   }
-  */
   // simple method
+  /*
   if (fullyExplored_) {
     if (totalCostIsActualCost_) {
       totalCostIsUseable_ = totalCost_ <= node->GetLocalBestCost() && totalCost_ != INVALID_VALUE;
@@ -714,11 +711,11 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
         if (node->getIsFirstPass()) {
           assert(totalCost_ <= node->GetLocalBestCost() && totalCost_ != INVALID_VALUE); //totalcost is DLB of prefix if not actual cost
         }
-        
+
         totalCost_ = node->GetLocalBestCost();
       }
     }
-  }
+  }*/
   
 
 

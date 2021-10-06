@@ -3762,6 +3762,7 @@ EnumTreeNode *LengthCostEnumerator::scheduleInst_(SchedInstruction *inst, bool i
   }
 #endif
 */
+
   if (isPseudoRoot) {
     rootNode_ = newNode;
     //Logger::Info("rootNode_ has inst num %d", rootNode_->GetInstNum());
