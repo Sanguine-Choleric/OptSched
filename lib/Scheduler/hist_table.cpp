@@ -607,11 +607,12 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
     return false;
 
   if (E->IsTwoPass_ && !E->isSecondPass()) assert(time_ == Node->GetTime());
+  assert(costInfoSet_ && partialCost_ != INVALID_VALUE);
 
     // If the other node's prefix cost is higher than or equal to the history
   // prefix cost the other node is pruned.
   bool ShouldPrune;
-  assert(costInfoSet_ && partialCost_ != INVALID_VALUE);
+  
   if (Node->GetCostLwrBound() >= partialCost_) {
     ShouldPrune = true;
     if (totalCost_ != INVALID_VALUE && fullyExplored_) {
@@ -623,6 +624,8 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
     else if (fullyExplored_) //totalCost_ == INVALID_VALUE
       assert(false && "hist has an invalid totalCost_");
   }
+
+
   else {
     ShouldPrune = false;
     LengthCostEnumerator *LCE = static_cast<LengthCostEnumerator *>(E);
@@ -707,8 +710,13 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
       totalCostIsUseable_ = totalCost_ <= node->GetLocalBestCost() && totalCost_ != INVALID_VALUE;
     }
     else {
-      if (node->getIsFirstPass()) (totalCost_ <= node->GetLocalBestCost()); //totalcost is DLB of prefix if not actual cost
-      totalCost_ = node->GetLocalBestCost();
+      if (node->GetLocalBestCost() != INVALID_VALUE) {
+        if (node->getIsFirstPass()) {
+          assert(totalCost_ <= node->GetLocalBestCost() && totalCost_ != INVALID_VALUE); //totalcost is DLB of prefix if not actual cost
+        }
+        
+        totalCost_ = node->GetLocalBestCost();
+      }
     }
   }
   
