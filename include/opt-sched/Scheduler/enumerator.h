@@ -679,7 +679,7 @@ protected:
 
   virtual void ResetAllocators_();
 
-  bool SetTotalCostsAndSuffixes(EnumTreeNode *const, EnumTreeNode *const, const InstCount, const bool);
+  bool SetTotalCostsAndSuffixes(EnumTreeNode *const, EnumTreeNode *const, const InstCount, const bool, const bool fullExplored);
 
   void PrintLog_();
 
