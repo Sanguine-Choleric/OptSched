@@ -1496,6 +1496,7 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
 #ifdef IS_DEBUG_INFSBLTY_TESTS
     stats::slotCountInfeasibilityHits++;
 #endif
+  if (!bbt_->isSecondPass()) Logger::Info("actually pruning due to slot count");
   stats::slotCountInfeasibilityHits++;
 #ifdef IS_DEBUG_SEARCH_ORDER
     Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: issue slot fail");
@@ -1508,10 +1509,11 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
     state_.lwrBoundsTightnd = true;
   }
 
-  if (fsbl == false) {
+  if (!fsbl) {
 #ifdef IS_DEBUG_INFSBLTY_TESTS
     stats::rangeTighteningInfeasibilityHits++;
 #endif
+  if (!bbt_->isSecondPass()) Logger::Info("actually pruning due to rng tightn");
   stats::rangeTighteningInfeasibilityHits++;
 
 #ifdef IS_DEBUG_SEARCH_ORDER
@@ -1556,7 +1558,7 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
 #ifdef IS_DEBUG_INFSBLTY_TESTS
       stats::relaxedSchedulingInfeasibilityHits++;
 #endif
-
+    if (!bbt_->isSecondPass()) Logger::Info("actually pruning due to rlx schd");
   stats::relaxedSchedulingInfeasibilityHits++;
 
       isRlxInfsbl = true;
@@ -2361,7 +2363,7 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
 
 bool Enumerator::TightnLwrBounds_(SchedInstruction *newInst, bool trueTightn) {
   //if (newInst) Logger::Log((Logger::LOG_LEVEL) 4, false, "Calling TLB for inst %d", newInst->GetNum());
-  
+  if (bbt_->getIsTwoPass() && !bbt_->isSecondPass()) assert(false);
   SchedInstruction *inst;
   InstCount newLwrBound = 0;
   InstCount nxtAvlblCycle[MAX_ISSUTYPE_CNT];
@@ -2598,6 +2600,7 @@ void Enumerator::RestoreCrntLwrBounds_(SchedInstruction *unschduldInst, bool tru
 /*****************************************************************************/
 
 bool Enumerator::RlxdSchdul_(EnumTreeNode *newNode) {
+  if (bbt_->getIsTwoPass() && !bbt_->isSecondPass()) assert(false);
   assert(newNode != NULL);
   LinkedList<SchedInstruction> *rsrcFxdLst = new LinkedList<SchedInstruction>;
 
