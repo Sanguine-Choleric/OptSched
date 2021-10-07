@@ -1958,7 +1958,11 @@ bool Enumerator::SetTotalCostsAndSuffixes(EnumTreeNode *const currentNode,
       }
     }
 
-    if (currentNode->GetLocalBestCost() != INVALID_VALUE && fullyExplored) {
+
+    if (fullyExplored) {
+      if (currentNode->GetLocalBestCost() == INVALID_VALUE) {
+        currentNode->SetLocalBestCost(currentNode->GetCostLwrBound());
+      }
       changeMade |= parentNode->SetLocalBestCost(currentNode->GetLocalBestCost());
     }
   }
