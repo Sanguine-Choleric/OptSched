@@ -2098,7 +2098,7 @@ if (isSecondPass()) {
 
       else {
         HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
-        assert(!crntHstry->getFullyExplored());
+        //assert(!crntHstry->getFullyExplored());
         crntHstry->setFullyExplored(true);
         exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                     hashTblEntryAlctr_, bbt_);
@@ -2121,18 +2121,15 @@ if (isSecondPass()) {
           // set fully explored to fullyExplored when work stealing
           assert(!crntHstry->getFullyExplored());
           crntHstry->setFullyExplored(true);
+          SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
+                            prune_.useSuffixConcatenation);
+          crntNode_->Archive();
+          bbt_->histTableUnlock(key);
       }
       else {
         crntHstry->setFullyExplored(true);
-      }
-      SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
+        SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                             prune_.useSuffixConcatenation);
-
-      if (bbt_->isWorker()) {
-        crntNode_->Archive();
-        bbt_->histTableUnlock(key);
-      }
-      else {
         crntNode_->Archive();
       }
     }

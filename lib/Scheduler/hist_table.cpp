@@ -647,7 +647,7 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
         assert(fullyExplored_ || partialCost_ == totalCost_ || totalCostIsActualCost_);
       }
       //if (partialCost_ != totalCost_) assert(totalCostIsActualCost_);
-
+      if (Node->getIsFirstPass() && totalCostIsUseable_) assert(fullyExplored_);
       ShouldPrune = (partialCost_ == totalCost_ || !fullyExplored_ || !totalCostIsUseable_) ? 
                       false : doesHistorySLILCostDominate(Node->GetCostLwrBound(),
                                                           partialCost_, totalCost_, LCE, Node, archived_);
@@ -698,12 +698,13 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
   // best cost for a subspace
 
   // second and non-two pass are not parallelized
+  totalCostIsUseable_ = false;
   if (enumrtr->isSecondPass() || !enumrtr->IsTwoPass_) totalCostIsUseable_ = true;
 
   InstCount localBest = node->GetLocalBestCost();
 
   // complete method
-  totalCostIsUseable_ = false;
+
   if (fullyExplored_ && enumrtr->IsTwoPass_ && !enumrtr->isSecondPass()) {
     if (localBest != INVALID_VALUE) {
       totalCostIsUseable_ = true;
