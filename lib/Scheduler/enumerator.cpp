@@ -2059,7 +2059,7 @@ bool Enumerator::BackTrack_(bool trueState) {
       bbt_->histTableLock(key);
         HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
         // set fully explored to fullyExplored when work stealing
-        crntHstry->setFullyExplored(true);
+        crntHstry->setFullyExplored(fullyExplored);
         SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                              prune_.useSuffixConcatenation);
         crntNode_->Archive();
@@ -2093,7 +2093,7 @@ if (isSecondPass()) {
         bbt_->histTableLock(key);
           HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
           // set fully explored to fullyExplored when work stealing
-          crntHstry->setFullyExplored(true);
+          crntHstry->setFullyExplored(fullyExplored);
           exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                     hashTblEntryAlctr_, bbt_);
           SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
@@ -2126,7 +2126,7 @@ if (isSecondPass()) {
           bbt_->histTableLock(key);
           // set fully explored to fullyExplored when work stealing
           assert(!crntHstry->getFullyExplored());
-          crntHstry->setFullyExplored(true);
+          crntHstry->setFullyExplored(fullyExplored);
           SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                             prune_.useSuffixConcatenation);
           crntNode_->Archive();
@@ -3273,7 +3273,7 @@ void Enumerator::BackTrackRoot_() {
     bbt_->histTableLock(key);
     HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
     // set fully explored to fullyExplored when work stealing
-    crntHstry->setFullyExplored(true);
+    crntHstry->setFullyExplored(fullyExplored);
     SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                              prune_.useSuffixConcatenation);
     crntNode_->Archive();
@@ -3291,7 +3291,7 @@ void Enumerator::BackTrackRoot_() {
     HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
     bbt_->histTableLock(key);
     // set fully explored to fullyExplored when work stealing
-    crntHstry->setFullyExplored(true);
+    crntHstry->setFullyExplored(fullyExplored);
     SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                           prune_.useSuffixConcatenation);
     crntNode_->Archive();

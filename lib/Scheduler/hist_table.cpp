@@ -578,6 +578,7 @@ static bool doesHistorySLILCostDominate(InstCount OtherPrefixCost,
 
   
   if (ImprovementOnHistory <= RequiredImprovement) {
+    Logger::Info("GOODPRUNE");
     OtherNode->SetLocalBestCost(HistTotalCost - ImprovementOnHistory);
     // possible that we are updating another active tree when work stealing and updating parent
     // need to change method and synchronize
