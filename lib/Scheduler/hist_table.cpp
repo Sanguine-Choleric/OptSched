@@ -621,6 +621,11 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
   
   if (Node->GetCostLwrBound() >= partialCost_) {
     ShouldPrune = true;
+    Node->SetLocalBestCost(Node->GetCostLwrBound());
+    if (Node->GetParent()) {
+      Node->GetParent()->SetLocalBestCost(Node->GetLocalBestCost());
+    }
+    /*
     if (totalCost_ != INVALID_VALUE && fullyExplored_) {
       if (totalCostIsUseable_) {
         Node->SetLocalBestCost(totalCost_ + (Node->GetCostLwrBound() - partialCost_));
@@ -637,6 +642,7 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
     }
     else if (fullyExplored_) // totalCost_ == INVALID_VALUE
       assert(false && "hist has an invalid totalCost_");
+    */
   }
 
 
@@ -735,10 +741,12 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
     if (totalCostIsActualCost_) {
       totalCostIsUseable_ = totalCost_ <= node->GetLocalBestCost() && totalCost_ != INVALID_VALUE;
     }
-    else {
+    else { //!totalCostISActualCost_
       if (node->GetLocalBestCost() != INVALID_VALUE) {
         if (node->getIsFirstPass()) {
+          if (totalCost_ > node->GetLocalBestCost()) Logger::Info("about to fire assert, totalCost_ %d node->GetLocalBestCost() %d", totalCost_, node->GetLocalBestCost());
           assert(totalCost_ <= node->GetLocalBestCost() && totalCost_ != INVALID_VALUE); //totalcost is DLB of prefix if not actual cost
+          assert(totalCost_ == partialCost_);
         }
 
         //totalCost_ = node->GetLocalBestCost();
