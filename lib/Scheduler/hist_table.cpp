@@ -728,6 +728,7 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
 */
 
   // simple method
+
   if (fullyExplored_) {
     if (totalCostIsActualCost_) {
       totalCostIsUseable_ = totalCost_ <= node->GetLocalBestCost() && totalCost_ != INVALID_VALUE;
@@ -742,7 +743,7 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
       }
     }
   }
-  
+
 
 
   if (suffix_ == nullptr && node->GetSuffix().size() > 0)
