@@ -3082,6 +3082,12 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
   stats::positiveDominationHits.Print(cout);
   stats::nodeSuperiorityInfeasibilityHits.Print(cout);
   stats::costInfeasibilityHits.Print(cout);
+  stats::forwardLBInfeasibilityHits.Print(cout);
+  stats::backwardLBInfeasibilityHits.Print(cout);
+  stats::slotCountInfeasibilityHits.Print(cout);
+  stats::rangeTighteningInfeasibilityHits.Print(cout);
+  stats::historyDominationInfeasibilityHits.Print(cout);
+  stats::relaxedSchedulingInfeasibilityHits.Print(cout);
 
   for (int j = 0; j < NumThreads_; j++) {
     Milliseconds endTime = Utilities::GetProcessorTime();
