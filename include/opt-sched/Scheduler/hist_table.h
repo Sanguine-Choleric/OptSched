@@ -66,6 +66,8 @@ public:
   inline void setCostIsUseable(bool isCostAbsoluteBest) {
     totalCostIsUseable_ = isCostAbsoluteBest;
   }
+
+  inline bool getCostIsUseable() {return totalCostIsUseable_;}
   bool isTemp_;
 
   void Copy(HistEnumTreeNode *other);
@@ -138,6 +140,9 @@ public:
     totalCost_ = totalCost;
     totalCostIsUseable_ = true;
   }
+
+  inline InstCount getTotalCost() {return totalCost_;}
+  inline InstCount getPartialCost() {return partialCost_;}
 
 
 protected:

@@ -579,6 +579,8 @@ static bool doesHistorySLILCostDominate(InstCount OtherPrefixCost,
   
   if (ImprovementOnHistory <= RequiredImprovement) {
     OtherNode->SetLocalBestCost(HistTotalCost - ImprovementOnHistory);
+    // possible that we are updating another active tree when work stealing and updating parent
+    // need to change method and synchronize
     OtherNode->GetParent()->SetLocalBestCost(OtherNode->GetLocalBestCost());
   }
 
@@ -620,12 +622,20 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
   if (Node->GetCostLwrBound() >= partialCost_) {
     ShouldPrune = true;
     if (totalCost_ != INVALID_VALUE && fullyExplored_) {
-      Node->SetLocalBestCost(totalCost_ + (Node->GetCostLwrBound() - partialCost_));
-      if (Node->GetParent()) {
-        Node->GetParent()->SetLocalBestCost(Node->GetLocalBestCost());
+      if (totalCostIsUseable_) {
+        Node->SetLocalBestCost(totalCost_ + (Node->GetCostLwrBound() - partialCost_));
+        if (Node->GetParent()) {
+          Node->GetParent()->SetLocalBestCost(Node->GetLocalBestCost());
+        }
+      }
+      else { // !totalCostIsUseable_
+        Node->SetLocalBestCost(partialCost_);
+        if (Node->GetParent()) {
+          Node->GetParent()->SetLocalBestCost(Node->GetLocalBestCost());
+        }
       }
     }
-    else if (fullyExplored_) //totalCost_ == INVALID_VALUE
+    else if (fullyExplored_) // totalCost_ == INVALID_VALUE
       assert(false && "hist has an invalid totalCost_");
   }
 
@@ -728,7 +738,7 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
           assert(totalCost_ <= node->GetLocalBestCost() && totalCost_ != INVALID_VALUE); //totalcost is DLB of prefix if not actual cost
         }
 
-        totalCost_ = node->GetLocalBestCost();
+        //totalCost_ = node->GetLocalBestCost();
       }
     }
   }

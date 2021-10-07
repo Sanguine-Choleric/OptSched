@@ -1792,6 +1792,10 @@ if (!crntNode_->getPushedToLocalPool() || !bbt_->isWorker() || isSecondPass()) {
 
           exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                     hashTblEntryAlctr_, bbt_);
+          assert(!crntHstry->getFullyExplored());
+          assert(!crntHstry->getCostIsUseable());
+          CostHistEnumTreeNode *temp = static_cast<CostHistEnumTreeNode *>(crntHstry);
+          assert(temp->getPartialCost() == temp->getTotalCost());
           //SetTotalCostsAndSuffixes(crntNode_, crntNode_->GetParent(), trgtSchedLngth_, prune_.useSuffixConcatenation);
         bbt_->histTableUnlock(key);
       }
