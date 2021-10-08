@@ -1516,6 +1516,7 @@ BBWorker::BBWorker(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
 
   WorkSteal_ = WorkSteal;
   WorkStealOn_ = WorkStealOn;
+  assert(!*WorkStealOn_);
   subspaceLwrBounds_ = subspaceLwrBounds;
   //Logger::Info("solverID %d has WorkStealOn_ %p", SolverID_, WorkStealOn_);
   IsTimeoutPerInst_ = IsTimeoutPerInst;

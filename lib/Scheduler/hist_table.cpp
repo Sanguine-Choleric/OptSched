@@ -625,6 +625,10 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
     if (Node->GetParent()) {
       Node->GetParent()->SetLocalBestCost(Node->GetCostLwrBound());
     }
+    
+    if (totalCost_ != INVALID_VALUE && fullyExplored_) {
+      assert(totalCost_ + (Node->GetCostLwrBound() - partialCost_) >= Node->GetCostLwrBound());
+    }
     /*
     if (totalCost_ != INVALID_VALUE && fullyExplored_) {
       if (totalCostIsUseable_) {

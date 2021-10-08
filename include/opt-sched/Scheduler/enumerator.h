@@ -318,7 +318,7 @@ public:
   inline HistEnumTreeNode *GetHistory();
 
   inline bool IsArchived();
-  void Archive();
+  void Archive(bool fullyExplored);
 
   inline bool IsFeasible();
   inline bool IsLngthFsbl();

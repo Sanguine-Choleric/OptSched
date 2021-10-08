@@ -442,14 +442,16 @@ bool EnumTreeNode::IsBranchDominated(SchedInstruction *cnddtInst) {
 }
 /*****************************************************************************/
 
-void EnumTreeNode::Archive() {
-  assert(isArchivd_ == false);
+void EnumTreeNode::Archive(bool fullyExplored) {
+  if (fullyExplored) {
+    assert(isArchivd_ == false);
 
-  if (enumrtr_->IsCostEnum()) {
-    hstry_->SetCostInfo(this, false, enumrtr_);
+    if (enumrtr_->IsCostEnum()) {
+      hstry_->SetCostInfo(this, false, enumrtr_);
+    }
+
+    isArchivd_ = true;
   }
-
-  isArchivd_ = true;
 }
 /**************************************************************************/
 
@@ -1802,7 +1804,7 @@ if (!crntNode_->getPushedToLocalPool() || !bbt_->isWorker() || isSecondPass()) {
       /*
       else {
         HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
-        crntNode_->Archive();
+        crntNode_->Archive(false);
         exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                     hashTblEntryAlctr_, bbt_);
         //SetTotalCostsAndSuffixes(crntNode_, crntNode_->GetParent(), trgtSchedLngth_, prune_.useSuffixConcatenation, fullyExplored);
@@ -2067,7 +2069,7 @@ bool Enumerator::BackTrack_(bool trueState) {
         crntHstry->setFullyExplored(fullyExplored);
         SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                              prune_.useSuffixConcatenation, fullyExplored);
-        crntNode_->Archive();
+        crntNode_->Archive(fullyExplored);
         exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                   hashTblEntryAlctr_, bbt_);
       bbt_->histTableUnlock(key);
@@ -2080,7 +2082,7 @@ bool Enumerator::BackTrack_(bool trueState) {
                                   hashTblEntryAlctr_, bbt_);
       SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                              prune_.useSuffixConcatenation, fullyExplored);
-      crntNode_->Archive();
+      crntNode_->Archive(true);
     }
       
 
@@ -2103,7 +2105,7 @@ if (isSecondPass()) {
                                     hashTblEntryAlctr_, bbt_);
           SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                               prune_.useSuffixConcatenation, fullyExplored);
-          crntNode_->Archive();
+          crntNode_->Archive(fullyExplored);
         bbt_->histTableUnlock(key);
       }
 
@@ -2115,7 +2117,7 @@ if (isSecondPass()) {
                                     hashTblEntryAlctr_, bbt_);
         SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                               prune_.useSuffixConcatenation, fullyExplored);
-        crntNode_->Archive();
+        crntNode_->Archive(true);
       }
         
 
@@ -2134,14 +2136,14 @@ if (isSecondPass()) {
           crntHstry->setFullyExplored(fullyExplored);
           SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                             prune_.useSuffixConcatenation, fullyExplored);
-          crntNode_->Archive();
+          crntNode_->Archive(fullyExplored);
           bbt_->histTableUnlock(key);
       }
       else {
         crntHstry->setFullyExplored(true);
         SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                             prune_.useSuffixConcatenation, fullyExplored);
-        crntNode_->Archive();
+        crntNode_->Archive(true);
       }
     }
   }
@@ -3243,7 +3245,7 @@ void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
       crntHstry->setFullyExplored(fullyExplored);
       needsPropogation |= SetTotalCostsAndSuffixes(propNode, trgtNode, trgtSchedLngth_,
                           prune_.useSuffixConcatenation, fullyExplored);
-      trgtNode->Archive();
+      trgtNode->Archive(fullyExplored);
   #ifdef INSERT_ON_BACKTRACK    
       exmndSubProbs_->InsertElement(trgtNode->GetSig(), crntHstry,
                                 hashTblEntryAlctr_, bbt_);
@@ -3281,7 +3283,7 @@ void Enumerator::BackTrackRoot_() {
     crntHstry->setFullyExplored(fullyExplored);
     SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                              prune_.useSuffixConcatenation, fullyExplored);
-    crntNode_->Archive();
+    crntNode_->Archive(fullyExplored);
     exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                   hashTblEntryAlctr_, bbt_);
     bbt_->histTableUnlock(key);
@@ -3299,7 +3301,7 @@ void Enumerator::BackTrackRoot_() {
     crntHstry->setFullyExplored(fullyExplored);
     SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                           prune_.useSuffixConcatenation, fullyExplored);
-    crntNode_->Archive();
+    crntNode_->Archive(fullyExplored);
     bbt_->histTableUnlock(key);
   }
 #endif
@@ -3309,8 +3311,6 @@ void Enumerator::BackTrackRoot_() {
   else {
     trgtNode->setChildStolen(true);
   }
-  
-  //TODO JEFF we should be inserting into history here if we insert on backtrack
 
   if (bbt_->isWorkStealOn()) {
   // it is possible that a crntNode becomes infeasible before exploring all its children
