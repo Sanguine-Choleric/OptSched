@@ -3080,7 +3080,7 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
     return false;
   }
 
-  if (IsHistDom()) {
+  if (IsHistDom() && !isGenerateState_) {
 //#ifdef IS_DEBUG_SEARCH_ORDER
 //    Logger::Info("Solver %d IN LCE HIST DOM", SolverID_);
 //#endif
