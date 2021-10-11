@@ -3265,7 +3265,7 @@ void Enumerator::BackTrackRoot_() {
   SchedInstruction *inst = crntNode_->GetInst();
   EnumTreeNode *trgtNode = crntNode_->GetParent();
   bool fullyExplored = false;
-  /*
+  
   if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn()) {
     trgtNode->incrementExploredChildren();
     fullyExplored = true;
@@ -3305,7 +3305,7 @@ void Enumerator::BackTrackRoot_() {
     bbt_->histTableUnlock(key);
   }
 #endif
-  */
+
   if (!crntNode_->wasChildStolen())
     nodeAlctr_->Free(crntNode_);
   else {
@@ -3595,6 +3595,7 @@ bool LengthCostEnumerator::scheduleNodeOrPrune(EnumTreeNode *node,
   SchedInstruction *inst;
   bool isFsbl = true;
   InstCount brnchCnt = node->GetBranchCnt(isEmptyNode);
+  bool found = false;
   //InstCount crntBrnchNum = node->GetCrntBranchNum();
 
   // iterate until we find the node
@@ -3612,6 +3613,7 @@ bool LengthCostEnumerator::scheduleNodeOrPrune(EnumTreeNode *node,
     inst = rdyLst_->GetNextPriorityInst();
     //Logger::Info("SolverID_ %d, checking %dth inst (num %d) in rdyLst to find match (against %d)", SolverID_, i, inst->GetNum(), node->GetInstNum());
     if (inst->GetNum() == node->GetInstNum()) {
+      found = true;
       //Logger::Info("SolverID_ %d , MATCH (num %d) (against %d)", SolverID_, inst->GetNum(), node->GetInstNum());
       // schedule its instruction
       //Logger::Info("SolverID %d attempting to schedule inst #%d", SolverID_, inst->GetNum());
@@ -3628,6 +3630,8 @@ bool LengthCostEnumerator::scheduleNodeOrPrune(EnumTreeNode *node,
       break;
     }
   }
+  assert(found);
+  if (!found) {Logger::Info("was unable to find inst when scheduling prefix of stolen node");}
   rdyLst_->ResetIterator();
   //Logger::Info("ending enum schedNodeOrPrune, entryCnt %d", getHistTableEntryCnt());
   return true;

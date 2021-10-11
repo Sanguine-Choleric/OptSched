@@ -565,11 +565,11 @@ static bool doesHistorySLILCostDominate(InstCount OtherPrefixCost,
                                         LengthCostEnumerator *LCE,
                                         EnumTreeNode *OtherNode,
                                         bool archived) {
-  if (OtherNode->getIsFirstPass()) {                                        
+  if (OtherNode->getIsFirstPass()) {
     assert(HistTotalCost > HistPrefixCost);
     assert(archived);
   }
-  if (HistTotalCost <= HistPrefixCost) {Logger::Info("weird condition, histTotal %d, histPrefix %d", HistTotalCost, HistPrefixCost);}
+  if (HistTotalCost < HistPrefixCost) {Logger::Info("weird condition, histTotal %d, histPrefix %d", HistTotalCost, HistPrefixCost);}
 
   auto RequiredImprovement = std::max(HistTotalCost - LCE->GetBestCost(), 0);
   auto ImprovementOnHistory = HistPrefixCost - OtherPrefixCost;
@@ -578,6 +578,7 @@ static bool doesHistorySLILCostDominate(InstCount OtherPrefixCost,
 
   
   if (ImprovementOnHistory <= RequiredImprovement) {
+    //Logger::Info("GOODPRUNE");
     OtherNode->SetLocalBestCost(HistTotalCost - ImprovementOnHistory);
     // possible that we are updating another active tree when work stealing and updating parent
     // need to change method and synchronize
@@ -626,15 +627,7 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
     if (Node->GetParent()) {
       Node->GetParent()->SetLocalBestCost(Node->GetCostLwrBound());
     }
-    
 
-    /*
-    if (totalCost_ != INVALID_VALUE && fullyExplored_) {
-      assert(totalCost_ + (Node->GetCostLwrBound() - partialCost_) >= Node->GetCostLwrBound());
-    }*/
-
-
-    
     if (totalCost_ != INVALID_VALUE && fullyExplored_) {
       if (totalCostIsUseable_) {
         Node->SetLocalBestCost(totalCost_ + (Node->GetCostLwrBound() - partialCost_));
@@ -643,19 +636,12 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
         }
       }
       else { // !totalCostIsUseable_
-        Node->SetLocalBestCost(partialCost_);
+        Node->SetLocalBestCost(Node->GetCostLwrBound());
         if (Node->GetParent()) {
           Node->GetParent()->SetLocalBestCost(Node->GetLocalBestCost());
         }
       }
     }
-    /*
-    else if (fullyExplored_) // totalCost_ == INVALID_VALUE
-      assert(false && "hist has an invalid totalCost_");
-    */
-    
-
-
   }
 
 
@@ -682,6 +668,7 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
       ShouldPrune = (partialCost_ == totalCost_ || !fullyExplored_ || !totalCostIsUseable_) ? 
                       false : doesHistorySLILCostDominate(Node->GetCostLwrBound(),
                                                           partialCost_, totalCost_, LCE, Node, archived_);
+
     }
 
     // If the cost function is peak plus avg, make sure that the fraction lost
