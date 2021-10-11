@@ -334,7 +334,7 @@ void EnumTreeNode::SetBranchCnt(InstCount rdyLstSize, bool isLeaf) {
   fsblBrnchCnt_ = brnchCnt_;
   lngthFsblBrnchCnt_ = brnchCnt_;
   numChildren_ = rdyLstSize;
-  explordChildren_ = 0;
+  explordChildren_.store(0);
 }
 /*****************************************************************************/
 
@@ -2049,11 +2049,18 @@ bool Enumerator::BackTrack_(bool trueState) {
 }
   rdyLst_->RemoveLatestSubList();
 
+  assert(!crntNode_->GetHistory()->getFullyExplored());
+  if (trgtNode)
+    assert(!trgtNode->GetHistory()->getFullyExplored());
+
   // It is posible we are falling to this backtrack directly from another backtrack
   // in which case, the exploredChild != numChildren but it should be labeled as fully explored
-  if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn() || crntNode_->getIsInfsblFromBacktrack_()) {
+  if (bbt_->isWorker())
+    assert(crntNode_->getExploredChildren() <= crntNode_->getNumChildrn());
+  if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn() || (crntNode_->getIsInfsblFromBacktrack_() && !crntNode_->wasChildStolen())) {
     trgtNode->incrementExploredChildren();
     fullyExplored = true;
+
     assert(!crntNode_->wasChildStolen());
   }
 
@@ -2090,14 +2097,15 @@ bool Enumerator::BackTrack_(bool trueState) {
     assert(crntNode_->IsArchived() == false);
   }
 #endif
-#ifdef INSERT_ON_STEPFRWRD
-if (isSecondPass()) {
+//#ifdef INSERT_ON_STEPFRWRD
+  if (isSecondPass()) {
     if (IsHistDom() && trueState) {
       assert(!crntNode_->IsArchived());
         UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
 
       if (bbt_->isWorker()) {
         bbt_->histTableLock(key);
+          assert(false);
           HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
           // set fully explored to fullyExplored when work stealing
           crntHstry->setFullyExplored(fullyExplored);
@@ -2111,7 +2119,7 @@ if (isSecondPass()) {
 
       else {
         HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
-        //assert(!crntHstry->getFullyExplored());
+        assert(!crntHstry->getFullyExplored());
         crntHstry->setFullyExplored(true);
         exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                     hashTblEntryAlctr_, bbt_);
@@ -2121,7 +2129,8 @@ if (isSecondPass()) {
       }
         
 
-    } else {
+    } 
+    else {
       assert(crntNode_->IsArchived() == false);
     }
   }
@@ -2147,7 +2156,11 @@ if (isSecondPass()) {
       }
     }
   }
-#endif
+//#endif
+
+  if (crntNode_->GetHistory()->getFullyExplored()) {
+    assert(!crntNode_->wasChildStolen() || crntNode_->getIsInfsblFromBacktrack_());
+  }
  
   if (!crntNode_->wasChildStolen())
     nodeAlctr_->Free(crntNode_);
@@ -3080,7 +3093,7 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
     return false;
   }
 
-  if (IsHistDom() && !isGenerateState_) {
+  if (IsHistDom()) {
 //#ifdef IS_DEBUG_SEARCH_ORDER
 //    Logger::Info("Solver %d IN LCE HIST DOM", SolverID_);
 //#endif
@@ -3265,7 +3278,7 @@ void Enumerator::BackTrackRoot_() {
   SchedInstruction *inst = crntNode_->GetInst();
   EnumTreeNode *trgtNode = crntNode_->GetParent();
   bool fullyExplored = false;
-  /*
+  
   if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn()) {
     trgtNode->incrementExploredChildren();
     fullyExplored = true;
@@ -3305,7 +3318,7 @@ void Enumerator::BackTrackRoot_() {
     bbt_->histTableUnlock(key);
   }
 #endif
-  */
+  
   if (!crntNode_->wasChildStolen())
     nodeAlctr_->Free(crntNode_);
   else {
@@ -3599,6 +3612,7 @@ bool LengthCostEnumerator::scheduleNodeOrPrune(EnumTreeNode *node,
 
   // iterate until we find the node
   rdyLst_->ResetIterator();
+  bool found = false;
 
   // TODO(JEFF) 6/28
   // changed for (i = crntBrnchNum) to for (i = 0) -- to test work stealing
@@ -3612,6 +3626,7 @@ bool LengthCostEnumerator::scheduleNodeOrPrune(EnumTreeNode *node,
     inst = rdyLst_->GetNextPriorityInst();
     //Logger::Info("SolverID_ %d, checking %dth inst (num %d) in rdyLst to find match (against %d)", SolverID_, i, inst->GetNum(), node->GetInstNum());
     if (inst->GetNum() == node->GetInstNum()) {
+      found = true;
       //Logger::Info("SolverID_ %d , MATCH (num %d) (against %d)", SolverID_, inst->GetNum(), node->GetInstNum());
       // schedule its instruction
       //Logger::Info("SolverID %d attempting to schedule inst #%d", SolverID_, inst->GetNum());
@@ -3628,6 +3643,7 @@ bool LengthCostEnumerator::scheduleNodeOrPrune(EnumTreeNode *node,
       break;
     }
   }
+  assert(found);
   rdyLst_->ResetIterator();
   //Logger::Info("ending enum schedNodeOrPrune, entryCnt %d", getHistTableEntryCnt());
   return true;
@@ -3745,7 +3761,7 @@ EnumTreeNode *LengthCostEnumerator::scheduleInst_(SchedInstruction *inst, bool i
   // stepFrwrd calls initNewNode which updates the insts in readyList
   //Logger::Info("initializing new node for inst %d", inst->GetNum());
   InitNewNode_(newNode);
-/*
+
 #ifdef INSERT_ON_STEPFRWRD
   if (!isSecondPass()) {
     if (IsHistDom()) {
@@ -3776,7 +3792,7 @@ EnumTreeNode *LengthCostEnumerator::scheduleInst_(SchedInstruction *inst, bool i
     }
   }
 #endif
-*/
+
 
   if (isPseudoRoot) {
     rootNode_ = newNode;

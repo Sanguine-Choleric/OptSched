@@ -643,7 +643,7 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
         }
       }
       else { // !totalCostIsUseable_
-        Node->SetLocalBestCost(partialCost_);
+        Node->SetLocalBestCost(Node->GetCostLwrBound());
         if (Node->GetParent()) {
           Node->GetParent()->SetLocalBestCost(Node->GetLocalBestCost());
         }
@@ -699,6 +699,7 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
 }
 
 void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enumrtr) {
+  assert(fullyExplored_);
   LengthCostEnumerator *LCE = static_cast<LengthCostEnumerator *>(enumrtr);
 
   cost_ = node->GetCost();

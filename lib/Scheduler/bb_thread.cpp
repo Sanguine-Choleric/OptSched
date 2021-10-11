@@ -2096,6 +2096,7 @@ if (isWorkSteal()) {
         //Logger::Info("SolverID %d found node with inst %d to work steal", SolverID_, workStealNode->GetInstNum());
         stoleWork = true;
         localPoolUnlock(victimID);
+        Logger::Info("stolen inst with num %d", workStealNode->GetInstNum());
       }
     }
       
