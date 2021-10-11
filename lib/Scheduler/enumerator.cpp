@@ -3318,7 +3318,7 @@ void Enumerator::BackTrackRoot_() {
     bbt_->histTableUnlock(key);
   }
 #endif
-  
+
   if (!crntNode_->wasChildStolen())
     nodeAlctr_->Free(crntNode_);
   else {
@@ -3607,24 +3607,28 @@ bool LengthCostEnumerator::scheduleNodeOrPrune(EnumTreeNode *node,
   bool isEmptyNode;
   SchedInstruction *inst;
   bool isFsbl = true;
-  InstCount brnchCnt = node->GetBranchCnt(isEmptyNode);
+  InstCount brnchCnt;// = node->GetBranchCnt(isEmptyNode);
+  bool found = false;
   //InstCount crntBrnchNum = node->GetCrntBranchNum();
 
   // iterate until we find the node
   rdyLst_->ResetIterator();
+
   bool found = false;
+  brnchCnt = rdyLst_->GetInstCnt();
+  //if (SolverID_ == 2 && isPseudoRoot) printRdyLst();
 
   // TODO(JEFF) 6/28
   // changed for (i = crntBrnchNum) to for (i = 0) -- to test work stealing
 
   //Logger::Info("SolverID %d rdyLst has size %d", SolverID_, rdyLst_->GetInstCnt());
-  for (i = 0; i < brnchCnt + 1 && node->IsFeasible(); i++) {
+  for (i = 0; i < brnchCnt + 1; i++) {
     
     //assert(i != brnchCnt - 1);
     //if (i == brnchCnt - 1) Logger::Info("SolverID %d, ALERT i == brnchCnt - 1", SolverID_);
     //if (i == brnchCnt && i != 0) Logger::Info("SolverID %d, DOUBLE ALERT", SolverID_);
     inst = rdyLst_->GetNextPriorityInst();
-    //Logger::Info("SolverID_ %d, checking %dth inst (num %d) in rdyLst to find match (against %d)", SolverID_, i, inst->GetNum(), node->GetInstNum());
+    //if (SolverID_ == 2 && isPseudoRoot) Logger::Info("SolverID_ %d, checking %dth inst (num %d) in rdyLst to find match (against %d)", SolverID_, i, inst->GetNum(), node->GetInstNum());
     if (inst->GetNum() == node->GetInstNum()) {
       found = true;
       //Logger::Info("SolverID_ %d , MATCH (num %d) (against %d)", SolverID_, inst->GetNum(), node->GetInstNum());
@@ -3644,6 +3648,8 @@ bool LengthCostEnumerator::scheduleNodeOrPrune(EnumTreeNode *node,
     }
   }
   assert(found);
+  //if (!found && SolverID_ == 2) {Logger::Info("SolverID_ %d was unable to find inst (num %d) when scheduling prefix of stolen node", SolverID_, node->GetInstNum());}
+
   rdyLst_->ResetIterator();
   //Logger::Info("ending enum schedNodeOrPrune, entryCnt %d", getHistTableEntryCnt());
   return true;
