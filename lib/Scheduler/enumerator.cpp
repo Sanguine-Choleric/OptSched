@@ -3241,6 +3241,7 @@ void LengthCostEnumerator::BackTrackRoot_() {
 
 void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
   if (propNode->GetParent()) {
+    Logger::Info("In propogate exploration main loop");
     EnumTreeNode *trgtNode = propNode->GetParent();
 
     if (IsHistDom()) assert(!trgtNode->IsArchived());
@@ -3279,7 +3280,7 @@ void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
 
 
 void Enumerator::BackTrackRoot_() {
-  
+  //Logger::Info("in the other BTR");
   SchedInstruction *inst = crntNode_->GetInst();
   EnumTreeNode *trgtNode = crntNode_->GetParent();
   bool fullyExplored = false;

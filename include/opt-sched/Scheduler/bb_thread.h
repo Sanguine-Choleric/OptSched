@@ -717,7 +717,7 @@ public:
                                                 EnumTreeNode *&removed) override;
 
     inline EnumTreeNode *getStolenNode() override {return stolenNode_;}
-    inline void setStolenNode(EnumTreeNode *stolenNode) {stolenNode_ = stolenNode;}
+    inline void setStolenNode(EnumTreeNode *&stolenNode) {stolenNode_ = stolenNode;}
 
     inline void freeAlctrs() {Enumrtr_->FreeAllocators_();}
 
