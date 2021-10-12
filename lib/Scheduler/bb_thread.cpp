@@ -2044,7 +2044,7 @@ if (isWorkSteal()) {
   while (!workStolenFsbl && !(RegionSched_->GetCost() == 0) && !isTimedOut && (*InactiveThreads_) < NumSolvers_) {
     //Logger::Info("SolverID %d in main work stealing loop", SolverID_);
     if (true) {
-      SubspaceLwrBound_ = INVALID_VALUE;
+      reset_();
       //Logger::Info("resetThreadWRiteFields");
       DataDepGraph_->resetThreadWriteFields(SolverID_);
       Enumrtr_->Reset();
@@ -2098,6 +2098,7 @@ if (isWorkSteal()) {
         //Logger::Info("SolverID %d found node with inst %d to work steal", SolverID_, workStealNode->GetInstNum());
         stoleWork = true;
         localPoolUnlock(victimID);
+        setStolenNode(workStealNode);
         Logger::Info("stolen inst with num %d", workStealNode->GetInstNum());
       }
     }

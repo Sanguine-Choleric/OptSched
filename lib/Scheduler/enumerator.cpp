@@ -97,7 +97,7 @@ void EnumTreeNode::Init_() {
   crntCycleBlkd_ = false;
   rsrvSlots_ = NULL;
   totalCostIsActualCost_ = false;
-  totalCost_ = INVALID_VALUE;
+  totalCost_.store(INVALID_VALUE);
   suffix_.clear();
 }
 /*****************************************************************************/
@@ -186,8 +186,9 @@ void EnumTreeNode::Clean() {
     rsrvSlots_ = NULL;
   }
 
-  cost_= costLwrBound_ = peakSpillCost_ = spillCostSum_ = totalCost_ = localBestCost_ = INVALID_VALUE;
-
+  cost_= costLwrBound_ = peakSpillCost_ = spillCostSum_ = INVALID_VALUE;
+  totalCost_.store(INVALID_VALUE);
+  localBestCost_.store(INVALID_VALUE);
   isClean_ = true;
 }
 /*****************************************************************************/
@@ -1931,6 +1932,9 @@ bool Enumerator::SetTotalCostsAndSuffixes(EnumTreeNode *const currentNode,
       if (suffixConcatenationEnabled &&
           (currentNode->IsLeaf() ||
            (!currentNode->IsLeaf() && currentNode->GetSuffix().size() > 0))) {
+
+        // TODO: parrentSuffix is not synchronized -- suffix concatenation has not been 
+        // enabled for parallel algorithm
         parentSuffix.reserve(currentNode->GetSuffix().size() + 1);
         parentSuffix.push_back(currentNode->GetInst());
         parentSuffix.insert(parentSuffix.end(),
@@ -3229,8 +3233,12 @@ void LengthCostEnumerator::BackTrackRoot_() {
   Enumerator::BackTrackRoot_();
 
   // should be set to the stolenNode's parent
-  EnumTreeNode *tempNode = crntNode_->GetParent();
-  //propogateExploration_(tempNode);
+  
+  if (bbt_->getStolenNode() != nullptr) {
+    EnumTreeNode *tempNode = bbt_->getStolenNode();
+    if (tempNode->GetParent())
+      propogateExploration_(tempNode->GetParent());
+  }
 }
 
 void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
@@ -3613,8 +3621,7 @@ bool LengthCostEnumerator::scheduleNodeOrPrune(EnumTreeNode *node,
 
   // iterate until we find the node
   rdyLst_->ResetIterator();
-
-  bool found = false;
+  
   brnchCnt = rdyLst_->GetInstCnt();
   //if (SolverID_ == 2 && isPseudoRoot) printRdyLst();
 

@@ -240,6 +240,8 @@ public:
   virtual bool isWorkSteal() = 0;
   virtual bool isWorkStealOn() = 0;
   virtual void setWorkStealOn(bool) = 0;
+
+  virtual EnumTreeNode *getStolenNode() = 0;
   // Thread stealing
   //virtual LinkedListIterator<EnumTreeNode> localPoolBegin(int SolverID) = 0;
   //virtual LinkedListIterator<EnumTreeNode> localPoolEnd(int SolverID) = 0 ;    
@@ -473,6 +475,8 @@ public:
       return false;
     }
 
+    inline EnumTreeNode *getStolenNode() override {return nullptr;}
+
     void setWorkStealOn(bool value) override {/*nothing*/};
 
 };
@@ -553,6 +557,7 @@ private:
     bool WorkSteal_;
     bool *WorkStealOn_;
     int64_t **subspaceLwrBounds_;
+    EnumTreeNode *stolenNode_ {nullptr};
 
     bool IsTimeoutPerInst_;
     int timeoutToMemblock_;
@@ -569,6 +574,11 @@ private:
     InstCount UpdtOptmlSched(InstSchedule *crntSched, LengthCostEnumerator *enumrtr);
 
     void writeBestSchedToMaster(InstSchedule *BestSchedule, InstCount BestCost, InstCount BestSpill);
+
+    inline void reset_() {
+      SubspaceLwrBound_ = INVALID_VALUE;
+      stolenNode_ = nullptr;
+    };
 
 public:
     BBWorker(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
@@ -706,6 +716,9 @@ public:
                                                 EnumTreeNode *parent, 
                                                 EnumTreeNode *&removed) override;
 
+    inline EnumTreeNode *getStolenNode() override {return stolenNode_;}
+    inline void setStolenNode(EnumTreeNode *stolenNode) {stolenNode_ = stolenNode;}
+
     inline void freeAlctrs() {Enumrtr_->FreeAllocators_();}
 
 };
@@ -809,6 +822,8 @@ public:
 
     inline bool isWorkSteal() override {return WorkSteal_;}
     inline bool isWorkStealOn() override {return WorkStealOn_;}
+
+    inline EnumTreeNode *getStolenNode() override {return nullptr;}
 
     void setWorkStealOn(bool value) override {/*nothing*/};
 

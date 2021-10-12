@@ -198,8 +198,8 @@ private:
   InstCount costLwrBound_ = INVALID_VALUE;
   InstCount peakSpillCost_;
   InstCount spillCostSum_;
-  InstCount totalCost_ = INVALID_VALUE;
-  InstCount localBestCost_ = INVALID_VALUE;
+  std::atomic<InstCount> totalCost_ {INVALID_VALUE};
+  std::atomic<InstCount> localBestCost_ {INVALID_VALUE};
   bool totalCostIsActualCost_ = false;
   ReserveSlot *rsrvSlots_;
 
@@ -357,10 +357,10 @@ public:
   int GetRealSlotNum() { return realSlotNum_; }
   void SetRealSlotNum(int num) { realSlotNum_ = num; }
 
-  inline InstCount GetTotalCost() const { return totalCost_; }
+  inline InstCount GetTotalCost() const { return totalCost_.load(); }
   inline void SetTotalCost(InstCount totalCost) { 
     assert(totalCost != INVALID_VALUE);
-    totalCost_ = totalCost; }
+    totalCost_.store(totalCost); }
 
   inline InstCount GetTotalCostIsActualCost() const {
     return totalCostIsActualCost_;
@@ -1200,9 +1200,9 @@ InstCount EnumTreeNode::GetSpillCostSum() { return spillCostSum_; }
 
 bool EnumTreeNode::SetLocalBestCost(InstCount cost) {
   bool changeMade = false;
-  if (cost < localBestCost_ || localBestCost_ == INVALID_VALUE) {
+  if (cost < localBestCost_.load() || localBestCost_.load() == INVALID_VALUE) {
     assert(cost != INVALID_VALUE || !isFirstPass_);
-    localBestCost_ = cost;
+    localBestCost_.store(cost);
     changeMade = true;
   }
   return changeMade;
@@ -1210,7 +1210,7 @@ bool EnumTreeNode::SetLocalBestCost(InstCount cost) {
 }
 /*****************************************************************************/
 InstCount EnumTreeNode::GetLocalBestCost() {
-  return localBestCost_;
+  return localBestCost_.load();
 }
 
 
