@@ -2064,8 +2064,6 @@ bool Enumerator::BackTrack_(bool trueState) {
   if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn() || (crntNode_->getIsInfsblFromBacktrack_() && !crntNode_->wasChildStolen())) {
     trgtNode->incrementExploredChildren();
     fullyExplored = true;
-
-    assert(!crntNode_->wasChildStolen());
   }
 
 #ifdef INSERT_ON_BACKTRACK
@@ -3229,7 +3227,7 @@ if (bbt_->isWorkStealOn()) {
 /*****************************************************************************/
 
 void LengthCostEnumerator::BackTrackRoot_() {
-  //Logger::Info("in the correct BTR");
+  Logger::Info("in the correct BTR");
   Enumerator::BackTrackRoot_();
 
   // should be set to the stolenNode's parent
@@ -3242,7 +3240,6 @@ void LengthCostEnumerator::BackTrackRoot_() {
 }
 
 void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
-  assert(false);
   if (propNode->GetParent()) {
     EnumTreeNode *trgtNode = propNode->GetParent();
 
@@ -3290,7 +3287,6 @@ void Enumerator::BackTrackRoot_() {
   if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn()) {
     trgtNode->incrementExploredChildren();
     fullyExplored = true;
-    assert(!crntNode_->wasChildStolen());
   }
 
 #ifdef INSERT_ON_BACKTRACK
@@ -3621,7 +3617,7 @@ bool LengthCostEnumerator::scheduleNodeOrPrune(EnumTreeNode *node,
 
   // iterate until we find the node
   rdyLst_->ResetIterator();
-  
+
   brnchCnt = rdyLst_->GetInstCnt();
   //if (SolverID_ == 2 && isPseudoRoot) printRdyLst();
 
