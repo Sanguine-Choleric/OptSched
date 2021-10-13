@@ -189,6 +189,13 @@ void EnumTreeNode::Clean() {
   cost_= costLwrBound_ = peakSpillCost_ = spillCostSum_ = INVALID_VALUE;
   totalCost_.store(INVALID_VALUE);
   localBestCost_.store(INVALID_VALUE);
+
+  totalCostIsActualCost_ = false;
+  isInfsblFromBacktrack_ = false;
+  pushedToLocalPool_ = false;
+  wasChildStolen_ = false;
+  recyclesHistNode_ = false;  
+
   isClean_ = true;
 }
 /*****************************************************************************/
@@ -1779,7 +1786,7 @@ if (!crntNode_->getPushedToLocalPool() || !bbt_->isWorker() || isSecondPass()) {
 
 #ifdef INSERT_ON_STEPFRWRD
   if (!isSecondPass()) {
-    if (IsHistDom()) {
+    if (IsHistDom() && !crntNode_->getRecyclesHistNode()) {
       assert(!crntNode_->IsArchived());
         UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
 
@@ -1837,7 +1844,7 @@ void Enumerator::InitNewNode_(EnumTreeNode *newNode, bool setCost) {
   crntNode_->SetCrntCycleBlkd(isCrntCycleBlkd_);
   crntNode_->SetRealSlotNum(crntRealSlotNum_);
 
-  if (IsHistDom()) {
+  if (IsHistDom() && !crntNode_->getRecyclesHistNode()) {
     bool setCost = true;
     if (SolverID_ < 2) setCost = false;
     crntNode_->CreateHistory(setCost);
@@ -2294,6 +2301,7 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
   stats::signatureDominationTests++;
 #endif
   HistEnumTreeNode *exNode;
+  HistEnumTreeNode *lastMatch = nullptr;
   int listSize = exmndSubProbs_->GetListSize(newNode->GetSig());
 
   UDT_HASHVAL key = exmndSubProbs_->HashKey(newNode->GetSig());
@@ -2365,6 +2373,9 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
         wasDmntSubProbExmnd = true;
         break;
       } else {
+        if (exNode->getFullyExplored()) {
+          lastMatch = exNode;
+        }
 #ifdef IS_DEBUG_SPD
         stats::signatureAliases++;
 #endif
@@ -2377,9 +2388,14 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
 
     exNode = exmndSubProbs_->GetPrevMatch(srchPtr, newNode->GetSig());
   }
-  
-  // unlock
-  //Logger::Info("Solver %d unlocking key %d", SolverID_, key);
+
+  if (!wasDmntSubProbExmnd && lastMatch != nullptr) {
+    lastMatch->ResetCostInfo(newNode);
+    newNode->SetHistory(lastMatch);
+    newNode->setRecyclesHistNode(true);
+    newNode->SetArchived(true);
+  }
+
   bbt_->histTableUnlock(key);  
 
   stats::traversedHistoryListSize.Record(trvrsdListSize);

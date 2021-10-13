@@ -453,6 +453,11 @@ void HistEnumTreeNode::SetCostInfo(EnumTreeNode *, bool, Enumerator *) {
   // Nothing.
 }
 
+void HistEnumTreeNode::ResetCostInfo(EnumTreeNode *) {
+  Logger::Info("in the wrong resetCostInfo");
+  // Nothing.
+}
+
 const std::shared_ptr<std::vector<SchedInstruction *>> &
 HistEnumTreeNode::GetSuffix() const {
   return suffix_;
@@ -771,6 +776,22 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
       cost_, peakSpillCost_, partialCost_, totalCost_,
       (totalCostIsActualCost_ ? 1 : 0));
 #endif
+}
+
+
+void CostHistEnumTreeNode::ResetCostInfo(EnumTreeNode *node) {
+  fullyExplored_ = false;
+  totalCostIsUseable_ = false;
+
+  cost_ = node->GetCost();
+  peakSpillCost_ = node->GetPeakSpillCost();
+  spillCostSum_ = node->GetSpillCostSum();
+  isLngthFsbl_ = node->IsLngthFsbl();
+
+  // (Chris)
+  partialCost_ = node->GetCostLwrBound();
+  totalCostIsActualCost_ = node->GetTotalCostIsActualCost();
+  totalCost_ = node->GetTotalCost();
 }
 
 InstCount HistEnumTreeNode::GetTime() { return time_; }

@@ -50,6 +50,7 @@ public:
   virtual void Construct(EnumTreeNode *node, bool isTemp, bool isGenerateState, bool setCost = true);
   virtual void SetCostInfo(EnumTreeNode *node, bool isTemp,
                            Enumerator *enumrtr);
+  virtual void ResetCostInfo(EnumTreeNode *node);
   const std::shared_ptr<std::vector<SchedInstruction *>> &GetSuffix() const;
   void
   SetSuffix(const std::shared_ptr<std::vector<SchedInstruction *>> &suffix);
@@ -134,6 +135,7 @@ public:
   // Does the sub-problem at this node dominate the given node's?
   bool DoesDominate(EnumTreeNode *node, Enumerator *enumrtr) override;
   void SetCostInfo(EnumTreeNode *node, bool isTemp, Enumerator *enumrtr) override;
+  void ResetCostInfo(EnumTreeNode *node) override;
 
 
   inline void setTotalCostFromLB(InstCount totalCost) {
