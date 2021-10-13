@@ -30,8 +30,6 @@ void HistEnumTreeNode::Construct(EnumTreeNode *node, bool isTemp, bool isGenerat
   crntCycleBlkd_ = node->crntCycleBlkd_;
   suffix_ = nullptr;
   SetRsrvSlots_(node);
-
-  
 }
 
 
@@ -158,20 +156,27 @@ bool HistEnumTreeNode::checkSameSubspace_(EnumTreeNode *otherNode) {
   return sameSubspace;
 }
 
-void HistEnumTreeNode::SetInstsSchduld_(BitVector *instsSchduld, bool isWorker, bool isGlobalPoolNode) {
+void HistEnumTreeNode::SetInstsSchduld_(BitVector *instsSchduld, bool isWorker, int SolverID, bool isGlobalPoolNode) {
   instsSchduld->Reset(isWorker);
   HistEnumTreeNode *crntNode;
 
   for (crntNode = this; crntNode != NULL; crntNode = crntNode->GetParent()) {
     SchedInstruction *inst = crntNode->inst_;
-
-
     if (inst != NULL) {
       /*if (isGlobalPoolNode)
         Logger::Info("instNum %d", crntNode->GetInstNum());
       */
       ///TODO -- hacker hour, whats goin on here
-      assert(!instsSchduld->GetBit(inst->GetNum()));
+      /*
+      if (instsSchduld->GetBit(inst->GetNum())) {
+        HistEnumTreeNode *crntHistNode = this;
+        Logger::Info("HistNode %p found double instruction in setInstsSchduld_ (inst num %d), hist prefix (from tip):", this, inst->GetNum());
+        for (;crntHistNode != NULL; crntHistNode = crntHistNode->GetParent()) {
+          if (crntHistNode->inst_ == NULL) break;
+          Logger::Info("%d", crntHistNode->inst_->GetNum());          
+        }
+      }*/
+      if (!isWorker) assert(!instsSchduld->GetBit(inst->GetNum()));
       instsSchduld->SetBit(inst->GetNum());
     }
   }
@@ -453,8 +458,8 @@ void HistEnumTreeNode::SetCostInfo(EnumTreeNode *, bool, Enumerator *) {
   // Nothing.
 }
 
-void HistEnumTreeNode::ResetCostInfo(EnumTreeNode *) {
-  Logger::Info("in the wrong resetCostInfo");
+void HistEnumTreeNode::ResetHistFields(EnumTreeNode *) {
+  Logger::Info("in the wrong resetHistFields");
   // Nothing.
 }
 
@@ -779,7 +784,9 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
 }
 
 
-void CostHistEnumTreeNode::ResetCostInfo(EnumTreeNode *node) {
+void CostHistEnumTreeNode::ResetHistFields(EnumTreeNode *node) {
+  HistEnumTreeNode::Construct(node, false, false);
+
   fullyExplored_ = false;
   totalCostIsUseable_ = false;
 
@@ -793,6 +800,8 @@ void CostHistEnumTreeNode::ResetCostInfo(EnumTreeNode *node) {
   totalCostIsActualCost_ = node->GetTotalCostIsActualCost();
   totalCost_ = node->GetTotalCost();
 }
+
+
 
 InstCount HistEnumTreeNode::GetTime() { return time_; }
 
@@ -827,8 +836,8 @@ bool HistEnumTreeNode::DoesMatch(EnumTreeNode *node, Enumerator *enumrtr, bool i
   }
 
 
-  SetInstsSchduld_(instsSchduld, isWorker, isGlobalPoolNode);
-  node->hstry_->SetInstsSchduld_(othrInstsSchduld, isWorker, isGlobalPoolNode);
+  SetInstsSchduld_(instsSchduld, isWorker, enumrtr->getSolverID(),isGlobalPoolNode);
+  node->hstry_->SetInstsSchduld_(othrInstsSchduld, isWorker, enumrtr->getSolverID(),isGlobalPoolNode);
 
 
   /*if (isGlobalPoolNode) {

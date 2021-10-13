@@ -203,7 +203,7 @@ private:
   bool totalCostIsActualCost_ = false;
   ReserveSlot *rsrvSlots_;
 
-  bool recyclesHistNode_;
+  bool recyclesHistNode_ = false;
 
   // used for global pool sorting
   unsigned long priorityKey_;
@@ -443,6 +443,7 @@ public:
 
   inline void setRecyclesHistNode(bool flag) { recyclesHistNode_ = flag;}
   inline bool getRecyclesHistNode() {return recyclesHistNode_;}
+
 };
 /*****************************************************************************/
 
