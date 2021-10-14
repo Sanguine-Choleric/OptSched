@@ -579,7 +579,6 @@ static bool doesHistorySLILCostDominate(InstCount OtherPrefixCost,
     assert(HistTotalCost > HistPrefixCost);
     assert(archived);
   }
-  if (HistTotalCost < HistPrefixCost) {Logger::Info("weird condition, histTotal %d, histPrefix %d", HistTotalCost, HistPrefixCost);}
 
   auto RequiredImprovement = std::max(HistTotalCost - LCE->GetBestCost(), 0);
   auto ImprovementOnHistory = HistPrefixCost - OtherPrefixCost;
@@ -651,6 +650,14 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
           Node->GetParent()->SetLocalBestCost(Node->GetLocalBestCost());
         }
       }
+    }
+
+    // Remove these code innards above, new feature to test
+    //else {
+    //Node->SetLocalBestCost(Node->GetCostLwrBound());
+    //if (Node->GetParent()) {
+    //  Node->GetParent()->SetLocalBestCost(Node->GetCostLwrBound());
+    //}
     }
   }
 
@@ -740,8 +747,8 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
       if (totalCost_ > localBest || !totalCostIsActualCost_) {
         totalCost_ = partialCost_ > localBest ? partialCost_ : localBest;
       }
-
     }
+
 
   }
   

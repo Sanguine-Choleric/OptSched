@@ -1975,7 +1975,8 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
   if (!GlobalPool_->empty()) {
     //Logger::Info("Solver %d pulling from global pool (%d nodes left)", SolverID_, GlobalPool_->size());
     if (RegionSched_->GetCost() == 0) return RES_SUCCESS;
-    if (SolverID_ == 2) Logger::Info("RegionSched Cost %d != 0, pulling from global pool", RegionSched_->GetCost(), getCostLwrBound());
+    Logger::Info("pulling from global pool");
+    //if (SolverID_ == 2) Logger::Info("RegionSched Cost %d != 0, pulling from global pool", RegionSched_->GetCost(), getCostLwrBound());
     HalfNode *temp;
     while (true) {
       GlobalPoolLock_->lock();
