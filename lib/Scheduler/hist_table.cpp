@@ -176,7 +176,7 @@ void HistEnumTreeNode::SetInstsSchduld_(BitVector *instsSchduld, bool isWorker, 
           Logger::Info("%d", crntHistNode->inst_->GetNum());          
         }
       }*/
-      if (!isWorker) assert(!instsSchduld->GetBit(inst->GetNum()));
+      assert(!instsSchduld->GetBit(inst->GetNum()));
       instsSchduld->SetBit(inst->GetNum());
     }
   }

@@ -3266,9 +3266,16 @@ if (bbt_->isWorkStealOn()) {
 }
 /*****************************************************************************/
 
-void LengthCostEnumerator::BackTrackRoot_() {
+void LengthCostEnumerator::BackTrackRoot_(EnumTreeNode *) {
   ///Logger::Info("in the correct BTR");
-  Enumerator::BackTrackRoot_();
+  EnumTreeNode *tempNode = nullptr;
+
+  if (bbt_->getStolenNode() != nullptr) {
+    tempNode = bbt_->getStolenNode();
+    Enumerator::BackTrackRoot_(tempNode);
+  }
+
+  
 
   // should be set to the stolenNode's parent
   
@@ -3323,14 +3330,15 @@ void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
 }
 
 
-void Enumerator::BackTrackRoot_() {
+void Enumerator::BackTrackRoot_(EnumTreeNode *trgtNode) {
   //Logger::Info("in the other BTR");
+  
   SchedInstruction *inst = crntNode_->GetInst();
-  EnumTreeNode *trgtNode = crntNode_->GetParent();
+  if (trgtNode == nullptr) trgtNode = crntNode_->GetParent();
   bool fullyExplored = false;
   
   if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn()) {
-    trgtNode->incrementExploredChildren();
+    if (trgtNode) trgtNode->incrementExploredChildren();
     fullyExplored = true;
   }
 

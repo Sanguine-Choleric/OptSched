@@ -626,7 +626,7 @@ protected:
 
   void StepFrwrd_(EnumTreeNode *&newNode);
   virtual bool BackTrack_(bool trueState = true);
-  virtual void BackTrackRoot_();
+  virtual void BackTrackRoot_(EnumTreeNode *node = nullptr);
   inline bool WasSolnFound_();
 
   void SetInstSigs_();
@@ -856,7 +856,7 @@ private:
   void FreeHistNode_(HistEnumTreeNode *histNode);
 
   bool BackTrack_(bool trueState = true);
-  void BackTrackRoot_();
+  void BackTrackRoot_(EnumTreeNode *node = nullptr);
   void propogateExploration_(EnumTreeNode *node);
   InstCount GetBestCost_();
   void CreateRootNode_();
