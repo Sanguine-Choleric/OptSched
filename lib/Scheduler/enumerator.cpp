@@ -3228,7 +3228,7 @@ if (bbt_->isWorkStealOn()) {
 /*****************************************************************************/
 
 void LengthCostEnumerator::BackTrackRoot_(EnumTreeNode *) {
-  Logger::Info("in the correct BTR");
+  //Logger::Info("in the correct BTR");
   EnumTreeNode *tempNode = nullptr;
   if (bbt_->getStolenNode() != nullptr) tempNode = bbt_->getStolenNode();
 
