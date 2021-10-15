@@ -532,9 +532,9 @@ Enumerator::Enumerator(DataDepGraph *dataDepGraph, MachineModel *machMdl,
   //  #define IS_CORRECT_LOCALPOOL
   //#endif
 
-  #ifndef IS_DEBUG_SEARCH_ORDER
-    #define IS_DEBUG_SEARCH_ORDER
-  #endif
+  //#ifndef IS_DEBUG_SEARCH_ORDER
+  //  #define IS_DEBUG_SEARCH_ORDER
+  //#endif
 
   //#ifndef DEBUG_GP_HISTORY
   //  #define DEBUG_GP_HISTORY
