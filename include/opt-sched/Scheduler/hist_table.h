@@ -50,6 +50,7 @@ public:
   virtual void Construct(EnumTreeNode *node, bool isTemp, bool isGenerateState, bool setCost = true);
   virtual void SetCostInfo(EnumTreeNode *node, bool isTemp,
                            Enumerator *enumrtr);
+  virtual void ResetHistFields(EnumTreeNode *node);
   const std::shared_ptr<std::vector<SchedInstruction *>> &GetSuffix() const;
   void
   SetSuffix(const std::shared_ptr<std::vector<SchedInstruction *>> &suffix);
@@ -74,6 +75,14 @@ public:
 
   inline int getInstNum() {return inst_ ? inst_->GetNum() : -1;}
 
+  inline bool isRecycled() {return recycled_;}
+
+  inline void setRecycled(bool recycled) {recycled_ = recycled;}
+
+  inline bool isInserted() {return isInserted_;}
+
+  inline void setInserted(bool inserted) {isInserted_ = inserted;}
+
 protected:
   HistEnumTreeNode *prevNode_;
 
@@ -86,6 +95,8 @@ protected:
   bool fullyExplored_ = false;
   bool totalCostIsUseable_ = false;
   bool archived_ = false;
+  bool recycled_ = false;
+  bool isInserted_ = false;
 
 #ifdef IS_DEBUG
   bool isCnstrctd_;
@@ -104,7 +115,7 @@ protected:
 
   bool SetBothInstsSchduld_(BitVector *thisInstsSchuld, BitVector *therInstsSchuld, HistEnumTreeNode *otherHist, bool isWorker);
   bool checkSameSubspace_(EnumTreeNode *otherNode);
-  void SetInstsSchduld_(BitVector *instsSchduld, bool isWorker, bool isGlobalPoolNode);
+  void SetInstsSchduld_(BitVector *instsSchduld, bool isWorker, int SolverID, bool isGlobalPoolNode);
   // Does this history node dominate the given node or history node?
   bool DoesDominate_(EnumTreeNode *node, HistEnumTreeNode *othrHstry,
                      ENUMTREE_NODEMODE mode, Enumerator *enumrtr,
@@ -134,6 +145,7 @@ public:
   // Does the sub-problem at this node dominate the given node's?
   bool DoesDominate(EnumTreeNode *node, Enumerator *enumrtr) override;
   void SetCostInfo(EnumTreeNode *node, bool isTemp, Enumerator *enumrtr) override;
+  void ResetHistFields(EnumTreeNode *node) override;
 
 
   inline void setTotalCostFromLB(InstCount totalCost) {

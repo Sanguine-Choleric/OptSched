@@ -203,6 +203,8 @@ private:
   bool totalCostIsActualCost_ = false;
   ReserveSlot *rsrvSlots_;
 
+  bool recyclesHistNode_ = false;
+
   // used for global pool sorting
   unsigned long priorityKey_;
 
@@ -319,6 +321,7 @@ public:
 
   inline bool IsArchived();
   void Archive(bool fullyExplored);
+  inline void SetArchived(bool archived);
 
   inline bool IsFeasible();
   inline bool IsLngthFsbl();
@@ -437,6 +440,10 @@ public:
 
   inline void setIsInfsblFromBacktrack_(bool infsbl) {isInfsblFromBacktrack_ = infsbl;}
   inline bool getIsInfsblFromBacktrack_() {return isInfsblFromBacktrack_;} 
+
+  inline void setRecyclesHistNode(bool flag) { recyclesHistNode_ = flag;}
+  inline bool getRecyclesHistNode() {return recyclesHistNode_;}
+
 };
 /*****************************************************************************/
 
@@ -620,6 +627,7 @@ protected:
   void StepFrwrd_(EnumTreeNode *&newNode);
   virtual bool BackTrack_(bool trueState = true);
   virtual void BackTrackRoot_(EnumTreeNode *tempNode = nullptr);
+
   inline bool WasSolnFound_();
 
   void SetInstSigs_();
@@ -850,6 +858,7 @@ private:
 
   bool BackTrack_(bool trueState = true);
   void BackTrackRoot_(EnumTreeNode *tempNode = nullptr);
+
   void propogateExploration_(EnumTreeNode *node);
   InstCount GetBestCost_();
   void CreateRootNode_();
@@ -1133,6 +1142,8 @@ inline void EnumTreeNode::ReplaceHistory(HistEnumTreeNode *newHstry) {
 /**************************************************************************/
 
 inline bool EnumTreeNode::IsArchived() { return isArchivd_; }
+
+inline void EnumTreeNode::SetArchived(bool archived) {isArchivd_ = archived;}
 /**************************************************************************/
 
 inline bool EnumTreeNode::IsFeasible() {

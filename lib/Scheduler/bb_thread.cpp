@@ -1975,7 +1975,8 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
   if (!GlobalPool_->empty()) {
     //Logger::Info("Solver %d pulling from global pool (%d nodes left)", SolverID_, GlobalPool_->size());
     if (RegionSched_->GetCost() == 0) return RES_SUCCESS;
-    if (SolverID_ == 2) Logger::Info("RegionSched Cost %d != 0, pulling from global pool", RegionSched_->GetCost(), getCostLwrBound());
+    Logger::Info("pulling from global pool");
+    //if (SolverID_ == 2) Logger::Info("RegionSched Cost %d != 0, pulling from global pool", RegionSched_->GetCost(), getCostLwrBound());
     HalfNode *temp;
     while (true) {
       GlobalPoolLock_->lock();
@@ -2099,7 +2100,7 @@ if (isWorkSteal()) {
         stoleWork = true;
         localPoolUnlock(victimID);
         setStolenNode(workStealNode);
-        Logger::Info("stolen inst with num %d", workStealNode->GetInstNum());
+        //Logger::Info("stolen inst with num %d", workStealNode->GetInstNum());
       }
     }
       
@@ -2107,7 +2108,7 @@ if (isWorkSteal()) {
     if (stoleWork) {
       workStolenFsbl = generateStateFromNode(workStealNode, false);
       if (!workStolenFsbl) {
-        Logger::Info("SolverID %d pruned its stolen node", SolverID_);
+        //Logger::Info("SolverID %d pruned its stolen node", SolverID_);
         InactiveThreadLock_->lock();
         (*InactiveThreads_)++;
         //Logger::Info("SovlerID %d incremented inactive threads to %d", SolverID_, *InactiveThreads_);

@@ -146,6 +146,8 @@ void EnumTreeNode::Construct(EnumTreeNode *prevNode, SchedInstruction *inst,
   isClean_ = false;
   pushedToLocalPool_ = false;
   wasChildStolen_ = false;
+
+  instCnt_ = enumrtr->getTotalInstCnt();
 }
 /*****************************************************************************/
 
@@ -189,6 +191,14 @@ void EnumTreeNode::Clean() {
   cost_= costLwrBound_ = peakSpillCost_ = spillCostSum_ = INVALID_VALUE;
   totalCost_.store(INVALID_VALUE);
   localBestCost_.store(INVALID_VALUE);
+
+  totalCostIsActualCost_ = false;
+  isInfsblFromBacktrack_ = false;
+  pushedToLocalPool_ = false;
+  wasChildStolen_ = false;
+  recyclesHistNode_ = false;
+  isArchivd_ = false;  
+
   isClean_ = true;
 }
 /*****************************************************************************/
@@ -445,7 +455,7 @@ bool EnumTreeNode::IsBranchDominated(SchedInstruction *cnddtInst) {
 
 void EnumTreeNode::Archive(bool fullyExplored) {
   if (fullyExplored) {
-    assert(isArchivd_ == false);
+    assert(isArchivd_ == false || getRecyclesHistNode());
 
     if (enumrtr_->IsCostEnum()) {
       hstry_->SetCostInfo(this, false, enumrtr_);
@@ -1537,6 +1547,7 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
 
   if (prune_.histDom && IsHistDom()) {
     if (isEarlySubProbDom_) {
+      assert(false);
       if (WasDmnntSubProbExmnd_(inst, newNode)) {
 #ifdef IS_DEBUG_INFSBLTY_TESTS
         stats::historyDominationInfeasibilityHits++;
@@ -1779,7 +1790,7 @@ if (!crntNode_->getPushedToLocalPool() || !bbt_->isWorker() || isSecondPass()) {
 
 #ifdef INSERT_ON_STEPFRWRD
   if (!isSecondPass()) {
-    if (IsHistDom()) {
+    if (IsHistDom() && !crntNode_->getRecyclesHistNode()) {
       assert(!crntNode_->IsArchived());
         UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
 
@@ -1792,9 +1803,10 @@ if (!crntNode_->getPushedToLocalPool() || !bbt_->isWorker() || isSecondPass()) {
             Logger::Info("parent inst %d", crntHstry->GetParent()->GetInstNum());
           }*/
           //crntHstry->Copy(crntNode_->GetHistory());
-
+          assert(!crntHstry->isInserted() || isSecondPass());
           exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                     hashTblEntryAlctr_, bbt_);
+          crntHstry->setInserted(true);
           assert(!crntHstry->getFullyExplored());
           assert(!crntHstry->getCostIsUseable());
           CostHistEnumTreeNode *temp = static_cast<CostHistEnumTreeNode *>(crntHstry);
@@ -1813,7 +1825,7 @@ if (!crntNode_->getPushedToLocalPool() || !bbt_->isWorker() || isSecondPass()) {
         
 
     } else {
-      assert(crntNode_->IsArchived() == false);
+      if (!crntNode_->getRecyclesHistNode()) assert(crntNode_->IsArchived() == false);
     }
   }
 #endif
@@ -1837,7 +1849,7 @@ void Enumerator::InitNewNode_(EnumTreeNode *newNode, bool setCost) {
   crntNode_->SetCrntCycleBlkd(isCrntCycleBlkd_);
   crntNode_->SetRealSlotNum(crntRealSlotNum_);
 
-  if (IsHistDom()) {
+  if (IsHistDom() && !crntNode_->getRecyclesHistNode()) {
     bool setCost = true;
     if (SolverID_ < 2) setCost = false;
     crntNode_->CreateHistory(setCost);
@@ -2080,16 +2092,24 @@ bool Enumerator::BackTrack_(bool trueState) {
         SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                              prune_.useSuffixConcatenation, fullyExplored);
         crntNode_->Archive(fullyExplored);
-        exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
+        if (!crntNode_->getRecyclesHistNode()) {
+          assert(!crntHstry->isInserted() || isSecondPass());
+          exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                   hashTblEntryAlctr_, bbt_);
+          crntHstry->setInserted(true);
+        }
       bbt_->histTableUnlock(key);
     }
 
     else {
       HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
       crntHstry->setFullyExplored(true);
-      exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
+      if (!crntNode_->getRecyclesHistNode()) {
+        assert(!crntHstry->isInserted() || isSecondPass());
+        exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                   hashTblEntryAlctr_, bbt_);
+      crntHstry->setInserted(true);
+      }
       SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                              prune_.useSuffixConcatenation, fullyExplored);
       crntNode_->Archive(true);
@@ -2100,10 +2120,10 @@ bool Enumerator::BackTrack_(bool trueState) {
     assert(crntNode_->IsArchived() == false);
   }
 #endif
-//#ifdef INSERT_ON_STEPFRWRD
+#ifdef INSERT_ON_STEPFRWRD
   if (isSecondPass()) {
     if (IsHistDom() && trueState) {
-      assert(!crntNode_->IsArchived());
+      if (!crntNode_->getRecyclesHistNode()) assert(!crntNode_->IsArchived());
         UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
 
       if (bbt_->isWorker()) {
@@ -2112,8 +2132,13 @@ bool Enumerator::BackTrack_(bool trueState) {
           HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
           // set fully explored to fullyExplored when work stealing
           crntHstry->setFullyExplored(fullyExplored);
-          exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
+          if (!crntNode_->getRecyclesHistNode()) {
+            assert(!crntHstry->isInserted() || isSecondPass());
+            exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                     hashTblEntryAlctr_, bbt_);
+            crntHstry->setInserted(true);
+                                  
+          }
           SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                               prune_.useSuffixConcatenation, fullyExplored);
           crntNode_->Archive(fullyExplored);
@@ -2124,8 +2149,12 @@ bool Enumerator::BackTrack_(bool trueState) {
         HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
         assert(!crntHstry->getFullyExplored());
         crntHstry->setFullyExplored(true);
-        exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
+        if (!crntNode_->getRecyclesHistNode()) {
+          assert(!crntHstry->isInserted() || isSecondPass());
+          exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                     hashTblEntryAlctr_, bbt_);
+          crntHstry->setInserted(true);
+        }
         SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                               prune_.useSuffixConcatenation, fullyExplored);
         crntNode_->Archive(true);
@@ -2159,7 +2188,7 @@ bool Enumerator::BackTrack_(bool trueState) {
       }
     }
   }
-//#endif
+#endif
 
   if (crntNode_->GetHistory()->getFullyExplored()) {
     assert(!crntNode_->wasChildStolen() || crntNode_->getIsInfsblFromBacktrack_());
@@ -2295,6 +2324,7 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
   stats::signatureDominationTests++;
 #endif
   HistEnumTreeNode *exNode;
+  HistEnumTreeNode *lastMatch = nullptr;
   int listSize = exmndSubProbs_->GetListSize(newNode->GetSig());
 
   UDT_HASHVAL key = exmndSubProbs_->HashKey(newNode->GetSig());
@@ -2366,6 +2396,9 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
         wasDmntSubProbExmnd = true;
         break;
       } else {
+        if (exNode->getFullyExplored()) {
+          lastMatch = exNode;
+        }
 #ifdef IS_DEBUG_SPD
         stats::signatureAliases++;
 #endif
@@ -2378,9 +2411,16 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
 
     exNode = exmndSubProbs_->GetPrevMatch(srchPtr, newNode->GetSig());
   }
-  
-  // unlock
-  //Logger::Info("Solver %d unlocking key %d", SolverID_, key);
+
+  if (!wasDmntSubProbExmnd && lastMatch != nullptr && IsTwoPass_ && !isSecondPass()) {
+    lastMatch->ResetHistFields(newNode);
+    //Logger::Info("set treeNode for hist node %p to %p with inst %d", lastMatch, newNode, newNode->GetInstNum());
+    lastMatch->setRecycled(true);
+    newNode->SetHistory(lastMatch);
+    newNode->setRecyclesHistNode(true);
+    newNode->SetArchived(true);
+  }
+
   bbt_->histTableUnlock(key);  
 
   stats::traversedHistoryListSize.Record(trvrsdListSize);
@@ -3228,11 +3268,11 @@ if (bbt_->isWorkStealOn()) {
 /*****************************************************************************/
 
 void LengthCostEnumerator::BackTrackRoot_(EnumTreeNode *) {
-  Logger::Info("in the correct BTR");
   EnumTreeNode *tempNode = nullptr;
   if (bbt_->getStolenNode() != nullptr) tempNode = bbt_->getStolenNode();
 
   Enumerator::BackTrackRoot_(tempNode);
+
 
   // should be set to the stolenNode's parent
   
@@ -3244,10 +3284,10 @@ void LengthCostEnumerator::BackTrackRoot_(EnumTreeNode *) {
 
 void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
   if (propNode->GetParent()) {
-    Logger::Info("In propogate exploration main loop");
+    //Logger::Info("In propogate exploration main loop");
     EnumTreeNode *trgtNode = propNode->GetParent();
 
-    if (IsHistDom()) assert(!trgtNode->IsArchived());
+    if (IsHistDom() && !trgtNode->getRecyclesHistNode()) assert(!trgtNode->IsArchived());
     if (propNode->GetHistory()->getFullyExplored()) trgtNode->incrementExploredChildren();
     UDT_HASHVAL key = exmndSubProbs_->HashKey(trgtNode->GetSig());
     bool needsPropogation = false;
@@ -3268,9 +3308,13 @@ void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
       needsPropogation |= SetTotalCostsAndSuffixes(propNode, trgtNode, trgtSchedLngth_,
                           prune_.useSuffixConcatenation, fullyExplored);
       trgtNode->Archive(fullyExplored);
-  #ifdef INSERT_ON_BACKTRACK    
-      exmndSubProbs_->InsertElement(trgtNode->GetSig(), crntHstry,
+  #ifdef INSERT_ON_BACKTRACK
+      if (!crntNode_->getRecyclesHistNode()) {
+        assert(!crntHstry->isInserted() || isSecondPass());    
+        exmndSubProbs_->InsertElement(trgtNode->GetSig(), crntHstry,
                                 hashTblEntryAlctr_, bbt_);
+        crntHstry->setInserted(true);
+      }
   #endif
       bbt_->histTableUnlock(key);
     }
@@ -3284,6 +3328,7 @@ void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
 
 void Enumerator::BackTrackRoot_(EnumTreeNode *trgtNode) {
   //Logger::Info("in the other BTR");
+  
   SchedInstruction *inst = crntNode_->GetInst();
   if (trgtNode == nullptr) trgtNode = crntNode_->GetParent();
   bool fullyExplored = false;
@@ -3295,7 +3340,7 @@ void Enumerator::BackTrackRoot_(EnumTreeNode *trgtNode) {
 
 #ifdef INSERT_ON_BACKTRACK
   if (IsHistDom()) {
-    assert(!crntNode_->IsArchived());
+    if (!crntNode_->getRecyclesHistNode()) assert(!crntNode_->IsArchived());
     UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
 
     bbt_->histTableLock(key);
@@ -3305,8 +3350,12 @@ void Enumerator::BackTrackRoot_(EnumTreeNode *trgtNode) {
     SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                              prune_.useSuffixConcatenation, fullyExplored);
     crntNode_->Archive(fullyExplored);
-    exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
+    if (!crntNode_->getRecyclesHistNode()) {
+      assert(!crntHstry->isInserted() || isSecondPass());
+      exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                   hashTblEntryAlctr_, bbt_);
+      crntHstry->setInserted(true);
+    }
     bbt_->histTableUnlock(key);
     }
   else {
@@ -3778,7 +3827,7 @@ EnumTreeNode *LengthCostEnumerator::scheduleInst_(SchedInstruction *inst, bool i
 #ifdef INSERT_ON_STEPFRWRD
   if (!isSecondPass()) {
     if (IsHistDom()) {
-      assert(!crntNode_->IsArchived());
+      if (!crntNode_->getRecyclesHistNode()) assert(!crntNode_->IsArchived());
         UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
 
       if (bbt_->isWorker()) {
@@ -3786,16 +3835,24 @@ EnumTreeNode *LengthCostEnumerator::scheduleInst_(SchedInstruction *inst, bool i
           HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
           crntHstry->setFullyExplored(false);
           crntHstry->setCostIsUseable(false);
-          exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
+          if (!crntNode_->getRecyclesHistNode()) {
+            assert(!crntHstry->isInserted() || isSecondPass());
+            exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                     hashTblEntryAlctr_, bbt_);
+            crntHstry->setInserted(true);
+          }
           //SetTotalCostsAndSuffixes(crntNode_, crntNode_->GetParent(), trgtSchedLngth_, prune_.useSuffixConcatenation, fullyExplored);
         bbt_->histTableUnlock(key);
       }
 
       else {
         HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
-        exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
+        if (!crntNode_->getRecyclesHistNode()) {
+          assert(!crntHstry->isInserted() || isSecondPass());
+          exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                     hashTblEntryAlctr_, bbt_);
+          crntHstry->setInserted(true);
+        }
         //SetTotalCostsAndSuffixes(crntNode_, crntNode_->GetParent(), trgtSchedLngth_, prune_.useSuffixConcatenation, fullyExplored);
       }
         

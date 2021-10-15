@@ -30,8 +30,6 @@ void HistEnumTreeNode::Construct(EnumTreeNode *node, bool isTemp, bool isGenerat
   crntCycleBlkd_ = node->crntCycleBlkd_;
   suffix_ = nullptr;
   SetRsrvSlots_(node);
-
-  
 }
 
 
@@ -158,19 +156,26 @@ bool HistEnumTreeNode::checkSameSubspace_(EnumTreeNode *otherNode) {
   return sameSubspace;
 }
 
-void HistEnumTreeNode::SetInstsSchduld_(BitVector *instsSchduld, bool isWorker, bool isGlobalPoolNode) {
+void HistEnumTreeNode::SetInstsSchduld_(BitVector *instsSchduld, bool isWorker, int SolverID, bool isGlobalPoolNode) {
   instsSchduld->Reset(isWorker);
   HistEnumTreeNode *crntNode;
 
   for (crntNode = this; crntNode != NULL; crntNode = crntNode->GetParent()) {
     SchedInstruction *inst = crntNode->inst_;
-
-
     if (inst != NULL) {
       /*if (isGlobalPoolNode)
         Logger::Info("instNum %d", crntNode->GetInstNum());
       */
       ///TODO -- hacker hour, whats goin on here
+      /*
+      if (instsSchduld->GetBit(inst->GetNum())) {
+        HistEnumTreeNode *crntHistNode = this;
+        Logger::Info("HistNode %p found double instruction in setInstsSchduld_ (inst num %d), hist prefix (from tip):", this, inst->GetNum());
+        for (;crntHistNode != NULL; crntHistNode = crntHistNode->GetParent()) {
+          if (crntHistNode->inst_ == NULL) break;
+          Logger::Info("%d", crntHistNode->inst_->GetNum());          
+        }
+      }*/
       assert(!instsSchduld->GetBit(inst->GetNum()));
       instsSchduld->SetBit(inst->GetNum());
     }
@@ -453,6 +458,11 @@ void HistEnumTreeNode::SetCostInfo(EnumTreeNode *, bool, Enumerator *) {
   // Nothing.
 }
 
+void HistEnumTreeNode::ResetHistFields(EnumTreeNode *) {
+  Logger::Info("in the wrong resetHistFields");
+  // Nothing.
+}
+
 const std::shared_ptr<std::vector<SchedInstruction *>> &
 HistEnumTreeNode::GetSuffix() const {
   return suffix_;
@@ -569,7 +579,6 @@ static bool doesHistorySLILCostDominate(InstCount OtherPrefixCost,
     assert(HistTotalCost > HistPrefixCost);
     assert(archived);
   }
-  if (HistTotalCost < HistPrefixCost) {Logger::Info("weird condition, histTotal %d, histPrefix %d", HistTotalCost, HistPrefixCost);}
 
   auto RequiredImprovement = std::max(HistTotalCost - LCE->GetBestCost(), 0);
   auto ImprovementOnHistory = HistPrefixCost - OtherPrefixCost;
@@ -623,11 +632,6 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
   if (Node->GetCostLwrBound() >= partialCost_) {
     ShouldPrune = true;
 
-    Node->SetLocalBestCost(Node->GetCostLwrBound());
-    if (Node->GetParent()) {
-      Node->GetParent()->SetLocalBestCost(Node->GetCostLwrBound());
-    }
-
     if (totalCost_ != INVALID_VALUE && fullyExplored_) {
       if (totalCostIsUseable_) {
         Node->SetLocalBestCost(totalCost_ + (Node->GetCostLwrBound() - partialCost_));
@@ -640,6 +644,14 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
         if (Node->GetParent()) {
           Node->GetParent()->SetLocalBestCost(Node->GetLocalBestCost());
         }
+      }
+    }
+
+    // In case of correctness issues, replace the outter if-else condition in this block with just the else block
+    else {
+      Node->SetLocalBestCost(Node->GetCostLwrBound());
+      if (Node->GetParent()) {
+        Node->GetParent()->SetLocalBestCost(Node->GetCostLwrBound());
       }
     }
   }
@@ -730,8 +742,8 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
       if (totalCost_ > localBest || !totalCostIsActualCost_) {
         totalCost_ = partialCost_ > localBest ? partialCost_ : localBest;
       }
-
     }
+
 
   }
   
@@ -773,6 +785,26 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
 #endif
 }
 
+
+void CostHistEnumTreeNode::ResetHistFields(EnumTreeNode *node) {
+  HistEnumTreeNode::Construct(node, false, false);
+
+  fullyExplored_ = false;
+  totalCostIsUseable_ = false;
+
+  cost_ = node->GetCost();
+  peakSpillCost_ = node->GetPeakSpillCost();
+  spillCostSum_ = node->GetSpillCostSum();
+  isLngthFsbl_ = node->IsLngthFsbl();
+
+  // (Chris)
+  partialCost_ = node->GetCostLwrBound();
+  totalCostIsActualCost_ = node->GetTotalCostIsActualCost();
+  totalCost_ = node->GetTotalCost();
+}
+
+
+
 InstCount HistEnumTreeNode::GetTime() { return time_; }
 
 InstCount HistEnumTreeNode::GetInstNum() {
@@ -806,8 +838,8 @@ bool HistEnumTreeNode::DoesMatch(EnumTreeNode *node, Enumerator *enumrtr, bool i
   }
 
 
-  SetInstsSchduld_(instsSchduld, isWorker, isGlobalPoolNode);
-  node->hstry_->SetInstsSchduld_(othrInstsSchduld, isWorker, isGlobalPoolNode);
+  SetInstsSchduld_(instsSchduld, isWorker, enumrtr->getSolverID(),isGlobalPoolNode);
+  node->hstry_->SetInstsSchduld_(othrInstsSchduld, isWorker, enumrtr->getSolverID(),isGlobalPoolNode);
 
 
   /*if (isGlobalPoolNode) {
