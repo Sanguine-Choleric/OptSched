@@ -2099,7 +2099,7 @@ if (isWorkSteal()) {
         stoleWork = true;
         localPoolUnlock(victimID);
         setStolenNode(workStealNode);
-        Logger::Info("stolen inst with num %d", workStealNode->GetInstNum());
+        //Logger::Info("stolen inst with num %d", workStealNode->GetInstNum());
       }
     }
       
@@ -2107,7 +2107,7 @@ if (isWorkSteal()) {
     if (stoleWork) {
       workStolenFsbl = generateStateFromNode(workStealNode, false);
       if (!workStolenFsbl) {
-        Logger::Info("SolverID %d pruned its stolen node", SolverID_);
+        //Logger::Info("SolverID %d pruned its stolen node", SolverID_);
         InactiveThreadLock_->lock();
         (*InactiveThreads_)++;
         //Logger::Info("SovlerID %d incremented inactive threads to %d", SolverID_, *InactiveThreads_);
@@ -2115,7 +2115,7 @@ if (isWorkSteal()) {
         stoleWork = false;
       }
       else {
-        Logger::Info("SolverID %d found a feasible stolen node", SolverID_);
+        //Logger::Info("SolverID %d found a feasible stolen node", SolverID_);
       }
     }
 

@@ -453,7 +453,7 @@ bool EnumTreeNode::IsBranchDominated(SchedInstruction *cnddtInst) {
 
 void EnumTreeNode::Archive(bool fullyExplored) {
   if (fullyExplored) {
-    assert(isArchivd_ == false);
+    if (!wasChildStolen_) assert(isArchivd_ == false);
 
     if (enumrtr_->IsCostEnum()) {
       hstry_->SetCostInfo(this, false, enumrtr_);
@@ -2167,10 +2167,10 @@ bool Enumerator::BackTrack_(bool trueState) {
     }
   }
 //#endif
-
+  /*
   if (crntNode_->GetHistory()->getFullyExplored()) {
     assert(!crntNode_->wasChildStolen() || crntNode_->getIsInfsblFromBacktrack_());
-  }
+  }*/
  
   if (!crntNode_->wasChildStolen())
     nodeAlctr_->Free(crntNode_);
@@ -3238,8 +3238,8 @@ void LengthCostEnumerator::BackTrackRoot_(EnumTreeNode *) {
   EnumTreeNode *tempNode = nullptr;
   if (bbt_->getStolenNode() != nullptr) tempNode = bbt_->getStolenNode();
 
-  // if we have stolen work, use the stolen node as the artificial root instead of
-  // the artificial root in active tree
+  // if we have stolen work, need to backtrack against the victim threads active tree
+  // use the stolen node to backtrack from
   Enumerator::BackTrackRoot_(tempNode);
 
   if (bbt_->getStolenNode() != nullptr) {
@@ -3255,19 +3255,23 @@ void LengthCostEnumerator::BackTrackRoot_(EnumTreeNode *) {
 }
 
 void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
-    Logger::Info("In propogate exploration main loop");
     EnumTreeNode *tmpTrgtNode = propNode->GetParent();
     EnumTreeNode *tmpCrntNode = propNode;
 
-    if (IsHistDom()) assert(!tmpTrgtNode->IsArchived());
+    tmpTrgtNode->setChildStolen(true);
 
     bool needsPropogation = false;
     bool fullyExplored = false;
 
-    if (tmpCrntNode->getExploredChildren() == tmpCrntNode->getNumChildrn()) {
+    // It is possible that the parent node has already marked this child as fully explored even 
+    // if the node has not been fully explored (because we chk cost feasibility during backtrack)
+    // Therefore, we must be sure to not count the child as having been fully explored multiple
+    // times, and ensure we do not increment the explored children of parent node if the crntNode
+    // had previously became infeasible during backtracking
+    if (tmpCrntNode->getExploredChildren() == tmpCrntNode->getNumChildrn() && !tmpCrntNode->getIsInfsblFromBacktrack_()) {
       fullyExplored = needsPropogation = true;
       tmpTrgtNode->incrementExploredChildren();      
-      Logger::Info("$$goodhit fully explored node when propogating past root, numChildrn of fully explored = %d", tmpCrntNode->getNumChildrn());
+      //Logger::Info("$$goodhit fully explored node when propogating past root, numChildrn of fully explored = %d", tmpCrntNode->getNumChildrn());
     }
 
 
@@ -3297,18 +3301,28 @@ void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
 
 
 void Enumerator::BackTrackRoot_(EnumTreeNode *tmpCrntNode) {
-  //Logger::Info("in the other BTR");
 
-  if (tmpCrntNode == nullptr) tmpCrntNode = crntNode_;
+  if (tmpCrntNode == nullptr) {
+    tmpCrntNode = crntNode_;
+  }
+  else {
+    if (crntNode_->GetLocalBestCost() != INVALID_VALUE) tmpCrntNode->SetLocalBestCost(crntNode_->GetLocalBestCost());
+    if (crntNode_->GetTotalCost() != INVALID_VALUE) tmpCrntNode->SetCost(crntNode_->GetTotalCost());
+    tmpCrntNode->SetCostLwrBound(crntNode_->GetCostLwrBound());
+    tmpCrntNode->SetCost(crntNode_->GetCost());
+    tmpCrntNode->SetHistory(crntNode_->GetHistory());
+  }
   SchedInstruction *inst = tmpCrntNode->GetInst();
   EnumTreeNode *trgtNode = tmpCrntNode->GetParent();
   bool fullyExplored = false;
   
-  if (tmpCrntNode->getExploredChildren() == tmpCrntNode->getNumChildrn()) {
+  if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn()) {
     if (trgtNode) trgtNode->incrementExploredChildren();
     fullyExplored = true;
   }
 
+
+  //if (bbt_->isWorkStealOn()) Logger::Info("finished init & explored ENUM BTR");
 #ifdef INSERT_ON_BACKTRACK
   if (IsHistDom()) {
     assert(!tmpCrntNode->IsArchived());
@@ -3321,6 +3335,7 @@ void Enumerator::BackTrackRoot_(EnumTreeNode *tmpCrntNode) {
     SetTotalCostsAndSuffixes(tmpCrntNode, trgtNode, trgtSchedLngth_,
                              prune_.useSuffixConcatenation, fullyExplored);
     tmpCrntNode->Archive(fullyExplored);
+    crntNode_->setArchived(true);
     exmndSubProbs_->InsertElement(tmpCrntNode->GetSig(), crntHstry,
                                   hashTblEntryAlctr_, bbt_);
     bbt_->histTableUnlock(key);
@@ -3336,18 +3351,26 @@ void Enumerator::BackTrackRoot_(EnumTreeNode *tmpCrntNode) {
     bbt_->histTableLock(key);
     // set fully explored to fullyExplored when work stealing
     crntHstry->setFullyExplored(fullyExplored);
+    //if (bbt_->isWorkStealOn()) Logger::Info("finished setFullyExplored ENUM BTR");
     SetTotalCostsAndSuffixes(tmpCrntNode, trgtNode, trgtSchedLngth_,
                           prune_.useSuffixConcatenation, fullyExplored);
+    //if (bbt_->isWorkStealOn()) Logger::Info("finished setTotalCost ENUM BTR");
     tmpCrntNode->Archive(fullyExplored);
+    crntNode_->setArchived(true);
+    //if (bbt_->isWorkStealOn()) Logger::Info("finished archive ENUM BTR");
     bbt_->histTableUnlock(key);
   }
 #endif
 
+  //if (bbt_->isWorkStealOn()) Logger::Info("finished insert to HistTable ENUM BTR");
+
   if (!tmpCrntNode->wasChildStolen())
     nodeAlctr_->Free(tmpCrntNode);
   else {
-    trgtNode->setChildStolen(true);
+    if (trgtNode) trgtNode->setChildStolen(true);
   }
+  
+  //if (bbt_->isWorkStealOn()) Logger::Info("finished main ENUM BTR");
 
   if (bbt_->isWorkStealOn()) {
   // it is possible that a crntNode becomes infeasible before exploring all its children
@@ -3377,7 +3400,7 @@ void Enumerator::BackTrackRoot_(EnumTreeNode *tmpCrntNode) {
     }
     bbt_->localPoolUnlock(SolverID_ - 2);
   }
-
+  //if (bbt_->isWorkStealOn()) Logger::Info("leaving ENUM BTR");
 }
 
 InstCount LengthCostEnumerator::GetBestCost_() { return bbt_->getBestCost(); }

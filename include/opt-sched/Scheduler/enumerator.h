@@ -322,6 +322,7 @@ public:
   inline HistEnumTreeNode *GetHistory();
 
   inline bool IsArchived();
+  inline void setArchived(bool isArchived);
   void Archive(bool fullyExplored);
 
   inline bool IsFeasible();
@@ -1140,6 +1141,8 @@ inline void EnumTreeNode::ReplaceHistory(HistEnumTreeNode *newHstry) {
 /**************************************************************************/
 
 inline bool EnumTreeNode::IsArchived() { return isArchivd_; }
+
+inline void EnumTreeNode::setArchived(bool isArchived) {isArchivd_ = isArchived;}
 /**************************************************************************/
 
 inline bool EnumTreeNode::IsFeasible() {
