@@ -203,6 +203,8 @@ private:
   bool totalCostIsActualCost_ = false;
   ReserveSlot *rsrvSlots_;
 
+  bool isArtRoot_ = false;
+
   // used for global pool sorting
   unsigned long priorityKey_;
 
@@ -267,6 +269,8 @@ public:
   inline EnumTreeNode *GetGrandParent();
   void PrntPartialSched(std::ostream &out);
   inline bool IsRoot();
+  inline bool isArtRoot();
+  inline void setAsRoot(bool isRoot);
 
   inline uint64_t GetNum();
   inline void SetNum(uint64_t num);
@@ -619,7 +623,7 @@ protected:
 
   void StepFrwrd_(EnumTreeNode *&newNode);
   virtual bool BackTrack_(bool trueState = true);
-  virtual void BackTrackRoot_();
+  virtual void BackTrackRoot_(EnumTreeNode *tmpCrntNode = nullptr);
   inline bool WasSolnFound_();
 
   void SetInstSigs_();
@@ -849,7 +853,7 @@ private:
   void FreeHistNode_(HistEnumTreeNode *histNode);
 
   bool BackTrack_(bool trueState = true);
-  void BackTrackRoot_();
+  void BackTrackRoot_(EnumTreeNode *tmpCrntNode = nullptr);
   void propogateExploration_(EnumTreeNode *node);
   InstCount GetBestCost_();
   void CreateRootNode_();
@@ -1045,6 +1049,9 @@ inline EnumTreeNode *EnumTreeNode::GetGrandParent() {
 /**************************************************************************/
 
 inline bool EnumTreeNode::IsRoot() { return prevNode_ == NULL; }
+
+inline bool EnumTreeNode::isArtRoot() {return isArtRoot_;}
+inline void EnumTreeNode::setAsRoot(bool isArtRoot) {isArtRoot_ = isArtRoot;}
 /**************************************************************************/
 
 inline uint64_t EnumTreeNode::GetNum() { return num_; }

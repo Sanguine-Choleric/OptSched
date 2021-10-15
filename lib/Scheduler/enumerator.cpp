@@ -189,6 +189,14 @@ void EnumTreeNode::Clean() {
   cost_= costLwrBound_ = peakSpillCost_ = spillCostSum_ = INVALID_VALUE;
   totalCost_.store(INVALID_VALUE);
   localBestCost_.store(INVALID_VALUE);
+
+  isArtRoot_ = false;
+  totalCostIsActualCost_ = false;
+  isInfsblFromBacktrack_ = false;
+  pushedToLocalPool_ = false;
+  wasChildStolen_ = false;
+  isArchivd_ = false;  
+
   isClean_ = true;
 }
 /*****************************************************************************/
@@ -3226,106 +3234,117 @@ if (bbt_->isWorkStealOn()) {
 }
 /*****************************************************************************/
 
-void LengthCostEnumerator::BackTrackRoot_() {
-  Logger::Info("in the correct BTR");
-  Enumerator::BackTrackRoot_();
+void LengthCostEnumerator::BackTrackRoot_(EnumTreeNode *) {
+  EnumTreeNode *tempNode = nullptr;
+  if (bbt_->getStolenNode() != nullptr) tempNode = bbt_->getStolenNode();
 
-  // should be set to the stolenNode's parent
-  
+  // if we have stolen work, use the stolen node as the artificial root instead of
+  // the artificial root in active tree
+  Enumerator::BackTrackRoot_(tempNode);
+
   if (bbt_->getStolenNode() != nullptr) {
-    EnumTreeNode *tempNode = bbt_->getStolenNode();
-    if (tempNode->GetParent())
+    // propogate information up the active tree of the victim thread, starting from
+    // the parent of stolen node as the "crntNode"
+
+    // note tempNode will never be the artifical root of victim tree, so we are safe to
+    // propogate up to its parent
+    if (tempNode->GetParent()) {
       propogateExploration_(tempNode->GetParent());
+    }
   }
 }
 
 void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
-  if (propNode->GetParent()) {
     Logger::Info("In propogate exploration main loop");
-    EnumTreeNode *trgtNode = propNode->GetParent();
+    EnumTreeNode *tmpTrgtNode = propNode->GetParent();
+    EnumTreeNode *tmpCrntNode = propNode;
 
-    if (IsHistDom()) assert(!trgtNode->IsArchived());
-    if (propNode->GetHistory()->getFullyExplored()) trgtNode->incrementExploredChildren();
-    UDT_HASHVAL key = exmndSubProbs_->HashKey(trgtNode->GetSig());
+    if (IsHistDom()) assert(!tmpTrgtNode->IsArchived());
+
     bool needsPropogation = false;
     bool fullyExplored = false;
 
+    if (tmpCrntNode->getExploredChildren() == tmpCrntNode->getNumChildrn()) {
+      fullyExplored = needsPropogation = true;
+      tmpTrgtNode->incrementExploredChildren();      
+      Logger::Info("$$goodhit fully explored node when propogating past root, numChildrn of fully explored = %d", tmpCrntNode->getNumChildrn());
+    }
 
+
+
+    UDT_HASHVAL key = exmndSubProbs_->HashKey(tmpTrgtNode->GetSig());
 
     if (IsHistDom()) {
-      HistEnumTreeNode *crntHstry = trgtNode->GetHistory();
-      if (trgtNode->getExploredChildren() == trgtNode->getNumChildrn()) {
-        fullyExplored = true;
-        needsPropogation = true;
-        Logger::Info("fully explored node when propogating past root, numChildrn of fully explored = %d", trgtNode->getNumChildrn());
-      }
+      HistEnumTreeNode *crntHstry = tmpCrntNode->GetHistory();
+
       bbt_->histTableLock(key);
       // set fully explored to fullyExplored when work stealing
       crntHstry->setFullyExplored(fullyExplored);
-      needsPropogation |= SetTotalCostsAndSuffixes(propNode, trgtNode, trgtSchedLngth_,
+      needsPropogation |= SetTotalCostsAndSuffixes(tmpCrntNode, tmpTrgtNode, trgtSchedLngth_,
                           prune_.useSuffixConcatenation, fullyExplored);
-      trgtNode->Archive(fullyExplored);
+      tmpCrntNode->Archive(fullyExplored);
   #ifdef INSERT_ON_BACKTRACK    
-      exmndSubProbs_->InsertElement(trgtNode->GetSig(), crntHstry,
+      exmndSubProbs_->InsertElement(tmpTrgtNode->GetSig(), crntHstry,
                                 hashTblEntryAlctr_, bbt_);
   #endif
       bbt_->histTableUnlock(key);
     }
 
-    if (needsPropogation) {
-      propogateExploration_(trgtNode);
+    if (needsPropogation && !propNode->isArtRoot()) {
+      propogateExploration_(tmpTrgtNode);
     }
-  }
 }
 
 
-void Enumerator::BackTrackRoot_() {
+void Enumerator::BackTrackRoot_(EnumTreeNode *tmpCrntNode) {
   //Logger::Info("in the other BTR");
-  SchedInstruction *inst = crntNode_->GetInst();
-  EnumTreeNode *trgtNode = crntNode_->GetParent();
+
+  if (tmpCrntNode == nullptr) tmpCrntNode = crntNode_;
+  SchedInstruction *inst = tmpCrntNode->GetInst();
+  EnumTreeNode *trgtNode = tmpCrntNode->GetParent();
   bool fullyExplored = false;
   
-  if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn()) {
-    trgtNode->incrementExploredChildren();
+  if (tmpCrntNode->getExploredChildren() == tmpCrntNode->getNumChildrn()) {
+    if (trgtNode) trgtNode->incrementExploredChildren();
     fullyExplored = true;
   }
 
 #ifdef INSERT_ON_BACKTRACK
   if (IsHistDom()) {
-    assert(!crntNode_->IsArchived());
-    UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
+    assert(!tmpCrntNode->IsArchived());
+    UDT_HASHVAL key = exmndSubProbs_->HashKey(tmpCrntNode->GetSig());
 
     bbt_->histTableLock(key);
-    HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
+    HistEnumTreeNode *crntHstry = tmpCrntNode->GetHistory();
     // set fully explored to fullyExplored when work stealing
     crntHstry->setFullyExplored(fullyExplored);
-    SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
+    SetTotalCostsAndSuffixes(tmpCrntNode, trgtNode, trgtSchedLngth_,
                              prune_.useSuffixConcatenation, fullyExplored);
-    crntNode_->Archive(fullyExplored);
-    exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
+    tmpCrntNode->Archive(fullyExplored);
+    exmndSubProbs_->InsertElement(tmpCrntNode->GetSig(), crntHstry,
                                   hashTblEntryAlctr_, bbt_);
     bbt_->histTableUnlock(key);
     }
   else {
-    assert(crntNode_->IsArchived() == false);
+    assert(tmpCrntNode->IsArchived() == false);
   }
 #endif
 #ifdef INSERT_ON_STEPFRWRD
   if (IsHistDom()) {
-    UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
-    HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
+    UDT_HASHVAL key = exmndSubProbs_->HashKey(tmpCrntNode->GetSig());
+    HistEnumTreeNode *crntHstry = tmpCrntNode->GetHistory();
     bbt_->histTableLock(key);
     // set fully explored to fullyExplored when work stealing
     crntHstry->setFullyExplored(fullyExplored);
-    SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
+    SetTotalCostsAndSuffixes(tmpCrntNode, trgtNode, trgtSchedLngth_,
                           prune_.useSuffixConcatenation, fullyExplored);
-    crntNode_->Archive(fullyExplored);
+    tmpCrntNode->Archive(fullyExplored);
     bbt_->histTableUnlock(key);
   }
 #endif
 
-  if (!crntNode_->wasChildStolen())
-    nodeAlctr_->Free(crntNode_);
+  if (!tmpCrntNode->wasChildStolen())
+    nodeAlctr_->Free(tmpCrntNode);
   else {
     trgtNode->setChildStolen(true);
   }
@@ -3805,8 +3824,8 @@ EnumTreeNode *LengthCostEnumerator::scheduleInst_(SchedInstruction *inst, bool i
 
 
   if (isPseudoRoot) {
+    newNode->setAsRoot(true);
     rootNode_ = newNode;
-    //Logger::Info("rootNode_ has inst num %d", rootNode_->GetInstNum());
   }
 
   CmtLwrBoundTightnng_();
