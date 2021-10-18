@@ -416,9 +416,10 @@ void ScheduleDAGOptSched::schedule() {
   DataDepGraph *dataDepGraph_ = static_cast<DataDepGraph *>(DDG.get());
   //Logger::Info("DDG size is %d", DDG.getsize());
   if ((size < MinDDGSize || size > 1000) && !SecondPass) {
-    Logger::Info("DDG of size %d is outside limits, bypassing region", size);
+    Logger::Info("DDG of size %d is outside limits, not parallelizing", size);
     Logger::Info("Limits: min (%d), max (%d)", MinDDGSize, 1000);
-    return;
+    ParallelBB = false;
+    //return;
   }
 
   // In the second pass, ignore artificial edges before running the sequential

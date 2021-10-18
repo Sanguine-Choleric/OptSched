@@ -1831,15 +1831,17 @@ FUNC_RESULT BBWorker::generateAndEnumerate(HalfNode *GlobalPoolNode,
                                  Milliseconds RgnTimeout,
                                  Milliseconds LngthTimeout) {
 
-  Enumrtr_->setIsGenerateState(true);
-  bool fsbl = generateStateFromNode(GlobalPoolNode);
-  Enumrtr_->setIsGenerateState(false);
-  if (!fsbl) {
-    //Logger::Info("SolverID %d pruned the globalPoolNode",SolverID_);
-    delete GlobalPoolNode;
+  bool fsbl = (GlobalPoolNode != nullptr);
+  if (fsbl) {
+    Enumrtr_->setIsGenerateState(true);
+    fsbl = generateStateFromNode(GlobalPoolNode);
+    Enumrtr_->setIsGenerateState(false);
+    if (!fsbl) {
+      //Logger::Info("SolverID %d pruned the globalPoolNode",SolverID_);
+      delete GlobalPoolNode;
+    }
   }
   return enumerate_(StartTime, RgnTimeout, LngthTimeout, false, fsbl);
-
 
 }
 
@@ -2880,55 +2882,7 @@ bool BBMaster::initGlobalPool() {
 
   GlobalPool->sort();
   return true;
-
-
-  /* FIRST ITERATION
-  if (false) { // run previous iteration of globalpool
-  bool fsbl;
-  EnumTreeNode *ArtRootNode = Enumrtr_->checkTreeFsblty(&fsbl);
-
-  if (!fsbl) return fsbl;
-
-
-
-  ReadyList *FirstInsts = new ReadyList();
-  // TODO -- solverID should be 1?
-  FirstInsts->setSolverID(0);
-  FirstInsts->CopyList(Enumrtr_->getGlobalPoolList(ArtRootNode));
-  FirstInsts->ResetIterator();
-  
-  
-  
-  assert(FirstInsts->GetInstCnt() > 0);
-  ArtRootNode = Enumrtr_->getRootNode();
-  //Logger::Info("artRootNode->getCost() %d", ArtRootNode->GetCost());
-  SchedInstruction *Inst = NULL;
-  // last inst is NULL
-
-  // TODO change this loop so terminate condition doesn get null
-
-  for (int i = 0; i < FirstInsts->GetInstCnt(); i++) {
-       //Inst = FirstInsts->GetNextPriorityInst(); Inst != NULL; 
-    Inst = FirstInsts->GetNextPriorityInst();
-
-    EnumTreeNode *NewPoolNode = NULL;
-    // construct GPQ node -- <EnumTreeNode, ReadyList>
-    NewPoolNode = Enumrtr_->allocAndInitNextNode(Inst, ArtRootNode, NewPoolNode, FirstInsts);
-
-   // GPQ.push(GPQNode)
-    assert(NewPoolNode != NULL);
-    if (Enumrtr_->isFsbl(NewPoolNode))
-      GlobalPool->emplace(NewPoolNode);
-  }
-
-  // TODO -- need delete here??
-  // delete FirstInsts;
-  MasterNodeCount_ += Enumrtr_->GetNodeCnt();
-
-  return true;
-  }
   */
-
 }
 /*****************************************************************************/
 
@@ -3078,6 +3032,10 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
     //Logger::Info("SolverID %d launching GlobalPoolNode with inst %d, (parent %d)", j+2, tempPrefix.back(), tempPrefix.front());
     //ThreadManager[j] = std::thread(&launchFunc, Workers[j], LaunchNodes[j], startTime, rgnTimeout, lngthTimeout, false);
     ThreadManager[j] = std::thread([=]{Workers[j]->generateAndEnumerate(LaunchNodes[j], startTime, rgnTimeout, lngthTimeout);});
+  }
+
+  for (int j = NumThreadsToLaunch_; j < NumThreads_; j++) {
+    ThreadManager[j] = std::thread([=]{Workers[j]->generateAndEnumerate(nullptr, startTime,rgnTimeout,lngthTimeout);});
   }
 
 
