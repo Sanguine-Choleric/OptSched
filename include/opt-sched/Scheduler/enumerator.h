@@ -483,6 +483,7 @@ protected:
   // TODO(max): Document.
   bool isCnstrctd_;
 
+  bool IsFirstPass_;
   bool IsSecondPass_;
   bool IsTwoPass_;
 

@@ -99,8 +99,8 @@ inline BitVector::~BitVector() {
     delete[] vctr_;
 }
 
-inline void BitVector::Reset(bool isWorker) {
-  if (oneCnt_ == 0 && !isWorker)
+inline void BitVector::Reset(bool isParallel) {
+  if (oneCnt_ == 0 && !isParallel)
     return;
 
   for (int i = 0; i < unitCnt_; i++) {

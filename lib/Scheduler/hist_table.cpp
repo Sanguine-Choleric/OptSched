@@ -156,17 +156,13 @@ bool HistEnumTreeNode::checkSameSubspace_(EnumTreeNode *otherNode) {
   return sameSubspace;
 }
 
-void HistEnumTreeNode::SetInstsSchduld_(BitVector *instsSchduld, bool isWorker, int SolverID, bool isGlobalPoolNode) {
-  instsSchduld->Reset(isWorker);
+void HistEnumTreeNode::SetInstsSchduld_(BitVector *instsSchduld, bool isParallel, int SolverID, bool isGlobalPoolNode) {
+  instsSchduld->Reset(isParallel);
   HistEnumTreeNode *crntNode;
 
   for (crntNode = this; crntNode != NULL; crntNode = crntNode->GetParent()) {
     SchedInstruction *inst = crntNode->inst_;
     if (inst != NULL) {
-      /*if (isGlobalPoolNode)
-        Logger::Info("instNum %d", crntNode->GetInstNum());
-      */
-      ///TODO -- hacker hour, whats goin on here
       /*
       if (instsSchduld->GetBit(inst->GetNum())) {
         HistEnumTreeNode *crntHistNode = this;
@@ -176,6 +172,8 @@ void HistEnumTreeNode::SetInstsSchduld_(BitVector *instsSchduld, bool isWorker, 
           Logger::Info("%d", crntHistNode->inst_->GetNum());          
         }
       }*/
+      
+      //whats goin on here
       assert(!instsSchduld->GetBit(inst->GetNum()));
       instsSchduld->SetBit(inst->GetNum());
     }
@@ -808,7 +806,7 @@ InstCount HistEnumTreeNode::GetInstNum() {
   return inst_ == NULL ? SCHD_STALL : inst_->GetNum();
 }
 
-bool HistEnumTreeNode::DoesMatch(EnumTreeNode *node, Enumerator *enumrtr, bool isWorker, bool isGlobalPoolNode) {
+bool HistEnumTreeNode::DoesMatch(EnumTreeNode *node, Enumerator *enumrtr, bool isParallel, bool isGlobalPoolNode) {
   BitVector *instsSchduld = enumrtr->bitVctr1_;
   BitVector *othrInstsSchduld = enumrtr->bitVctr2_;
 
@@ -835,8 +833,8 @@ bool HistEnumTreeNode::DoesMatch(EnumTreeNode *node, Enumerator *enumrtr, bool i
   }
 
 
-  SetInstsSchduld_(instsSchduld, isWorker, enumrtr->getSolverID(),isGlobalPoolNode);
-  node->hstry_->SetInstsSchduld_(othrInstsSchduld, isWorker, enumrtr->getSolverID(),isGlobalPoolNode);
+  SetInstsSchduld_(instsSchduld, isParallel, enumrtr->getSolverID(),isGlobalPoolNode);
+  node->hstry_->SetInstsSchduld_(othrInstsSchduld, isParallel, enumrtr->getSolverID(),isGlobalPoolNode);
 
 
   /*if (isGlobalPoolNode) {
