@@ -414,16 +414,14 @@ void ScheduleDAGOptSched::schedule() {
 
   int size = DDG.get()->getSize();
   DataDepGraph *dataDepGraph_ = static_cast<DataDepGraph *>(DDG.get());
+  int preFiltered = false;
+
   //Logger::Info("DDG size is %d", DDG.getsize());
   if ((size < MinDDGSize || size > 1000) && !SecondPass) {
     Logger::Info("DDG of size %d is outside limits, not parallelizing", size);
     Logger::Info("Limits: min (%d), max (%d)", MinDDGSize, 1000);
-    ParallelBB = false;
+    preFiltered = true;
     //return;
-  }
-
-  else {
-    ParallelBB = true;
   }
 
   // In the second pass, ignore artificial edges before running the sequential
@@ -459,7 +457,7 @@ void ScheduleDAGOptSched::schedule() {
   }
 
   // create region
-  if (!ParallelBB || SecondPass)
+  if (!ParallelBB || SecondPass || preFiltered)
   {
     auto region = llvm::make_unique<BBWithSpill>(
         OST.get(), dataDepGraph_, 0, HistTableHashBits,

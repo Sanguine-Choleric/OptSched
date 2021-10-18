@@ -174,7 +174,7 @@ void HistEnumTreeNode::SetInstsSchduld_(BitVector *instsSchduld, bool isParallel
       }*/
       
       //whats goin on here
-      assert(!instsSchduld->GetBit(inst->GetNum()));
+      //assert(!instsSchduld->GetBit(inst->GetNum()));
       instsSchduld->SetBit(inst->GetNum());
     }
   }
