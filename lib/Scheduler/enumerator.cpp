@@ -3265,20 +3265,9 @@ void LengthCostEnumerator::CreateRootNode_() {
 
 void LengthCostEnumerator::scheduleInt(int instNum, EnumTreeNode *newNode, bool isPseudoRoot, bool prune)
 {
-  // what about for the isPseudoRoot case
-
-  //Logger::Info("in scheduleNode, inst %d", node->GetInstNum());
-  //scheduleInst_(node->GetInst(), isPseudoRoot);
-
   newNode = NULL;
-
-  //Logger::Info("attempting to schedule inst %d", instNum);
-
-
  
   //PROBEBRANCH
-  //out = ProbeBranch_(node->GetInst(), newNode, nodeDom, rlxInfsbl, lngthInfsbl, prune);
- 
   SchedInstruction *inst;
   int rdyListSize = rdyLst_->GetInstCnt();
 
@@ -3336,19 +3325,7 @@ void LengthCostEnumerator::scheduleInt(int instNum, EnumTreeNode *newNode, bool 
   } else {
     instNumToSchdul = instToSchdul->GetNum();
     SchdulInst_(instToSchdul, crntCycleNum_);
-    
-    /*Logger::Info("attempting to remove %d from readyLst", instToSchdul->GetNum());
-    Logger::Info("readyLst contains");
-    printRdyLst();
-    SchedInstruction *tempInst = rdyLst_->GetNextPriorityInst();
-    Logger::Info("iterating on %d in rdyLst", tempInst->GetNum());
-    while (tempInst->GetNum() != instToSchdul->GetNum()) {
-      tempInst = rdyLst_->GetNextPriorityInst();
-      Logger::Info("iterating on %d in rdyLst", tempInst->GetNum());
-    }
-    rdyLst_->RemoveNextPriorityInst();
-    rdyLst_->ResetIterator();*/
-    
+        
     if (instToSchdul->GetTplgclOrdr() == minUnschduldTplgclOrdr_) {
       minUnschduldTplgclOrdr_++;
     }
@@ -3475,44 +3452,33 @@ void LengthCostEnumerator::scheduleNode(EnumTreeNode *node, bool isPseudoRoot, b
 
 bool LengthCostEnumerator::scheduleNodeOrPrune(EnumTreeNode *node,
                                                bool isPseudoRoot) {
-  //Logger::Info("beginning enum schedNodeOrPrune, entryCnt %d", getHistTableEntryCnt());
-
-  // shculeding function for state generation
-
-
+  // scheduling function for state generation
   InstCount i;
   bool isEmptyNode;
   SchedInstruction *inst;
   bool isFsbl = true;
-  InstCount brnchCnt;// = node->GetBranchCnt(isEmptyNode);
+  InstCount brnchCnt;
   bool found = false;
   //InstCount crntBrnchNum = node->GetCrntBranchNum();
 
-  // iterate until we find the node
+  
   rdyLst_->ResetIterator();
 
   brnchCnt = rdyLst_->GetInstCnt();
-  //if (SolverID_ == 2 && isPseudoRoot) printRdyLst();
 
   // TODO(JEFF) 6/28
   // changed for (i = crntBrnchNum) to for (i = 0) -- to test work stealing
 
-  //Logger::Info("SolverID %d rdyLst has size %d", SolverID_, rdyLst_->GetInstCnt());
+  // iterate until we find the node
   for (i = 0; i < brnchCnt + 1; i++) {
     
-    //assert(i != brnchCnt - 1);
-    //if (i == brnchCnt - 1) Logger::Info("SolverID %d, ALERT i == brnchCnt - 1", SolverID_);
-    //if (i == brnchCnt && i != 0) Logger::Info("SolverID %d, DOUBLE ALERT", SolverID_);
     inst = rdyLst_->GetNextPriorityInst();
-    //if (SolverID_ == 2 && isPseudoRoot) Logger::Info("SolverID_ %d, checking %dth inst (num %d) in rdyLst to find match (against %d)", SolverID_, i, inst->GetNum(), node->GetInstNum());
     if (inst->GetNum() == node->GetInstNum()) {
       found = true;
-      //Logger::Info("SolverID_ %d , MATCH (num %d) (against %d)", SolverID_, inst->GetNum(), node->GetInstNum());
       // schedule its instruction
-      //Logger::Info("SolverID %d attempting to schedule inst #%d", SolverID_, inst->GetNum());
-
-
-
+      // TODO -- currently we do not prune by history when scheduling the prefix
+      // of a stolen node. Enabling history pruning results in overpruning and
+      // mismatches
       scheduleInst_(inst, isPseudoRoot, isFsbl, false, false);
       if (!isFsbl) {
         //nodeAlctr_->Free(node);
@@ -3522,10 +3488,8 @@ bool LengthCostEnumerator::scheduleNodeOrPrune(EnumTreeNode *node,
     }
   }
   assert(found);
-  //if (!found && SolverID_ == 2) {Logger::Info("SolverID_ %d was unable to find inst (num %d) when scheduling prefix of stolen node", SolverID_, node->GetInstNum());}
 
   rdyLst_->ResetIterator();
-  //Logger::Info("ending enum schedNodeOrPrune, entryCnt %d", getHistTableEntryCnt());
   return true;
   
   // nodes examined? if (fsbl) 

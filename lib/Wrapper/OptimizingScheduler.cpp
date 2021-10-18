@@ -422,6 +422,10 @@ void ScheduleDAGOptSched::schedule() {
     //return;
   }
 
+  else {
+    ParallelBB = true;
+  }
+
   // In the second pass, ignore artificial edges before running the sequential
   // heuristic list scheduler.
   if (SecondPass)
