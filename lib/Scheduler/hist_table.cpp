@@ -632,6 +632,11 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
   if (Node->GetCostLwrBound() >= partialCost_) {
     ShouldPrune = true;
 
+    Node->SetLocalBestCost(Node->GetCostLwrBound());
+    if (Node->GetParent()) {
+      Node->GetParent()->SetLocalBestCost(Node->GetCostLwrBound());
+    }
+    /*
     if (totalCost_ != INVALID_VALUE && fullyExplored_) {
       if (totalCostIsUseable_) {
         Node->SetLocalBestCost(totalCost_ + (Node->GetCostLwrBound() - partialCost_));
@@ -645,15 +650,7 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
           Node->GetParent()->SetLocalBestCost(Node->GetLocalBestCost());
         }
       }
-    }
-
-    // In case of correctness issues, replace the outter if-else condition in this block with just the else block
-    else {
-      Node->SetLocalBestCost(Node->GetCostLwrBound());
-      if (Node->GetParent()) {
-        Node->GetParent()->SetLocalBestCost(Node->GetCostLwrBound());
-      }
-    }
+    }*/
   }
 
 

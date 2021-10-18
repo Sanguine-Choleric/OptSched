@@ -204,6 +204,7 @@ private:
   ReserveSlot *rsrvSlots_;
 
   bool recyclesHistNode_ = false;
+  bool isArtRoot_ = false;
 
   // used for global pool sorting
   unsigned long priorityKey_;
@@ -269,6 +270,8 @@ public:
   inline EnumTreeNode *GetGrandParent();
   void PrntPartialSched(std::ostream &out);
   inline bool IsRoot();
+  inline bool isArtRoot();
+  inline void setAsRoot(bool isRoot);
 
   inline uint64_t GetNum();
   inline void SetNum(uint64_t num);
@@ -320,6 +323,7 @@ public:
   inline HistEnumTreeNode *GetHistory();
 
   inline bool IsArchived();
+  inline void setArchived(bool isArchived);
   void Archive(bool fullyExplored);
   inline void SetArchived(bool archived);
 
@@ -626,8 +630,7 @@ protected:
 
   void StepFrwrd_(EnumTreeNode *&newNode);
   virtual bool BackTrack_(bool trueState = true);
-  virtual void BackTrackRoot_(EnumTreeNode *tempNode = nullptr);
-
+  virtual void BackTrackRoot_(EnumTreeNode *tmpCrntNode = nullptr);
   inline bool WasSolnFound_();
 
   void SetInstSigs_();
@@ -703,7 +706,7 @@ protected:
   // in the current slot is feasible or not
   virtual bool ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
                             bool &isNodeDmntd, bool &isRlxInfsbl,
-                            bool &isLngthFsbl);
+                            bool &isLngthFsbl, bool prune = true);
   virtual bool Initialize_(InstSchedule *preSched, InstCount trgtLngth,
                            int SolverID = 0, bool scheduleRoot = false);
   virtual void CreateRootNode_();
@@ -857,8 +860,7 @@ private:
   void FreeHistNode_(HistEnumTreeNode *histNode);
 
   bool BackTrack_(bool trueState = true);
-  void BackTrackRoot_(EnumTreeNode *tempNode = nullptr);
-
+  void BackTrackRoot_(EnumTreeNode *tmpCrntNode = nullptr);
   void propogateExploration_(EnumTreeNode *node);
   InstCount GetBestCost_();
   void CreateRootNode_();
@@ -866,7 +868,8 @@ private:
   // Check if branching from the current node by scheduling this instruction
   // in the current slot is feasible or not
   bool ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
-                    bool &isNodeDmntd, bool &isRlxInfsbl, bool &isLngthFsbl);
+                    bool &isNodeDmntd, bool &isRlxInfsbl, bool &isLngthFsbl, 
+                    bool prune = true);
 
   bool ChkCostFsblty_(SchedInstruction *inst, EnumTreeNode *&newNode, bool trueState = true);
   bool EnumStall_();
@@ -1054,6 +1057,9 @@ inline EnumTreeNode *EnumTreeNode::GetGrandParent() {
 /**************************************************************************/
 
 inline bool EnumTreeNode::IsRoot() { return prevNode_ == NULL; }
+
+inline bool EnumTreeNode::isArtRoot() {return isArtRoot_;}
+inline void EnumTreeNode::setAsRoot(bool isArtRoot) {isArtRoot_ = isArtRoot;}
 /**************************************************************************/
 
 inline uint64_t EnumTreeNode::GetNum() { return num_; }
@@ -1143,7 +1149,7 @@ inline void EnumTreeNode::ReplaceHistory(HistEnumTreeNode *newHstry) {
 
 inline bool EnumTreeNode::IsArchived() { return isArchivd_; }
 
-inline void EnumTreeNode::SetArchived(bool archived) {isArchivd_ = archived;}
+inline void EnumTreeNode::setArchived(bool isArchived) {isArchivd_ = isArchived;}
 /**************************************************************************/
 
 inline bool EnumTreeNode::IsFeasible() {

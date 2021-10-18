@@ -2116,7 +2116,7 @@ if (isWorkSteal()) {
         stoleWork = false;
       }
       else {
-        Logger::Info("SolverID %d found a feasible stolen node", SolverID_);
+        //Logger::Info("SolverID %d found a feasible stolen node", SolverID_);
       }
     }
 
