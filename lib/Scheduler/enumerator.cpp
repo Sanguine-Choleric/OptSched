@@ -1417,7 +1417,7 @@ else {
 
 bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
                               bool &isNodeDmntd, bool &isRlxInfsbl,
-                              bool &isLngthFsbl) {
+                              bool &isLngthFsbl, bool prune) {
 
   bool fsbl = true;
   newNode = NULL;
@@ -3061,7 +3061,7 @@ bool LengthCostEnumerator::WasObjctvMet_() {
 bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
                                         EnumTreeNode *&newNode,
                                         bool &isNodeDmntd, bool &isRlxInfsbl,
-                                        bool &isLngthFsbl) {
+                                        bool &isLngthFsbl, bool prune) {
 
   #ifdef IS_DEBUG_METADATA                                          
   Milliseconds startTime = Utilities::GetProcessorTime();
@@ -3103,7 +3103,7 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
     return false;
   }
 
-  if (IsHistDom()) {
+  if (IsHistDom() && prune) {
 //#ifdef IS_DEBUG_SEARCH_ORDER
 //    Logger::Info("Solver %d IN LCE HIST DOM", SolverID_);
 //#endif
@@ -3245,9 +3245,13 @@ void LengthCostEnumerator::BackTrackRoot_(EnumTreeNode *) {
   if (bbt_->getStolenNode() != nullptr) {
     // propogate information up the active tree of the victim thread, starting from
     // the parent of stolen node as the "crntNode"
-
     // note tempNode will never be the artifical root of victim tree, so we are safe to
     // propogate up to its parent
+    // TODO(JEFF) it is possible that the work stealing thread has stolen from a work 
+    // thread, in which case we will only propogote up to artifical root of the thief 
+    // thread and never propogate that information to the master victim thread. To
+    // resolve this -- we must have GetParent() return the stolen node when it makes
+    // sense
     if (tempNode->GetParent()) {
       propogateExploration_(tempNode->GetParent());
     }
@@ -3322,7 +3326,6 @@ void Enumerator::BackTrackRoot_(EnumTreeNode *tmpCrntNode) {
   }
 
 
-  //if (bbt_->isWorkStealOn()) Logger::Info("finished init & explored ENUM BTR");
 #ifdef INSERT_ON_BACKTRACK
   if (IsHistDom()) {
     assert(!tmpCrntNode->IsArchived());
@@ -3351,18 +3354,14 @@ void Enumerator::BackTrackRoot_(EnumTreeNode *tmpCrntNode) {
     bbt_->histTableLock(key);
     // set fully explored to fullyExplored when work stealing
     crntHstry->setFullyExplored(fullyExplored);
-    //if (bbt_->isWorkStealOn()) Logger::Info("finished setFullyExplored ENUM BTR");
     SetTotalCostsAndSuffixes(tmpCrntNode, trgtNode, trgtSchedLngth_,
                           prune_.useSuffixConcatenation, fullyExplored);
-    //if (bbt_->isWorkStealOn()) Logger::Info("finished setTotalCost ENUM BTR");
     tmpCrntNode->Archive(fullyExplored);
     crntNode_->setArchived(true);
-    //if (bbt_->isWorkStealOn()) Logger::Info("finished archive ENUM BTR");
     bbt_->histTableUnlock(key);
   }
 #endif
 
-  //if (bbt_->isWorkStealOn()) Logger::Info("finished insert to HistTable ENUM BTR");
 
   if (!tmpCrntNode->wasChildStolen())
     nodeAlctr_->Free(tmpCrntNode);
@@ -3370,7 +3369,6 @@ void Enumerator::BackTrackRoot_(EnumTreeNode *tmpCrntNode) {
     if (trgtNode) trgtNode->setChildStolen(true);
   }
   
-  //if (bbt_->isWorkStealOn()) Logger::Info("finished main ENUM BTR");
 
   if (bbt_->isWorkStealOn()) {
   // it is possible that a crntNode becomes infeasible before exploring all its children
@@ -3400,7 +3398,6 @@ void Enumerator::BackTrackRoot_(EnumTreeNode *tmpCrntNode) {
     }
     bbt_->localPoolUnlock(SolverID_ - 2);
   }
-  //if (bbt_->isWorkStealOn()) Logger::Info("leaving ENUM BTR");
 }
 
 InstCount LengthCostEnumerator::GetBestCost_() { return bbt_->getBestCost(); }
@@ -3684,7 +3681,7 @@ bool LengthCostEnumerator::scheduleNodeOrPrune(EnumTreeNode *node,
 
       //if (!bbt_->isWorker() || SolverID_ == 3)
       //  Logger::Info("attempting to schedule inst %d", inst->GetNum());
-      scheduleInst_(inst, isPseudoRoot, isFsbl);
+      scheduleInst_(inst, isPseudoRoot, isFsbl, false, false);
       if (!isFsbl) {
         //nodeAlctr_->Free(node);
         //Logger::Info("ending enum schedNodeOrPrune, entryCnt %d", getHistTableEntryCnt());
@@ -3764,7 +3761,7 @@ EnumTreeNode *LengthCostEnumerator::scheduleInst_(SchedInstruction *inst, bool i
   EnumTreeNode *newNode;
 
   bool isNodeDominated = false, isRlxdFsbl = true, isLngthFsbl = true;
-  isFsbl = ProbeBranch_(inst, newNode, isNodeDominated, isRlxdFsbl, isLngthFsbl);
+  isFsbl = ProbeBranch_(inst, newNode, isNodeDominated, isRlxdFsbl, isLngthFsbl, prune);
 
 #ifdef DEBUG_GP_HISTORY
   if (isNodeDominated)
@@ -3861,7 +3858,7 @@ EnumTreeNode *LengthCostEnumerator::scheduleInst_(SchedInstruction *inst, bool i
 bool LengthCostEnumerator::scheduleArtificialRoot(bool setAsRoot)
 {
   //Logger::Info("SolverID_ %d Scheduling artificial root", SolverID_);
-
+  assert(rdyLst_->GetInstCnt() == 1);
   SchedInstruction *inst = rdyLst_->GetNextPriorityInst();
   //Logger::Info("SolverID_ %d Scheduling artificial root inst %d", SolverID_, inst->GetNum());
   bool isFsbl = true;
