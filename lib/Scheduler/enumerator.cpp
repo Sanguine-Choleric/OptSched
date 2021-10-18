@@ -2419,7 +2419,7 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
     lastMatch->setRecycled(true);
     newNode->SetHistory(lastMatch);
     newNode->setRecyclesHistNode(true);
-    newNode->SetArchived(true);
+    newNode->setArchived(true);
   }
 
   bbt_->histTableUnlock(key);  

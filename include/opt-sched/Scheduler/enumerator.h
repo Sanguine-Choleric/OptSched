@@ -325,7 +325,6 @@ public:
   inline bool IsArchived();
   inline void setArchived(bool isArchived);
   void Archive(bool fullyExplored);
-  inline void SetArchived(bool archived);
 
   inline bool IsFeasible();
   inline bool IsLngthFsbl();
