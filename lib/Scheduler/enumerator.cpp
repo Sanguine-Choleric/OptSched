@@ -553,10 +553,6 @@ Enumerator::Enumerator(DataDepGraph *dataDepGraph, MachineModel *machMdl,
   //  #define INSERT_ON_STEPFRWRD
   //#endif
 
-  //#ifndef IS_DEBUG_METADATA
-  //  #define IS_DEBUG_METADATA
-  //#endif
-
   NumSolvers_ = NumSolvers;
   
   timeoutToMemblock_ = timeoutToMemblock;
@@ -1173,14 +1169,7 @@ FUNC_RESULT Enumerator::FindFeasibleSchedule_(InstSchedule *sched,
     mostRecentMatchingHistNode_ = nullptr;
 
     if (isCrntNodeFsbl) {
-      #ifdef IS_DEBUG_METADATA
-      Milliseconds startTime = Utilities::GetProcessorTime();
-      #endif
       foundFsblBrnch = FindNxtFsblBrnch_(nxtNode);
-      
-      #ifdef IS_DEBUG_METADATA
-      findBranchTime += Utilities::GetProcessorTime() - startTime;
-      #endif
     } else {
       foundFsblBrnch = false;
     }
@@ -1190,16 +1179,9 @@ FUNC_RESULT Enumerator::FindFeasibleSchedule_(InstSchedule *sched,
       // dominates a history node with a suffix schedule. If this is the case,
       // then instead of continuing the search, we should generate schedules by
       // concatenating the best known suffix.
-      #ifdef IS_DEBUG_METADATA
-      Milliseconds startTime = Utilities::GetProcessorTime();
-      #endif
+
 
       StepFrwrd_(nxtNode);
-
-      #ifdef IS_DEBUG_METADATA
-      moveForwardTime += Utilities::GetProcessorTime() - startTime;
-      #endif
-
       // Find matching history nodes with suffixes.
       auto matchingHistNodesWithSuffix = mostRecentMatchingHistNode_;
 
@@ -1633,9 +1615,6 @@ bool Enumerator::ProbeIssuSlotFsblty_(SchedInstruction *inst, bool trueProbe) {
 
 void Enumerator::RestoreCrntState_(SchedInstruction *inst,
                                    EnumTreeNode *newNode) {
-  #ifdef IS_DEBUG_METADATA
-  Milliseconds startTime = Utilities::GetProcessorTime();
-  #endif
 
   if (newNode != NULL) {
     if (newNode->IsArchived() == false) {
@@ -1664,9 +1643,6 @@ void Enumerator::RestoreCrntState_(SchedInstruction *inst,
 
   ClearState_();
 
-  #ifdef IS_DEBUG_METADATA
-  restoreTime += Utilities::GetProcessorTime() - startTime;
-  #endif
 
 }
 /*****************************************************************************/
@@ -1731,35 +1707,8 @@ if (bbt_->isWorkStealOn()) {
   }  
 }
 
-//TEST CODE
-/*
-if (!crntNode_->getPushedToLocalPool() || !bbt_->isWorker() || isSecondPass()) {
   CreateNewRdyLst_();
-  newNode->SetRdyLst(rdyLst_);
-}
-*/
 
-  //if (!crntNode_->getPushedToLocalPool()) CreateNewRdyLst_();
-  //if (crntNode_->getPushedToLocalPool()) bbt_->localPoolLock(SolverID_ - 2);
-  CreateNewRdyLst_();
-  //if (crntNode_->getPushedToLocalPool()) bbt_->localPoolUnlock(SolverID_ - 2);
-
-  // correctness issue
-  // the new node should inherit the parents ready list before any thread potentiallly
-  // removes an instruction from it. If we dont account for this then there is a 
-  // potential correctness issue.
-
-  // The solution should have createRdyLst in critical section, and
-  // only perform the following lines if the crntNode hasnot pushed to local
-
-  // Note: only CreateNewRdyLst_ needs to be in critical section (not setting the rdyLst)
-  // code in current form attempts to solve these problems
-
-
-
-  // this code compiles and runs if we remove createNEwRdyLst in crit seciton above
-  //if (crntNode_->getPushedToLocalPool()) bbt_->localPoolLock(SolverID_ - 2);
-  //CreateNewRdyLst_();
   // Let the new node inherit its parent's ready list before we update it
   newNode->SetRdyLst(rdyLst_);
   //if (crntNode_->getPushedToLocalPool()) bbt_->localPoolUnlock(SolverID_ - 2);
@@ -1815,14 +1764,16 @@ if (!crntNode_->getPushedToLocalPool() || !bbt_->isWorker() || isSecondPass()) {
           //SetTotalCostsAndSuffixes(crntNode_, crntNode_->GetParent(), trgtSchedLngth_, prune_.useSuffixConcatenation, fullyExplored);
         bbt_->histTableUnlock(key);
       }
-      /*
+      
       else {
         HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
+        crntHstry->setFullyExplored(false);
+        crntHstry->setCostIsUseable(false);
         crntNode_->Archive(false);
         exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                     hashTblEntryAlctr_, bbt_);
         //SetTotalCostsAndSuffixes(crntNode_, crntNode_->GetParent(), trgtSchedLngth_, prune_.useSuffixConcatenation, fullyExplored);
-      }*/
+      }
         
 
     } else {
@@ -2785,30 +2736,6 @@ void Enumerator::printInfsbltyHits() {
   
 }
 
-void Enumerator::printMetadata() {
-  Logger::Info("time spent finding branch %d", findBranchTime);
-  Logger::Info("time spent probing %d",probeTime);
-  Logger::Info("time spent restoring %d", restoreTime);
-  Logger::Info("time spent moving forward %d", moveForwardTime);
-  Logger::Info("time spent backtracking %d", backtrackTime);
-  Logger::Info("time spent checking soln %d", checkSolnTime);
-  Logger::Info("time spent checking cost fsblt for probe %d", tightnLBTime);
-}
-
-void Enumerator::printProbeTiming() {
-  Logger::Info("Time for prefix %d", prefixTime);
-  Logger::Info("Time for LB %d", lbTime);
-  Logger::Info("Time for deadline %d", deadlineTime);
-  Logger::Info("Time for useCnt %d", useCntTime);
-  Logger::Info("Time for nodeSup %d", nodeSupTime);
-  Logger::Info("Time for instScheduling %d", instSchedulingTime);
-  Logger::Info("Time for issueSlot %d", issueSlotTime);
-  Logger::Info("Time for tightnLB %d", tightnLBTime);
-  Logger::Info("Time for nodeAlloc %d", nodeAllocTime);
-  Logger::Info("Time for histDom %d", histDomTime);
-  Logger::Info("Time for relaxedSched %d", relaxedTime);
-}
-
 /*****************************************************************************/
 
 LengthEnumerator::LengthEnumerator(
@@ -3047,26 +2974,15 @@ FUNC_RESULT LengthCostEnumerator::FindFeasibleSchedule(InstSchedule *sched,
   //printInfsbltyHits();
   //printProbeTiming();
 
-  #ifdef IS_DEBUG_METADATA
-  Logger::Info("finished enumeration");
-  printMetadata();
-  #endif
-
   return rslt;
 }
 /*****************************************************************************/
 
 bool LengthCostEnumerator::WasObjctvMet_() {
-  #ifdef IS_DEBUG_METADATA
-  Milliseconds startTime = Utilities::GetProcessorTime();
-  #endif
   assert(GetBestCost_() >= 0);
 
   //Logger::Info("was objctv met: schedulInstCount %d, tot isntCount %d", schduldInstCnt_, totInstCnt_);
   if (WasSolnFound_() == false) {
-    #ifdef IS_DEBUG_METADATA
-    checkSolnTime += Utilities::GetProcessorTime() - startTime;
-    #endif
     return false;
   }
 
@@ -3083,9 +2999,6 @@ bool LengthCostEnumerator::WasObjctvMet_() {
       bbt_->incrementImprvmntCnt();
   }
 
-  #ifdef IS_DEBUG_METADATA
-  checkSolnTime += Utilities::GetProcessorTime() - startTime;
-  #endif
 
   if (newCost == costLwrBound_) Logger::Info("objctv met");
   return newCost == costLwrBound_;
@@ -3096,11 +3009,6 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
                                         EnumTreeNode *&newNode,
                                         bool &isNodeDmntd, bool &isRlxInfsbl,
                                         bool &isLngthFsbl, bool prune) {
-
-  #ifdef IS_DEBUG_METADATA                                          
-  Milliseconds startTime = Utilities::GetProcessorTime();
-  #endif
-
   bool isFsbl = true;
 
   isFsbl = Enumerator::ProbeBranch_(inst, newNode, isNodeDmntd, isRlxInfsbl,
@@ -3111,10 +3019,6 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
   if (isFsbl == false) {
     assert(isLngthFsbl == false);
     isLngthFsbl = false;
-
-    #ifdef IS_DEBUG_METADATA
-    probeTime += Utilities::GetProcessorTime() - startTime;
-    #endif
 
     crntNode_->incrementExploredChildren();
     return false;
@@ -3129,9 +3033,6 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
 #ifdef IS_DEBUG_SEARCH_ORDER
     Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: cost fail");
 #endif
-    #ifdef IS_DEBUG_METADATA
-    probeTime += Utilities::GetProcessorTime() - startTime; 
-    #endif
     crntNode_->incrementExploredChildren();
     crntNode_->SetLocalBestCost(newNode->GetLocalBestCost());
     return false;
@@ -3156,9 +3057,6 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
 #ifdef IS_DEBUG_SEARCH_ORDER
       Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: LCE history fail");
 #endif
-#ifdef IS_DEBUG_METADATA
-      probeTime += Utilities::GetProcessorTime() - startTime;
-#endif
       isNodeDmntd = true;
       crntNode_->incrementExploredChildren();
       nodeAlctr_->Free(newNode);
@@ -3168,9 +3066,6 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
   }
 
   assert(newNode);
-  #ifdef IS_DEBUG_METADATA
-  probeTime += Utilities::GetProcessorTime() - startTime;
-  #endif
   return true;
 }
 /*****************************************************************************/
@@ -3206,10 +3101,6 @@ bool LengthCostEnumerator::ChkCostFsblty_(SchedInstruction *inst,
 bool LengthCostEnumerator::BackTrack_(bool trueState) {
   
   //Logger::Info("SolverID %d in LCE Backtrack", SolverID_);
-  #ifdef IS_DEBUG_METADATA
-  Milliseconds startTime;
-  startTime = Utilities::GetProcessorTime();
-  #endif
   SchedInstruction *inst = crntNode_->GetInst();
 
   bbt_->UnschdulInstBBThread(inst, crntCycleNum_, crntSlotNum_, crntNode_->GetParent());
@@ -3261,9 +3152,6 @@ if (bbt_->isWorkStealOn()) {
   }
 }
 
-  #ifdef IS_DEBUG_METADATA
-  backtrackTime += Utilities::GetProcessorTime() - startTime;
-  #endif
   return fsbl;
 }
 /*****************************************************************************/

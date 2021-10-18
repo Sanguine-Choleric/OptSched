@@ -469,27 +469,6 @@ protected:
   friend class HistEnumTreeNode;
   friend class CostHistEnumTreeNode;
 
-  // probe performance
-  
-  Milliseconds prefixTime = 0;
-  Milliseconds lbTime = 0;
-  Milliseconds deadlineTime = 0;
-  Milliseconds useCntTime = 0;
-  Milliseconds nodeSupTime = 0;
-  Milliseconds instSchedulingTime = 0;
-  Milliseconds issueSlotTime = 0;
-  Milliseconds tightnLBTime = 0;
-  Milliseconds nodeAllocTime = 0;
-  Milliseconds histDomTime = 0;
-  Milliseconds relaxedTime = 0;
-
-  Milliseconds findBranchTime = 0;
-  Milliseconds probeTime = 0;
-  Milliseconds restoreTime = 0;
-  Milliseconds moveForwardTime = 0;
-  Milliseconds backtrackTime = 0;
-  Milliseconds checkSolnTime = 0;
-
   uint64_t costInfsbl = 0;
   uint64_t rlxdInfsbl = 0;
   uint64_t bkwrdLBInfsbl = 0;
@@ -759,8 +738,6 @@ public:
   void printInfsbltyHits();
 
   void printProbeTiming();
-
-  void printMetadata();
 
   void printRdyLst();
 
