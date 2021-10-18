@@ -460,7 +460,7 @@ void ScheduleDAGOptSched::schedule() {
         OST.get(), dataDepGraph_, 0, HistTableHashBits,
         LowerBoundAlgorithm, HeuristicPriorities, EnumPriorities, VerifySchedule,
         PruningStrategy, SchedForRPOnly, EnumStalls, SCW, SCF, HeurSchedType, TimeoutToMemblock,
-        TwoPassEnabled);
+        TwoPassEnabled, IsTimeoutPerInst);
 
       // Used for two-pass-optsched to alter upper bound value.
     if (SecondPass)

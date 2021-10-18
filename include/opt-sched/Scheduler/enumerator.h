@@ -136,7 +136,7 @@ private:
   bool isEmpty_;
 
   bool isFsbl_;
-  bool isInfsblFromBacktrack_ = false;
+  bool IsInfsblFromBacktrack_ = false;
 
   bool isLngthFsbl_;
 
@@ -441,8 +441,8 @@ public:
     return false;
   }
 
-  inline void setIsInfsblFromBacktrack_(bool infsbl) {isInfsblFromBacktrack_ = infsbl;}
-  inline bool getIsInfsblFromBacktrack_() {return isInfsblFromBacktrack_;} 
+  inline void setIsInfsblFromBacktrack_(bool infsbl) {IsInfsblFromBacktrack_ = infsbl;}
+  inline bool getIsInfsblFromBacktrack_() {return IsInfsblFromBacktrack_;} 
 
   inline void setRecyclesHistNode(bool flag) { recyclesHistNode_ = flag;}
   inline bool getRecyclesHistNode() {return recyclesHistNode_;}

@@ -194,7 +194,7 @@ void EnumTreeNode::Clean() {
 
   isArtRoot_ = false;
   totalCostIsActualCost_ = false;
-  isInfsblFromBacktrack_ = false;
+  IsInfsblFromBacktrack_ = false;
   pushedToLocalPool_ = false;
   wasChildStolen_ = false;
   recyclesHistNode_ = false;

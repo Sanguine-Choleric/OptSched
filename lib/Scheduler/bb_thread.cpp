@@ -1326,9 +1326,9 @@ std::mutex *BBInterfacer::getAllocatorLock() {
   return nullptr;
 }
 
-FUNC_RESULT BBWithSpill::Enumerate_(Milliseconds startTime, 
-                                    Milliseconds rgnTimeout,
-                                    Milliseconds lngthTimeout,
+FUNC_RESULT BBWithSpill::Enumerate_(Milliseconds StartTime, 
+                                    Milliseconds RgnTimeout,
+                                    Milliseconds LngthTimeout,
                                     int *OptimalSolverID) {
   InstCount trgtLngth;
   FUNC_RESULT rslt = RES_SUCCESS;
@@ -1342,17 +1342,19 @@ FUNC_RESULT BBWithSpill::Enumerate_(Milliseconds startTime,
 
   Milliseconds rgnDeadline, lngthDeadline;
   rgnDeadline =
-      (rgnTimeout == INVALID_VALUE) ? INVALID_VALUE : startTime + rgnTimeout;
+    (RgnTimeout == INVALID_VALUE) ? INVALID_VALUE : StartTime + RgnTimeout;
   lngthDeadline =
-      (rgnTimeout == INVALID_VALUE) ? INVALID_VALUE : startTime + lngthTimeout;
-  assert(lngthDeadline <= rgnDeadline);
+    (RgnTimeout == INVALID_VALUE) ? INVALID_VALUE : StartTime + LngthTimeout;
+  
+
+  Milliseconds deadline = IsTimeoutPerInst_ ? lngthDeadline : rgnDeadline;
 
   for (trgtLngth = schedLwrBound_; trgtLngth <= schedUprBound_; trgtLngth++) {
     InitForSchdulng();
     Logger::Event("Enumerating", "target_length", trgtLngth);
 
     rslt = Enumrtr_->FindFeasibleSchedule(enumCrntSched_, trgtLngth, this,
-                                          costLwrBound, lngthDeadline);
+                                          costLwrBound, deadline);
     if (rslt == RES_TIMEOUT)
       timeout = true;
     HandlEnumrtrRslt_(rslt, trgtLngth);
@@ -1383,7 +1385,7 @@ FUNC_RESULT BBWithSpill::Enumerate_(Milliseconds startTime,
 
     iterCnt++;
     costLwrBound += 1;
-    lngthDeadline = Utilities::GetProcessorTime() + lngthTimeout;
+    lngthDeadline = Utilities::GetProcessorTime() + LngthTimeout;
     if (lngthDeadline > rgnDeadline)
       lngthDeadline = rgnDeadline;
   }
@@ -1419,7 +1421,8 @@ BBWithSpill::BBWithSpill(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
               SchedPriorities hurstcPrirts, SchedPriorities enumPrirts,
               bool vrfySched, Pruning PruningStrategy, bool SchedForRPOnly,
               bool enblStallEnum, int SCW, SPILL_COST_FUNCTION spillCostFunc,
-              SchedulerType HeurSchedType, int timeoutToMemblock, bool twoPassEnabled)
+              SchedulerType HeurSchedType, int timeoutToMemblock, bool twoPassEnabled,
+              bool IsTimeoutPerInst)
               : BBInterfacer(OST_, dataDepGraph, rgnNum, sigHashSize, lbAlg, hurstcPrirts,
                              enumPrirts, vrfySched, PruningStrategy, SchedForRPOnly, 
                              enblStallEnum, SCW, spillCostFunc, HeurSchedType) {
@@ -1428,6 +1431,7 @@ BBWithSpill::BBWithSpill(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
     twoPassEnabled_ = twoPassEnabled;
 
     timeoutToMemblock_ = timeoutToMemblock;
+    IsTimeoutPerInst_ = IsTimeoutPerInst;
 }
 
 Enumerator *BBWithSpill::AllocEnumrtr_(Milliseconds timeout) {

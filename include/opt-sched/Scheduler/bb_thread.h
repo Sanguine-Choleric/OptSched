@@ -460,7 +460,8 @@ public:
                 SchedPriorities hurstcPrirts, SchedPriorities enumPrirts,
                 bool vrfySched, Pruning PruningStrategy, bool SchedForRPOnly,
                 bool enblStallEnum, int SCW, SPILL_COST_FUNCTION spillCostFunc,
-                SchedulerType HeurSchedType, int timeoutToMemblock, bool isTwoPass);
+                SchedulerType HeurSchedType, int timeoutToMemblock, bool isTwoPass,
+                bool IsTimeoutPerInst);
 
     
     FUNC_RESULT Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout,
