@@ -1981,7 +1981,7 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
   if (!GlobalPool_->empty()) {
     //Logger::Info("Solver %d pulling from global pool (%d nodes left)", SolverID_, GlobalPool_->size());
     if (RegionSched_->GetCost() == 0) return RES_SUCCESS;
-    Logger::Info("pulling from global pool");
+    //Logger::Info("pulling from global pool");
     //if (SolverID_ == 2) Logger::Info("RegionSched Cost %d != 0, pulling from global pool", RegionSched_->GetCost(), getCostLwrBound());
     HalfNode *temp;
     while (true) {
@@ -2023,7 +2023,7 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
     }
   }
 
-  if (SolverID_ == 2) Logger::Info("Global Pool empty");
+  //if (SolverID_ == 2) Logger::Info("Global Pool empty");
 
 #ifdef DEBUG_GP_HISTORY
   Logger::Info("Solver %d bypassed global pool pulling (size = %d)", SolverID_, GlobalPool_->size());
@@ -2135,7 +2135,7 @@ if (isWorkSteal()) {
       }
     }
   }
-
+  /*
   if (!workStolenFsbl) {
     if (RegionSched_->GetCost() == 0) {
       Logger::Info("found optimal schedule");
@@ -2146,9 +2146,9 @@ if (isWorkSteal()) {
     else if (isTimedOut) {
       Logger::Info("timedout");
     }
-  }
+  }*/
 
-  Logger::Info("There are %d inactiveThreads", *InactiveThreads_);
+  //Logger::Info("There are %d inactiveThreads", *InactiveThreads_);
   //Logger::Info("there are %d numSolvers", NumSolvers_);
   assert((*InactiveThreads_) < 2 * NumSolvers_);
   if ((*InactiveThreads_) >= NumSolvers_) {
