@@ -490,6 +490,7 @@ void CostHistEnumTreeNode::Construct(EnumTreeNode *node, bool isTemp, bool isGen
   costInfoSet_ = false;
   HistEnumTreeNode::Construct(node, isTemp, isGenerateState);
   fullyExplored_ = false;
+  isInserted_ = false;
 #ifdef INSERT_ON_STEPFRWRD
   if (setCost) {
     partialCost_ = node->GetCostLwrBound();
@@ -509,6 +510,7 @@ void CostHistEnumTreeNode::Construct(EnumTreeNode *node, bool isTemp, bool isGen
 void CostHistEnumTreeNode::Init_() {
   HistEnumTreeNode::Init_();
   costInfoSet_ = totalCostIsActualCost_ = archived_ = totalCostIsUseable_ = fullyExplored_ =  false;
+  isInserted_ = false;
   cost_ = 0;
   totalCost_ = partialCost_ = INVALID_VALUE;
 }

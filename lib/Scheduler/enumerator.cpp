@@ -1747,7 +1747,7 @@ if (bbt_->isWorkStealOn()) {
             Logger::Info("parent inst %d", crntHstry->GetParent()->GetInstNum());
           }*/
           //crntHstry->Copy(crntNode_->GetHistory());
-          assert(!crntHstry->isInserted() || isSecondPass());
+          assert(!crntHstry->isInserted());
           exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                     hashTblEntryAlctr_, bbt_);
           crntHstry->setInserted(true);
@@ -2013,7 +2013,7 @@ bool Enumerator::BackTrack_(bool trueState) {
 
   // if a thread stole from this node, then there is a race condition on updating whether
   // or not the current node has been fullyExplored
-  assert(!crntNode_->GetHistory()->getFullyExplored() || !crntNode_->wasChildStolen());
+  assert(!crntNode_->GetHistory()->getFullyExplored() || crntNode_->wasChildStolen());
   if (trgtNode)
     assert(!trgtNode->GetHistory()->getFullyExplored());
 
@@ -2079,7 +2079,7 @@ bool Enumerator::BackTrack_(bool trueState) {
         assert(!crntHstry->getFullyExplored());
         crntHstry->setFullyExplored(true);
         if (!crntNode_->getRecyclesHistNode()) {
-          assert(!crntHstry->isInserted() || isSecondPass());
+          assert(!crntHstry->isInserted());
           exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                     hashTblEntryAlctr_, bbt_);
           crntHstry->setInserted(true);
@@ -2100,7 +2100,10 @@ bool Enumerator::BackTrack_(bool trueState) {
       if (bbt_->isWorker()) {
           bbt_->histTableLock(key);
           // set fully explored to fullyExplored when work stealing
-          assert(!crntHstry->getFullyExplored());
+          // there is a race condition to setFullyExplored when a child has stole
+          // from the subspace, thus the fullyExplored assert is only true
+          // if the subspace has not been stolen from
+          assert(!crntHstry->getFullyExplored() || crntNode_->wasChildStolen());
           crntHstry->setFullyExplored(fullyExplored);
           SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                             prune_.useSuffixConcatenation, fullyExplored);
