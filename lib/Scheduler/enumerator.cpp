@@ -2013,33 +2013,34 @@ bool Enumerator::BackTrack_(bool trueState) {
 }
   rdyLst_->RemoveLatestSubList();
 
-  // if a thread stole from this node, then there is a race condition on updating whether
-  // or not the current node has been fullyExplored
-  assert(!crntNode_->GetHistory()->getFullyExplored() || crntNode_->wasChildStolen());
-  if (trgtNode) assert(!trgtNode->GetHistory()->getFullyExplored());
+  if (bbt_->isWorker() && IsFirstPass_) {
+    // if a thread stole from this node, then there is a race condition on updating whether
+    // or not the current node has been fullyExplored
+    assert(!crntNode_->GetHistory()->getFullyExplored() || crntNode_->wasChildStolen());
+    //if (trgtNode) assert(!trgtNode->GetHistory()->getFullyExplored());
 
-  // It is posible we are falling to this backtrack directly from another backtrack
-  // in which case, the exploredChild != numChildren but it should be labeled as fully explored
-  if (bbt_->isWorker() && IsFirstPass_)
+    // It is posible we are falling to this backtrack directly from another backtrack
+    // in which case, the exploredChild != numChildren but it should be labeled as fully explored
     assert(crntNode_->getExploredChildren() <= crntNode_->getNumChildrn());
 
 
 
-  if (IsHistDom()) {
-    HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
-    UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
-    bbt_->histTableLock(key);
+    if (IsHistDom()) {
+      HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
+      UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
+      bbt_->histTableLock(key);
 
 
-    if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn() || (crntNode_->getIsInfsblFromBacktrack_() && !crntNode_->wasChildStolen())) {
-      if (!crntNode_->getIncrementedParent()) {
-        trgtNode->incrementExploredChildren();
-        crntNode_->setIncrementedParent(true);
+      if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn() || (crntNode_->getIsInfsblFromBacktrack_() && !crntNode_->wasChildStolen())) {
+        if (!crntNode_->getIncrementedParent()) {
+          trgtNode->incrementExploredChildren();
+          crntNode_->setIncrementedParent(true);
+        }
+        fullyExplored = true;
+        if (crntNode_->wasChildStolen()) Logger::Info("$$GOODHIT -- fullyexplored with stolen child");
       }
-      fullyExplored = true;
-      if (crntNode_->wasChildStolen()) Logger::Info("$$GOODHIT -- fullyexplored with stolen child");
+      bbt_->histTableUnlock(key);
     }
-    bbt_->histTableUnlock(key);
   }
 
 #ifdef INSERT_ON_BACKTRACK
