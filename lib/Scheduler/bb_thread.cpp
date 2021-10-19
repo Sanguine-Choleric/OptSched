@@ -1335,6 +1335,7 @@ FUNC_RESULT BBWithSpill::Enumerate_(Milliseconds StartTime,
   int iterCnt = 0;
   int costLwrBound = 0;
   bool timeout = false;
+  Logger::Info("invoking iterative approach to find best length");
 
   // Non-parallel enumerator, if finds optimal, then SolverID must be this thread
   // Required by SchedRegion which uses SolverID as index when verifying schedule
@@ -3040,7 +3041,7 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
 
 
 
-  for (int j = 0; j < NumThreadsToLaunch_; j++) {
+  for (int j = 0; j < NumThreads_; j++) {
     ThreadManager[j].join();
   }
 
