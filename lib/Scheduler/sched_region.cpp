@@ -369,7 +369,7 @@ FUNC_RESULT SchedRegion::FindOptimalSchedule(
 
   // TODO - unintended consequences?
   // Need to clear the thread dependent structures before reusing
-  if (isParallelBB)
+  if (isParallelBB && !isSecondPass_)
     dataDepGraph_->resetThreadWriteFields();
 
   // Step #2: Use ACO to find a schedule if enabled and no optimal schedule is
@@ -413,7 +413,7 @@ FUNC_RESULT SchedRegion::FindOptimalSchedule(
     }
 
     // Need to clear the thread dependent structures before reusing
-    if (isParallelBB)
+    if (isParallelBB && !isSecondPass_)
       dataDepGraph_->resetThreadWriteFields();
   }
 

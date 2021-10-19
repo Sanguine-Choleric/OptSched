@@ -1275,7 +1275,7 @@ bool Enumerator::FindNxtFsblBrnch_(EnumTreeNode *&newNode) {
         return false;
       }
 #ifdef IS_DEBUG_SEARCH_ORDER
-      //Logger::Log((Logger::LOG_LEVEL) 4, false, "Out of instructions, stalling");
+      Logger::Log((Logger::LOG_LEVEL) 4, false, "Out of instructions, stalling");
 #endif
       // then we only have the option of scheduling a stall
       assert(isEmptyNode == false || brnchCnt == 1);
