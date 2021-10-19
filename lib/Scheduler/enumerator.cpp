@@ -146,6 +146,7 @@ void EnumTreeNode::Construct(EnumTreeNode *prevNode, SchedInstruction *inst,
   isClean_ = false;
   pushedToLocalPool_ = false;
   wasChildStolen_ = false;
+  IncrementedParent_ = false;
 
   instCnt_ = enumrtr->getTotalInstCnt();
 }
@@ -199,6 +200,7 @@ void EnumTreeNode::Clean() {
   wasChildStolen_ = false;
   recyclesHistNode_ = false;
   isArchivd_ = false;  
+  IncrementedParent_ = false;
 
   isClean_ = true;
 }
@@ -2014,17 +2016,27 @@ bool Enumerator::BackTrack_(bool trueState) {
   // if a thread stole from this node, then there is a race condition on updating whether
   // or not the current node has been fullyExplored
   assert(!crntNode_->GetHistory()->getFullyExplored() || crntNode_->wasChildStolen());
-  if (trgtNode)
-    assert(!trgtNode->GetHistory()->getFullyExplored());
+  if (trgtNode) assert(!trgtNode->GetHistory()->getFullyExplored());
 
   // It is posible we are falling to this backtrack directly from another backtrack
   // in which case, the exploredChild != numChildren but it should be labeled as fully explored
   if (bbt_->isWorker() && IsFirstPass_)
     assert(crntNode_->getExploredChildren() <= crntNode_->getNumChildrn());
-  if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn() || (crntNode_->getIsInfsblFromBacktrack_() && !crntNode_->wasChildStolen())) {
-    trgtNode->incrementExploredChildren();
-    fullyExplored = true;
-    if (crntNode_->wasChildStolen()) Logger::Info("$$GOODHIT -- fullyexplored with stolen child");
+
+
+
+  if (IsHistDom()) {
+    HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
+    UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
+    bbt_->histTableLock(key);
+
+
+    if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn() || (crntNode_->getIsInfsblFromBacktrack_() && !crntNode_->wasChildStolen())) {
+      if (!crntNode_->getIncrementedParent()) trgtNode->incrementExploredChildren();
+      fullyExplored = true;
+      if (crntNode_->wasChildStolen()) Logger::Info("$$GOODHIT -- fullyexplored with stolen child");
+    }
+    bbt_->histTableUnlock(key);
   }
 
 #ifdef INSERT_ON_BACKTRACK
@@ -3099,20 +3111,18 @@ void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
     // Therefore, we must be sure to not count the child as having been fully explored multiple
     // times, and ensure we do not increment the explored children of parent node if the crntNode
     // had previously became infeasible during backtracking
-    if (tmpCrntNode->getExploredChildren() == tmpCrntNode->getNumChildrn() && !tmpCrntNode->getIsInfsblFromBacktrack_()) {
-      fullyExplored = needsPropogation = true;
-      tmpTrgtNode->incrementExploredChildren();      
-      //Logger::Info("$$goodhit fully explored node when propogating past root, numChildrn of fully explored = %d", tmpCrntNode->getNumChildrn());
-    }
-
-
-
-    UDT_HASHVAL key = exmndSubProbs_->HashKey(tmpTrgtNode->GetSig());
-
     if (IsHistDom()) {
       HistEnumTreeNode *crntHstry = tmpCrntNode->GetHistory();
-
+      UDT_HASHVAL key = exmndSubProbs_->HashKey(tmpCrntNode->GetSig());
       bbt_->histTableLock(key);
+
+      if (tmpCrntNode->getExploredChildren() == tmpCrntNode->getNumChildrn() && !tmpCrntNode->getIsInfsblFromBacktrack_()) {
+        fullyExplored = needsPropogation = true;
+        if (!tmpCrntNode->getIncrementedParent()) tmpTrgtNode->incrementExploredChildren();      
+        tmpCrntNode->setIncrementedParent(true);
+        //Logger::Info("$$goodhit fully explored node when propogating past root, numChildrn of fully explored = %d", tmpCrntNode->getNumChildrn());
+      } 
+    
       // set fully explored to fullyExplored when work stealing
       crntHstry->setFullyExplored(fullyExplored);
       needsPropogation |= SetTotalCostsAndSuffixes(tmpCrntNode, tmpTrgtNode, trgtSchedLngth_,
@@ -3129,7 +3139,7 @@ void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
       bbt_->histTableUnlock(key);
     }
 
-    if (needsPropogation && !propNode->isArtRoot()) {
+    if (needsPropogation && !tmpCrntNode->isArtRoot()) {
       propogateExploration_(tmpTrgtNode);
     }
 }
@@ -3152,9 +3162,17 @@ void Enumerator::BackTrackRoot_(EnumTreeNode *tmpCrntNode) {
   bool fullyExplored = false;
   
 
-  if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn()) {
-    if (trgtNode) trgtNode->incrementExploredChildren();
-    fullyExplored = true;
+  if (IsHistDom()) {
+    HistEnumTreeNode *crntHstry = tmpCrntNode->GetHistory();
+    UDT_HASHVAL key = exmndSubProbs_->HashKey(tmpCrntNode->GetSig());
+    bbt_->histTableLock(key);
+
+    if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn()) {
+      if (trgtNode && !crntNode_->getIncrementedParent()) trgtNode->incrementExploredChildren();
+      fullyExplored = true;
+    }
+
+    bbt_->histTableUnlock(key);
   }
 
 

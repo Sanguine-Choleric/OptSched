@@ -124,6 +124,7 @@ private:
   InstCount lngthFsblBrnchCnt_;
   InstCount numChildren_ = 0;
   std::atomic<InstCount> explordChildren_;
+  bool IncrementedParent_ = false;
 
   // The current time or position (or step number) in the scheduling process
   // This is eqaul to the length of the path from the root node to this node
@@ -339,6 +340,9 @@ public:
 
   inline InstCount getExploredChildren();
   inline InstCount getNumChildrn();
+
+  inline bool getIncrementedParent();
+  inline void setIncrementedParent(bool IncrementedParent);
 
   inline void SetCost(InstCount cost);
   inline InstCount GetCost();
@@ -1149,6 +1153,14 @@ void EnumTreeNode::incrementExploredChildren() {
 
 InstCount EnumTreeNode::getExploredChildren() {
   return explordChildren_.load();
+}
+
+inline bool EnumTreeNode::getIncrementedParent() {
+  return IncrementedParent_;
+}
+
+inline void EnumTreeNode::setIncrementedParent(bool IncrementedParent) {
+  IncrementedParent_ = IncrementedParent;
 }
 
 InstCount EnumTreeNode::getNumChildrn() {
