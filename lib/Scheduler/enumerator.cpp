@@ -2032,7 +2032,10 @@ bool Enumerator::BackTrack_(bool trueState) {
 
 
     if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn() || (crntNode_->getIsInfsblFromBacktrack_() && !crntNode_->wasChildStolen())) {
-      if (!crntNode_->getIncrementedParent()) trgtNode->incrementExploredChildren();
+      if (!crntNode_->getIncrementedParent()) {
+        trgtNode->incrementExploredChildren();
+        crntNode_->setIncrementedParent(true);
+      }
       fullyExplored = true;
       if (crntNode_->wasChildStolen()) Logger::Info("$$GOODHIT -- fullyexplored with stolen child");
     }
@@ -3118,8 +3121,10 @@ void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
 
       if (tmpCrntNode->getExploredChildren() == tmpCrntNode->getNumChildrn() && !tmpCrntNode->getIsInfsblFromBacktrack_()) {
         fullyExplored = needsPropogation = true;
-        if (!tmpCrntNode->getIncrementedParent()) tmpTrgtNode->incrementExploredChildren();      
-        tmpCrntNode->setIncrementedParent(true);
+        if (!tmpCrntNode->getIncrementedParent()) {
+          tmpTrgtNode->incrementExploredChildren();      
+          tmpCrntNode->setIncrementedParent(true);
+        }
         //Logger::Info("$$goodhit fully explored node when propogating past root, numChildrn of fully explored = %d", tmpCrntNode->getNumChildrn());
       } 
     
@@ -3168,7 +3173,10 @@ void Enumerator::BackTrackRoot_(EnumTreeNode *tmpCrntNode) {
     bbt_->histTableLock(key);
 
     if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn()) {
-      if (trgtNode && !crntNode_->getIncrementedParent()) trgtNode->incrementExploredChildren();
+      if (trgtNode && !crntNode_->getIncrementedParent()) {
+        trgtNode->incrementExploredChildren();
+        tmpCrntNode->setIncrementedParent(true);
+      }
       fullyExplored = true;
     }
 
