@@ -134,7 +134,6 @@ bool HistEnumTreeNode::SetBothInstsSchduld_(BitVector *thisInstsSchuld, BitVecto
 }
 
 bool HistEnumTreeNode::checkSameSubspace_(EnumTreeNode *otherNode) {
-  //Logger::Info("in check same subspace");
   bool sameSubspace = true;
   HistEnumTreeNode *thisCrntNode = this;
   EnumTreeNode *otherCrntNode = otherNode;
@@ -142,12 +141,10 @@ bool HistEnumTreeNode::checkSameSubspace_(EnumTreeNode *otherNode) {
   if (time_ != otherNode->GetTime())
     return false;
 
-  //Logger::Info("checking prefix of node, has isnts:");
   for (; thisCrntNode != NULL && otherCrntNode != NULL; 
        thisCrntNode = thisCrntNode->prevNode_, otherCrntNode = otherCrntNode->GetParent()) {
   
       if (thisCrntNode->prevNode_ != NULL && otherCrntNode->prevNode_ != NULL) {
-        //Logger::Info("comparing inst %d to hist inst %d", otherCrntNode->GetInstNum(), thisCrntNode->GetInstNum());
         sameSubspace = sameSubspace && (thisCrntNode->GetInstNum() == otherCrntNode->GetInstNum());
     }
 
@@ -156,7 +153,7 @@ bool HistEnumTreeNode::checkSameSubspace_(EnumTreeNode *otherNode) {
   return sameSubspace;
 }
 
-void HistEnumTreeNode::SetInstsSchduld_(BitVector *instsSchduld, bool isParallel, int SolverID, bool isGlobalPoolNode) {
+void HistEnumTreeNode::SetInstsSchduld_(BitVector *instsSchduld, bool isParallel) {
   instsSchduld->Reset(isParallel);
   HistEnumTreeNode *crntNode;
 
@@ -833,8 +830,8 @@ bool HistEnumTreeNode::DoesMatch(EnumTreeNode *node, Enumerator *enumrtr, bool i
   }
 
 
-  SetInstsSchduld_(instsSchduld, isParallel, enumrtr->getSolverID(),isGlobalPoolNode);
-  node->hstry_->SetInstsSchduld_(othrInstsSchduld, isParallel, enumrtr->getSolverID(),isGlobalPoolNode);
+  SetInstsSchduld_(instsSchduld, isParallel);
+  node->hstry_->SetInstsSchduld_(othrInstsSchduld, isParallel);
 
 
   /*if (isGlobalPoolNode) {

@@ -783,7 +783,6 @@ void Enumerator::Reset() {
   exmndNodeCnt_ = 0;
 
   if (IsHistDom() && SolverID_ <= 1) {
-    Logger::Info("resetting hist table");
     exmndSubProbs_->Clear(false, hashTblEntryAlctr_);
   }
 
@@ -905,7 +904,6 @@ bool Enumerator::InitPreFxdInsts_() {
 void Enumerator::SetInstSigs_() {
   InstCount i;
   int16_t bitsForInstNum = Utilities::clcltBitsNeededToHoldNum(totInstCnt_ - 1);
-  Logger::Info("solverID %d setting inst sigs", SolverID_);
 
   for (i = 0; i < totInstCnt_; i++) {
     SchedInstruction *inst = dataDepGraph_->GetInstByIndx(i);
@@ -1150,7 +1148,6 @@ FUNC_RESULT Enumerator::FindFeasibleSchedule_(InstSchedule *sched,
   if (!bbt_->isWorker()) {
     if (Initialize_(sched, trgtLngth) == false) 
       return RES_FAIL;
-    Logger::Info("worker id %d has root isnt %d", SolverID_, rootNode_->GetInstNum());
   }
 
 #ifdef IS_DEBUG_NODES

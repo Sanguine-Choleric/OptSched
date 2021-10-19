@@ -479,7 +479,6 @@ void DataDepGraph::CmputBasicLwrBounds_(int SolverID) {
       SchedInstruction *inst = GetInstByIndx(i);
       InstCount frwrdLwrBound = inst->GetCrtclPath(DIR_FRWRD);
       InstCount bkwrdLwrBound = inst->GetCrtclPath(DIR_BKWRD);
-      if (inst->GetNum() == 2) Logger::Info("setting inst 2 frwrdLwrBound to %d", frwrdLwrBound);
       inst->SetBounds(frwrdLwrBound, bkwrdLwrBound);
       //TODO -- faster to just use for loop for both?
       for (int SolverID_ = 0; SolverID_ < NumSolvers_; SolverID_++){

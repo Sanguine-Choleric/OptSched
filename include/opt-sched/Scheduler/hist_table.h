@@ -115,7 +115,7 @@ protected:
 
   bool SetBothInstsSchduld_(BitVector *thisInstsSchuld, BitVector *therInstsSchuld, HistEnumTreeNode *otherHist, bool isWorker);
   bool checkSameSubspace_(EnumTreeNode *otherNode);
-  void SetInstsSchduld_(BitVector *instsSchduld, bool isWorker, int SolverID, bool isGlobalPoolNode);
+  void SetInstsSchduld_(BitVector *instsSchduld, bool isWorker);
   // Does this history node dominate the given node or history node?
   bool DoesDominate_(EnumTreeNode *node, HistEnumTreeNode *othrHstry,
                      ENUMTREE_NODEMODE mode, Enumerator *enumrtr,
