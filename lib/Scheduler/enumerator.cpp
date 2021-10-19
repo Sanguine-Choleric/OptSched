@@ -533,9 +533,9 @@ Enumerator::Enumerator(DataDepGraph *dataDepGraph, MachineModel *machMdl,
   //  #define IS_CORRECT_LOCALPOOL
   //#endif
 
-  #ifndef IS_DEBUG_SEARCH_ORDER
-    #define IS_DEBUG_SEARCH_ORDER
-  #endif
+  //#ifndef IS_DEBUG_SEARCH_ORDER
+  //  #define IS_DEBUG_SEARCH_ORDER
+  //#endif
 
   //#ifndef DEBUG_GP_HISTORY
   //  #define DEBUG_GP_HISTORY
@@ -2011,7 +2011,9 @@ bool Enumerator::BackTrack_(bool trueState) {
 }
   rdyLst_->RemoveLatestSubList();
 
-  assert(!crntNode_->GetHistory()->getFullyExplored());
+  // if a thread stole from this node, then there is a race condition on updating whether
+  // or not the current node has been fullyExplored
+  assert(!crntNode_->GetHistory()->getFullyExplored() || !crntNode_->wasChildStolen());
   if (trgtNode)
     assert(!trgtNode->GetHistory()->getFullyExplored());
 
@@ -3146,6 +3148,7 @@ void Enumerator::BackTrackRoot_(EnumTreeNode *tmpCrntNode) {
   EnumTreeNode *trgtNode = tmpCrntNode->GetParent();
   bool fullyExplored = false;
   
+
   if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn()) {
     if (trgtNode) trgtNode->incrementExploredChildren();
     fullyExplored = true;
