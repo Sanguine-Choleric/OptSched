@@ -332,16 +332,17 @@ void DataDepGraph::resetThreadWriteFields(int SolverID, bool full)
 
     
     //DepthFirstSearch(SolverID);
+    if (full) {
+      delete frwrdLwrBounds_[SolverID];
+      delete bkwrdLwrBounds_[SolverID];
+      frwrdLwrBounds_[SolverID] = new InstCount[instCnt_];
+      bkwrdLwrBounds_[SolverID] = new InstCount[instCnt_];
 
-    delete frwrdLwrBounds_[SolverID];
-    delete bkwrdLwrBounds_[SolverID];
-    frwrdLwrBounds_[SolverID] = new InstCount[instCnt_];
-    bkwrdLwrBounds_[SolverID] = new InstCount[instCnt_];
-
-    for (InstCount i = 0; i < instCnt_; i++) {
-        SchedInstruction *inst = insts_[i];
-        frwrdLwrBounds_[SolverID][i] = inst->GetLwrBound(DIR_FRWRD);
-        bkwrdLwrBounds_[SolverID][i] = inst->GetLwrBound(DIR_BKWRD);
+      for (InstCount i = 0; i < instCnt_; i++) {
+          SchedInstruction *inst = insts_[i];
+          frwrdLwrBounds_[SolverID][i] = inst->GetLwrBound(DIR_FRWRD);
+          bkwrdLwrBounds_[SolverID][i] = inst->GetLwrBound(DIR_BKWRD);
+      }
     }
 
     // could cause problems for parallel threads

@@ -192,13 +192,14 @@ void SchedInstruction::resetThreadWriteFields(int SolverID, bool full) {
       rdyCyclePerPrdcsr_[SolverID][i] = INVALID_VALUE;
       prevMinRdyCyclePerPrdcsr_[SolverID][i] = INVALID_VALUE;
     }
-
+ 
+    /*
     for (GraphEdge *edge = GetFrstPrdcsrEdge(SolverID); edge != NULL;
          edge = GetNxtPrdcsrEdge(SolverID)) {
 
         sortedPrdcsrLst_[SolverID]->InsrtElmnt((SchedInstruction *)edge->GetOtherNode(this),
                                       edge->label, true);
-    }
+    }*/
 
 
 
