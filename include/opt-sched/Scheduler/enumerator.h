@@ -369,7 +369,8 @@ public:
 
   inline InstCount GetTotalCost() const { return totalCost_.load(); }
   inline void SetTotalCost(InstCount totalCost) { 
-    assert(totalCost != INVALID_VALUE);
+    //assert(totalCost != INVALID_VALUE);
+    if (totalCost != INVALID_VALUE && (totalCost < totalCost_.load() || totalCost_.load() == INVALID_VALUE))
     totalCost_.store(totalCost); }
 
   inline InstCount GetTotalCostIsActualCost() const {
@@ -1168,8 +1169,10 @@ InstCount EnumTreeNode::getNumChildrn() {
 }
 
 void EnumTreeNode::SetCost(InstCount cost) {
-  assert(cost >= 0);
-  cost_ = cost;
+  if (cost < cost_ || cost_ == INVALID_VALUE) {
+    assert(cost >= 0);
+    cost_ = cost;
+  }
 }
 /*****************************************************************************/
 

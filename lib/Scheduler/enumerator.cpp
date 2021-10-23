@@ -2019,8 +2019,7 @@ bool Enumerator::BackTrack_(bool trueState) {
     assert(!crntNode_->GetHistory()->getFullyExplored() || crntNode_->wasChildStolen());
     //if (trgtNode) assert(!trgtNode->GetHistory()->getFullyExplored());
 
-    // It is posible we are falling to this backtrack directly from another backtrack
-    // in which case, the exploredChild != numChildren but it should be labeled as fully explored
+
     assert(crntNode_->getExploredChildren() <= crntNode_->getNumChildrn());
 
 
@@ -2030,7 +2029,8 @@ bool Enumerator::BackTrack_(bool trueState) {
       UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
       bbt_->histTableLock(key);
 
-
+      // It is posible we are falling to this backtrack directly from another backtrack
+      // in which case, the exploredChild != numChildren but it should be labeled as fully explored
       if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn() || (crntNode_->getIsInfsblFromBacktrack_() && !crntNode_->wasChildStolen())) {
         if (!crntNode_->getIncrementedParent()) {
           trgtNode->incrementExploredChildren();
@@ -3159,10 +3159,11 @@ void Enumerator::BackTrackRoot_(EnumTreeNode *tmpCrntNode) {
   }
   else {
     if (crntNode_->GetLocalBestCost() != INVALID_VALUE) tmpCrntNode->SetLocalBestCost(crntNode_->GetLocalBestCost());
-    if (crntNode_->GetTotalCost() != INVALID_VALUE) tmpCrntNode->SetCost(crntNode_->GetTotalCost());
+    if (crntNode_->GetTotalCost() != INVALID_VALUE) tmpCrntNode->SetTotalCost(crntNode_->GetTotalCost());
     tmpCrntNode->SetCostLwrBound(crntNode_->GetCostLwrBound());
     tmpCrntNode->SetCost(crntNode_->GetCost());
     tmpCrntNode->SetHistory(crntNode_->GetHistory());
+    tmpCrntNode->SetTotalCostIsActualCost(crntNode_->GetTotalCostIsActualCost());
   }
   SchedInstruction *inst = tmpCrntNode->GetInst();
   EnumTreeNode *trgtNode = tmpCrntNode->GetParent();
@@ -3175,7 +3176,7 @@ void Enumerator::BackTrackRoot_(EnumTreeNode *tmpCrntNode) {
     bbt_->histTableLock(key);
 
     if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn()) {
-      if (trgtNode && !crntNode_->getIncrementedParent()) {
+      if (trgtNode && !tmpCrntNode->getIncrementedParent()) {
         trgtNode->incrementExploredChildren();
         tmpCrntNode->setIncrementedParent(true);
       }
