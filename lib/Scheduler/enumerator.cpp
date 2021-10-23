@@ -3105,6 +3105,7 @@ void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
     EnumTreeNode *tmpTrgtNode = propNode->GetParent();
     EnumTreeNode *tmpCrntNode = propNode;
 
+    assert(tmpCrntNode->wasChildStolen());
     tmpTrgtNode->setChildStolen(true);
 
     bool needsPropogation = false;
