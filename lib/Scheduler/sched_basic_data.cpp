@@ -71,7 +71,7 @@ SchedInstruction::~SchedInstruction() {
 
 }
 
-void SchedInstruction::resetThreadWriteFields(int SolverID) {
+void SchedInstruction::resetThreadWriteFields(int SolverID, bool full) {
   resetGraphNodeThreadWriteFields(SolverID);
 
   if (SolverID == -1) {  
@@ -173,19 +173,6 @@ void SchedInstruction::resetThreadWriteFields(int SolverID) {
 
   // We are resetting a specific solver
   else {
-    if (sortedPrdcsrLst_ != NULL) 
-      if (sortedPrdcsrLst_[SolverID] != NULL) 
-        delete sortedPrdcsrLst_[SolverID]; 
-    if (rdyCyclePerPrdcsr_ != NULL) 
-      if (rdyCyclePerPrdcsr_[SolverID] != NULL) 
-        delete[] rdyCyclePerPrdcsr_[SolverID]; 
-    if (prevMinRdyCyclePerPrdcsr_ != NULL) 
-      if (prevMinRdyCyclePerPrdcsr_[SolverID] != NULL) 
-        delete[] prevMinRdyCyclePerPrdcsr_[SolverID]; 
-    /*if (crntRange_ != NULL)
-      if (crntRange_[SolverID] != NULL)
-        delete[] crntRange_[SolverID];*/
-
     ready_[SolverID] = false;
     minRdyCycle_[SolverID] = INVALID_VALUE;
     crntSchedCycle_[SolverID] = SCHD_UNSCHDULD;
@@ -193,9 +180,9 @@ void SchedInstruction::resetThreadWriteFields(int SolverID) {
     //crntRange_[SolverID] = new SchedRange(this);
     unschduldScsrCnt_[SolverID] = scsrCnt_;
     unschduldPrdcsrCnt_[SolverID] = prdcsrCnt_;
-    rdyCyclePerPrdcsr_[SolverID] = new InstCount[prdcsrCnt_];
-    prevMinRdyCyclePerPrdcsr_[SolverID] = new InstCount[prdcsrCnt_];
-    sortedPrdcsrLst_[SolverID] = new PriorityList<SchedInstruction>;
+    //rdyCyclePerPrdcsr_[SolverID] = new InstCount[prdcsrCnt_];
+    //prevMinRdyCyclePerPrdcsr_[SolverID] = new InstCount[prdcsrCnt_];
+    //sortedPrdcsrLst_[SolverID] = new PriorityList<SchedInstruction>;
 
     //if (GetNum() == 1)
     //  Logger::Info("schedinst %d isScheduld ? %d", GetNum(), IsSchduld(SolverID));
@@ -214,9 +201,23 @@ void SchedInstruction::resetThreadWriteFields(int SolverID) {
     }
 
 
-    crntRange_[SolverID]->resetState();
-    crntRange_[SolverID]->SetBounds(frwrdLwrBound_, bkwrdLwrBound_);
-    //if (GetNum() == 2 && SolverID == 2) Logger::Info("just set inst2 frwrdLB to %d bkwrdLB to %d", crntRange_[SolverID]->GetLwrBound(DIR_FRWRD), crntRange_[SolverID]->GetLwrBound(DIR_BKWRD));
+
+
+    if (full) {
+      if (sortedPrdcsrLst_ != NULL) 
+        if (sortedPrdcsrLst_[SolverID] != NULL) 
+          delete sortedPrdcsrLst_[SolverID]; 
+
+      sortedPrdcsrLst_[SolverID] = new PriorityList<SchedInstruction>;
+
+      for (GraphEdge *edge = GetFrstPrdcsrEdge(SolverID); edge != NULL; edge = GetNxtPrdcsrEdge(SolverID)) {
+        sortedPrdcsrLst_[SolverID]->InsrtElmnt((SchedInstruction *)edge->GetOtherNode(this),
+                                      edge->label, true);
+      }
+    
+      crntRange_[SolverID]->resetState();
+      crntRange_[SolverID]->SetBounds(frwrdLwrBound_, bkwrdLwrBound_);      
+    }
   }
 }
 

@@ -261,7 +261,7 @@ DataDepGraph::~DataDepGraph() {
   Logger::Info("finished deleting the DDG");
 }
 
-void DataDepGraph::resetThreadWriteFields(int SolverID)
+void DataDepGraph::resetThreadWriteFields(int SolverID, bool full)
 {
   if (SolverID == -1) {
     //delete[] frwrdLwrBounds_;
@@ -273,7 +273,7 @@ void DataDepGraph::resetThreadWriteFields(int SolverID)
     InstCount i;
     for (i = 0; i < instCnt_; i++) {
       SchedInstruction *inst = insts_[i];
-      inst->resetThreadWriteFields();
+      inst->resetThreadWriteFields(full);
 
       /*
       for (int SolverID_ = 0; SolverID_ < NumSolvers_; SolverID_++) {
@@ -327,7 +327,7 @@ void DataDepGraph::resetThreadWriteFields(int SolverID)
     InstCount i;
     for (i = 0; i < instCnt_; i++) {
       SchedInstruction *inst = insts_[i];
-      inst->resetThreadWriteFields(SolverID);
+      inst->resetThreadWriteFields(SolverID, full);
     }
 
     

@@ -185,7 +185,7 @@ public:
 
   virtual ~DataDepGraph();
 
-  void resetThreadWriteFields(int SolverID = -1);
+  void resetThreadWriteFields(int SolverID = -1, bool full = true);
 
   // Reads the data dependence graph from a text file.
   FUNC_RESULT ReadFrmFile(SpecsBuffer *buf, bool &endOfFileReached);

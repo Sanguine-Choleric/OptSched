@@ -1959,7 +1959,7 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
 
   if (true) {
       //Logger::Info("resetThreadWRiteFields");
-      DataDepGraph_->resetThreadWriteFields(SolverID_);
+      DataDepGraph_->resetThreadWriteFields(SolverID_, false);
       Enumrtr_->Reset();
       if (Enumrtr_->IsHistDom())
         Enumrtr_->resetEnumHistoryState();
@@ -2054,7 +2054,7 @@ if (isWorkSteal()) {
     if (true) {
       reset_();
       //Logger::Info("resetThreadWRiteFields");
-      DataDepGraph_->resetThreadWriteFields(SolverID_);
+      DataDepGraph_->resetThreadWriteFields(SolverID_, false);
       Enumrtr_->Reset();
       //if (Enumrtr_->IsHistDom())
       //  Enumrtr_->resetEnumHistoryState();
