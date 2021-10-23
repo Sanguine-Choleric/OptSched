@@ -3176,7 +3176,7 @@ void Enumerator::BackTrackRoot_(EnumTreeNode *tmpCrntNode) {
     bbt_->histTableLock(key);
 
     if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn()) {
-      if (trgtNode && !tmpCrntNode->getIncrementedParent()) {
+      if (trgtNode && !crntNode->getIncrementedParent()) {
         trgtNode->incrementExploredChildren();
         tmpCrntNode->setIncrementedParent(true);
       }

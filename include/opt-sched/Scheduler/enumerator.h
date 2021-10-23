@@ -1170,7 +1170,7 @@ InstCount EnumTreeNode::getNumChildrn() {
 
 void EnumTreeNode::SetCost(InstCount cost) {
   if (cost < cost_ || cost_ == INVALID_VALUE) {
-    assert(cost >= 0);
+  assert(cost >= 0);
     cost_ = cost;
   }
 }
