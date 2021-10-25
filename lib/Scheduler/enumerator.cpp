@@ -3176,9 +3176,9 @@ void Enumerator::BackTrackRoot_(EnumTreeNode *tmpCrntNode) {
     bbt_->histTableLock(key);
 
     if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn()) {
-      if (trgtNode && !crntNode->getIncrementedParent()) {
+      if (trgtNode && !crntNode_->getIncrementedParent()) {
         trgtNode->incrementExploredChildren();
-        tmpCrntNode->setIncrementedParent(true);
+        crntNode_->setIncrementedParent(true);
       }
       fullyExplored = true;
     }
@@ -3502,7 +3502,7 @@ bool LengthCostEnumerator::scheduleNodeOrPrune(EnumTreeNode *node,
   // changed for (i = crntBrnchNum) to for (i = 0) -- to test work stealing
 
   // iterate until we find the node
-  for (i = 0; i < brnchCnt + 1; i++) {
+  for (i = 0; i < brnchCnt; i++) {
     
     inst = rdyLst_->GetNextPriorityInst();
     if (inst->GetNum() == node->GetInstNum()) {
