@@ -215,6 +215,10 @@ void EnumTreeNode::Clean() {
   IncrementedParent_ = false;
 
   isClean_ = true;
+
+#ifdef IS_DEBUG_WORKSTEAL
+  if (prefixInstNums_ != nullptr) delete prefixInstNums_;
+#endif
 }
 /*****************************************************************************/
 
