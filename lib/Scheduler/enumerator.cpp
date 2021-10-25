@@ -3130,7 +3130,7 @@ void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
     EnumTreeNode *tmpCrntNode = propNode;
 
     assert(tmpCrntNode->wasChildStolen());
-    tmpTrgtNode->setChildStolen(true);
+    if (tmpTrgtNode) tmpTrgtNode->setChildStolen(true);
 
     bool needsPropogation = false;
     bool fullyExplored = false;
@@ -3148,7 +3148,7 @@ void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
       if (tmpCrntNode->getExploredChildren() == tmpCrntNode->getNumChildrn() && !tmpCrntNode->getIsInfsblFromBacktrack_()) {
         fullyExplored = needsPropogation = true;
         if (!tmpCrntNode->getIncrementedParent()) {
-          tmpTrgtNode->incrementExploredChildren();      
+          if (tmpTrgtNode) tmpTrgtNode->incrementExploredChildren();      
           tmpCrntNode->setIncrementedParent(true);
         }
         //Logger::Info("$$goodhit fully explored node when propogating past root, numChildrn of fully explored = %d", tmpCrntNode->getNumChildrn());
@@ -3170,7 +3170,7 @@ void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
       bbt_->histTableUnlock(key);
     }
 
-    if (needsPropogation && !tmpCrntNode->isArtRoot()) {
+    if (needsPropogation && !tmpCrntNode->isArtRoot() && tmpCrntNode->GetParent() != nullptr && tmpCrntNode->GetParent() != NULL) {
       propogateExploration_(tmpTrgtNode);
     }
 }
