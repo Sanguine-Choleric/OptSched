@@ -1721,49 +1721,6 @@ bool BBWorker::generateStateFromNode(EnumTreeNode *GlobalPoolNode, bool isGlobal
     }
 
 
-  /*
-  EnumTreeNode *temp = GlobalPoolNode->GetParent();
-  std::stack<EnumTreeNode *> prefix;
-  int prefixLength = 0;
-
-  if (temp->GetInstNum() != Enumrtr_->getRootInstNum()) {
-    //prefix.push(node);
-    //Logger::Info("expanding prefix of exploreNode %d", node->GetNum());
-
-    while (temp->GetInstNum() != Enumrtr_->getRootInstNum()) {
-      prefix.push(temp);
-      temp = temp->GetParent();
-    }
-
-    prefixLength = prefix.size();
-  
-    int j = 0;
-    bool setAsRoot = false;
-    while (!prefix.empty()) {
-      ++j;
-      temp = prefix.top();
-      if (SolverID_ == 2)
-        Logger::Info("scheduling the %dth inst of prefix (inst is %d)", j, temp->GetInstNum());
-      prefix.pop();generateStateFromNode
-      // TODO -- delete node
-    }
-    setAsRoot = true;
-    
-    fsbl = Enumrtr_->scheduleNodeOrPrune(GlobalPoolNode, setAsRoot);
-    if (!fsbl) return false;
-
-    
-    if (SolverID_ == 2) {
-      Enumrtr_->printRdyLst();
-      Logger::Info("scheduled prefix of length %d", prefixLength);
-    }
-
-    return true;
-  }
-  */
-  
-  //Logger::Info("beginning by schedulling pseudoRoot %d", GlobalPoolNode->GetInstNum());
-  //Enumrtr_->scheduleNode2(GlobalPoolNode, true);
   }
 
   else {
@@ -1799,6 +1756,15 @@ bool BBWorker::generateStateFromNode(EnumTreeNode *GlobalPoolNode, bool isGlobal
       //assert(temp->GetParent()->GetInstNum() == Enumrtr_->getRootInstNum());
       //Logger::Info("temp has inst num %d, root has inst num %d", temp->GetInstNum(), Enumrtr_->getRootInstNum());
 
+
+      #ifdef IS_DEBUG_WORKSTEAL
+        int prefixInst = GlobalPoolNode->getNextInstPrefix();
+        while (prefixInst == Enumrtr_->getRootInstNum() || prefixInst == INVALID_VALUE) {
+          prefixInst = GlobalPoolNode->getNextInstPrefix();
+        }
+      #endif
+
+
       int j = 0;
       while (!prefix.empty()) {
         ++j;
@@ -1806,6 +1772,15 @@ bool BBWorker::generateStateFromNode(EnumTreeNode *GlobalPoolNode, bool isGlobal
         prefix.pop();
         //Logger::Info("before scheduling prefix");
         //printRdyLst();
+
+        #ifdef IS_DEBUG_WORKSTEAL
+          //Logger::Info("genstate debug worksteal");
+          if (temp->GetInstNum() != prefixInst) Logger::Info("about to invalidate assert, used %d hardcoded %d root %d", temp->GetInstNum(), prefixInst, Enumrtr_->getRootInstNum());
+          assert(temp->GetInstNum() == prefixInst);
+          //Logger::Info("VALID WORKSTEALPREFIX, used %d hardcoded %d", temp->GetInstNum(), prefixInst);
+          prefixInst = GlobalPoolNode->getNextInstPrefix();
+        #endif
+
         fsbl = Enumrtr_->scheduleNodeOrPrune(temp, false);
         //if (SolverID_ == 2) Logger::Info("SolverID_ %d scheuled %d insts of prefix (inst num %d)", SolverID_, j, temp->GetInstNum());
         Enumrtr_->removeInstFromRdyLst_(temp->GetInstNum());
@@ -2582,7 +2557,7 @@ bool BBMaster::initGlobalPool() {
 
   assert(firstLevelSize_ > 0);
 
-  // if the global pool has a size that is initially <= 20 * numThreads we dont want
+  // if the global pool has a size that is initially >= 20 * numThreads we dont want
   // to incur overhead of splitting even once despite our minimums
   if (firstLevelSize_ < NumThreads_ * 20 && (
     firstLevelSize_ < NumThreads_ * MinNodesAsMultiple_ || MinSplittingDepth_ > 0)) {

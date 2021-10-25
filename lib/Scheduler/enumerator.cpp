@@ -117,8 +117,20 @@ void EnumTreeNode::Construct(EnumTreeNode *prevNode, SchedInstruction *inst,
   isFirstPass_ = enumrtr->IsTwoPass_ && !enumrtr->IsSecondPass_;
   
   prevNode_ = prevNode;
-    
+
   inst_ = inst;
+
+  #ifdef IS_DEBUG_WORKSTEAL
+  prefixInstNums_ = new std::queue<int>();
+  if (prevNode_) {
+    int prefixTip = inst_ ? inst_->GetNum() : INVALID_VALUE;
+    copyInstPrefix(prevNode_->getInstPrefix());
+    pushToInstPrefix(prefixTip);
+  }
+  else pushToInstPrefix(INVALID_VALUE);
+  #endif
+    
+
   enumrtr_ = enumrtr;
   time_ = prevNode_ == NULL ? 0 : prevNode_->time_ + 1;
 
@@ -530,6 +542,10 @@ Enumerator::Enumerator(DataDepGraph *dataDepGraph, MachineModel *machMdl,
                        int timeoutToMemblock,
                        bool isSecondPass, InstCount preFxdInstCnt, SchedInstruction *preFxdInsts[])
     : ConstrainedScheduler(dataDepGraph, machMdl, schedUprBound, SolverID) {
+
+  //#ifndef IS_DEBUG_WORKSTEAL
+  //  #define IS_DEBUG_WORKSTEAL
+  //#endif
 
   //#ifndef IS_CORRECT_LOCALPOOL
   //  #define IS_CORRECT_LOCALPOOL
@@ -1675,7 +1691,6 @@ if (bbt_->isWorkStealOn()) {
           bbt_->localPoolLock(SolverID_ - 2);
           while (temp != NULL) {
             pushNode = nodeAlctr_->Alloc(crntNode_, temp, this, false);
-
           //rdyLst_->RemoveNextPriorityInst();
 
             bbt_->localPoolPushFront(SolverID_ - 2, pushNode);
@@ -1792,6 +1807,12 @@ if (bbt_->isWorkStealOn()) {
 /*****************************************************************************/
 
 void Enumerator::InitNewNode_(EnumTreeNode *newNode, bool setCost) {
+  //#ifdef IS_DEBUG_WORKSTEAL
+  //  if (crntNode_->getInstPrefix()) newNode->copyInstPrefix(crntNode_->getInstPrefix());
+  //  else newNode->allocateInstPrefix();
+  //  newNode->pushToInstPrefix(crntNode_->GetInstNum());
+  //#endif
+
   crntNode_ = newNode;
 
   crntNode_->SetCrntCycleBlkd(isCrntCycleBlkd_);
@@ -1815,7 +1836,6 @@ void Enumerator::InitNewNode_(EnumTreeNode *newNode, bool setCost) {
   crntNode_->SetNum(createdNodeCnt_);
 
   crntNode_->setIsInfsblFromBacktrack_(false);
-
 }
 
 /*****************************************************************************/

@@ -229,7 +229,9 @@ public:
   ~EnumTreeNode();
 
   std::queue<EnumTreeNode *> prefix_;
-  LinkedList<int> *prefixInstNums_;
+#ifdef IS_DEBUG_WORKSTEAL
+  std::queue<int> *prefixInstNums_ = nullptr;
+#endif
 
   void Construct(EnumTreeNode *prevNode, SchedInstruction *inst,
                  Enumerator *enumrtr, bool fullNode = true, bool allocStructs = true,
@@ -403,13 +405,27 @@ public:
   inline void setPrefix(std::queue<EnumTreeNode *> prefix) {prefix_ = prefix;}
 
 
+#ifdef IS_DEBUG_WORKSTEAL
+  inline int getInstPrefixSize() {return prefixInstNums_->size();}
+  inline int getNextInstPrefix() {
+    int prefixInt = prefixInstNums_->front();
+    prefixInstNums_->pop();
+    return prefixInt;
+  }
+  inline void pushToInstPrefix(int instNum) {prefixInstNums_->push(instNum);};
+  inline std::queue<int> *getInstPrefix() {return prefixInstNums_;}
+  inline void copyInstPrefix(std::queue<int> *prefix) {
+    if (prefix != nullptr && prefix != NULL) {
+      if (prefix->size() > 0) {
+        assert(prefix && prefixInstNums_);
 
-  inline int getInstPrefixSize() {return prefixInstNums_->GetElmntCnt();}
-  inline int getNextInstPrefix() {return *(prefixInstNums_->GetNxtElmnt());}
-  inline void pushToInstPrefix(int instNum) {prefixInstNums_->InsrtElmnt(&instNum);};
-  inline LinkedList<int> *getInstPrefix() {return prefixInstNums_;}
-  inline void copyInstPrefix(LinkedList<int> *&prefix) {prefixInstNums_ = prefix;} //copy constructor
-  inline void allocateInstPrefix() {prefixInstNums_ = new LinkedList<int>();}
+        *prefixInstNums_ = *prefix;
+      //*prefixInstNums_ = *prefix;
+      }
+    } 
+  } //copy constructor
+  inline void allocateInstPrefix() {prefixInstNums_ = new std::queue<int>();}
+#endif
  
 
 
