@@ -2378,6 +2378,8 @@ BBMaster::BBMaster(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
               &WorkStealOn_, IsTimeoutPerInst_, nodeCounts, timeoutToMemblock_, subspaceLwrBounds_);
   
   ThreadManager.resize(NumThreads_);
+
+  Logger::Event("FinishedConstBBInterfacer");
 }
 
 

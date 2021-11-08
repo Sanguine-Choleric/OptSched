@@ -305,6 +305,7 @@ void ScheduleDAGOptSched::schedule() {
   // This log output is parsed by scripts. Don't change its format unless you
   // are prepared to change the relevant scripts as well.
   Logger::Info("********** Opt Scheduling **********");
+  Logger::Event("BeginScheduling");
   LLVM_DEBUG(dbgs() << "********** Scheduling Region " << RegionName
                     << " **********\n");
   LLVM_DEBUG(const auto *MBB = RegionBegin->getParent();
