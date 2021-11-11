@@ -593,6 +593,8 @@ Enumerator::Enumerator(DataDepGraph *dataDepGraph, MachineModel *machMdl,
   isCnstrctd_ = false;
 
   IsSecondPass_ = isSecondPass;
+  timeoutToMemblock_ *= IsSecondPass_ ? 100 : 1;
+
 
   rdyLst_ = NULL;
   prirts_ = prirts;
@@ -2309,9 +2311,9 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
       }
     }
 
-    else {
-      if (exNode->GetTime() == newNode->GetTime() && !isGenerateState_) Logger::Info("found a non matching node with same sig and same depth");
-    }
+    //else {
+    //  if (exNode->GetTime() == newNode->GetTime() && !isGenerateState_) Logger::Info("found a non matching node with same sig and same depth");
+    //}
 
     exNode = exmndSubProbs_->GetPrevMatch(srchPtr, newNode->GetSig());
   }
