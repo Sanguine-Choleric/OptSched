@@ -20,6 +20,8 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/FileSystem.h"
 
+#define SPILLCOSTWEIGHT 10000
+
 extern bool OPTSCHED_gPrintSpills;
 
 using namespace llvm::opt_sched;
@@ -551,7 +553,8 @@ FUNC_RESULT SchedRegion::FindOptimalSchedule(
     if (rgnTimeout != 0) {
       bool optimalSchedule = isLstOptml || (rslt == RES_SUCCESS);
       Logger::Event("BestResult", "name", dataDepGraph_->GetDagID(), //
-                    "cost", bestCost_, "length", bestSchedLngth_,    //
+                    "cost", bestCost_, "length", bestSchedLngth_,  //
+                    "spillCost", (bestCost_ - (bestSchedLngth_ * 100 - costLwrBound_))/SPILLCOSTWEIGHT,  
                     "optimal", optimalSchedule);
       // TODO(justin): Remove once relevant scripts have been updated:
       // get-sched-length.py, plaidbench-validation-test.py
