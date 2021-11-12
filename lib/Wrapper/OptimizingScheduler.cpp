@@ -417,6 +417,8 @@ void ScheduleDAGOptSched::schedule() {
   DataDepGraph *dataDepGraph_ = static_cast<DataDepGraph *>(DDG.get());
   int preFiltered = false;
 
+  Logger::Info("fin create ddg");
+
   //Logger::Info("DDG size is %d", DDG.getsize());
   if ((size < MinDDGSize || size > 1000) && !SecondPass) {
     Logger::Info("DDG of size %d is outside limits, not parallelizing", size);
@@ -432,12 +434,14 @@ void ScheduleDAGOptSched::schedule() {
   else
     DDG->convertSUnits(false, false);
 
+
+  Logger::Info("fin convert sunit");
   DDG->convertRegFiles();
 
   auto *BDDG = static_cast<OptSchedDDGWrapperBasic *>(DDG.get());
   addGraphTransformations(BDDG);
 
-
+  Logger::Info("fin grph xform & convert reg");
 
   bool IsEasy = false;
   InstCount NormBestCost = 0;
