@@ -1121,10 +1121,10 @@ void DataDepGraph::CreateEdge_(InstCount frmNodeNum, InstCount toNodeNum,
 #endif
 
   // need to keep iterator states consistent
-  for (int SolverID = 0; SolverID < NumSolvers_; SolverID++)
-  {
-    edge = frmNode->FindScsr(toNode, SolverID);
-  }
+  //for (int SolverID = 0; SolverID < NumSolvers_; SolverID++)
+  //{
+    edge = frmNode->FindScsr(toNode,0);//, SolverID);
+  //}
 
   if (edge == NULL) {
 #ifdef IS_DEBUG_DAG
