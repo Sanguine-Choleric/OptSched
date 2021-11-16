@@ -21,6 +21,13 @@ GraphNode::GraphNode(UDT_GNODES num, UDT_GNODES maxNodeCnt, const int NumSolvers
 
   scsrLstIt_ = (LinkedListIterator<GraphEdge> *) malloc(sizeof(LinkedListIterator<GraphEdge>) * NumSolvers_);
   prdcsrLstIt_ = (LinkedListIterator<GraphEdge> *) malloc(sizeof(LinkedListIterator<GraphEdge>) * NumSolvers_);
+
+  for (int i = 0; i < NumSolvers_; i++) {
+    scsrLstIt_[i] = scsrLst_->begin();
+    prdcsrLstIt_[i] = prdcsrLst_->begin();
+  }
+
+
   rcrsvScsrLstIt_ = (LinkedListIterator<GraphNode> *) malloc(sizeof(LinkedListIterator<GraphEdge>) * NumSolvers_);
   rcrsvPrdcsrLstIt_ = (LinkedListIterator<GraphNode> *) malloc(sizeof(LinkedListIterator<GraphEdge>) * NumSolvers_);
 
@@ -148,6 +155,11 @@ void GraphNode::AllocRcrsvInfo(DIRECTION dir, UDT_GNODES nodeCnt) {
     assert(rcrsvScsrLst_ == NULL && isRcrsvScsr_ == NULL);
     
     rcrsvScsrLst_ = new LinkedList<GraphNode>;
+
+    for (int SolverID = 0; SolverID < NumSolvers_; SolverID++) {
+      rcrsvScsrLstIt_[SolverID] = rcrsvScsrLst_->begin();
+    }
+
     isRcrsvScsr_ = new BitVector(nodeCnt);
 
   } else {
@@ -163,6 +175,10 @@ void GraphNode::AllocRcrsvInfo(DIRECTION dir, UDT_GNODES nodeCnt) {
     
     rcrsvPrdcsrLst_ = new LinkedList<GraphNode>;
     isRcrsvPrdcsr_ = new BitVector(nodeCnt);
+
+    for (int SolverID = 0; SolverID < NumSolvers_; SolverID++) {
+      rcrsvPrdcsrLstIt_[SolverID] = rcrsvPrdcsrLst_->begin();
+    }
 
   }
 }

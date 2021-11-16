@@ -517,8 +517,7 @@ inline GraphNode *GraphNode::GetFrstScsr(UDT_GLABEL &label, int SolverID) {
 inline GraphNode *GraphNode::GetNxtScsr(UDT_GLABEL &label, int SolverID) {
   ++scsrLstIt_[SolverID];
   GraphEdge *edge = scsrLstIt_[SolverID].GetEntry()->element;
-  if (edge == NULL)
-    return NULL;
+  if (edge == nullptr) return NULL;
   label = edge->label;
   return edge->to;
 }
@@ -548,8 +547,7 @@ inline GraphNode *GraphNode::GetFrstPrdcsr(UDT_GLABEL &label, int SolverID) {
 inline GraphNode *GraphNode::GetNxtPrdcsr(UDT_GLABEL &label, int SolverID) {
   ++prdcsrLstIt_[SolverID];
   GraphEdge *edge = prdcsrLstIt_[SolverID].GetEntry()->element;
-  if (edge == NULL)
-    return NULL;
+  if (edge == nullptr) return NULL;
   label = edge->label;
   return edge->to;
 }
@@ -654,59 +652,65 @@ inline LinkedList<GraphEdge> *GraphNode::GetNghbrLst(DIRECTION dir) {
 
 // GetFrstPrdcsr alters state of list structure during scheduling
 // Must be thread depedent
-inline GraphEdge *GraphNode::GetFrstScsrEdge(int SolverID_) {
-  scsrLstIt_[SolverID_] = scsrLst_->begin();
-  return scsrLstIt_[SolverID_].GetEntry()->element;
+inline GraphEdge *GraphNode::GetFrstScsrEdge(int SolverID) {
+  scsrLstIt_[SolverID] = scsrLst_->begin();
+  if (scsrLstIt_[SolverID] == scsrLst_->end()) return NULL;
+  return scsrLstIt_[SolverID].GetEntry()->element;
 }
 
 // GetNxtScsrEdge alters state of list structure during scheduling
 // Must be thread depedent
-inline GraphEdge *GraphNode::GetNxtScsrEdge(int SolverID_) {
-  ++scsrLstIt_[SolverID_];
-  return scsrLstIt_[SolverID_].GetEntry()->element;
+inline GraphEdge *GraphNode::GetNxtScsrEdge(int SolverID) {
+  ++scsrLstIt_[SolverID];
+  if (scsrLstIt_[SolverID] == scsrLst_->end()) return NULL;
+  return scsrLstIt_[SolverID].GetEntry()->element;
 }
 
 // GetLastScsrEdge alters state of list structure during scheduling
 // Must be thread depedent
-inline GraphEdge *GraphNode::GetLastScsrEdge(int SolverID_) {
-  scsrLstIt_[SolverID_] = scsrLst_->rbegin();
-  return scsrLstIt_[SolverID_].GetEntry()->element;
+inline GraphEdge *GraphNode::GetLastScsrEdge(int SolverID) {
+  scsrLstIt_[SolverID] = scsrLst_->rbegin();
+  return scsrLstIt_[SolverID].GetEntry()->element;
 
 }
 
 // GetPrecScsrEdge alters state of list structure during scheduling
 // Must be thread depedent
-inline GraphEdge *GraphNode::GetPrevScsrEdge(int SolverID_) {
-  --scsrLstIt_[SolverID_];
-  return scsrLstIt_[SolverID_].GetEntry()->element;
+inline GraphEdge *GraphNode::GetPrevScsrEdge(int SolverID) {
+  if (scsrLstIt_[SolverID] == scsrLst_->begin()) return NULL;
+  --scsrLstIt_[SolverID];
+  return scsrLstIt_[SolverID].GetEntry()->element;
 }
 
-inline void GraphNode::ResetScsrIterator(int SolverID_) {
-  scsrLstIt_[SolverID_] = scsrLst_->begin();
+inline void GraphNode::ResetScsrIterator(int SolverID) {
+  scsrLstIt_[SolverID] = scsrLst_->begin();
 }
 
-inline GraphEdge *GraphNode::GetFrstPrdcsrEdge(int SolverID_) {
-  prdcsrLstIt_[SolverID_] = scsrLst_->begin();
-  return prdcsrLstIt_[SolverID_].GetEntry()->element;
+inline GraphEdge *GraphNode::GetFrstPrdcsrEdge(int SolverID) {
+  prdcsrLstIt_[SolverID] = prdcsrLst_->begin();
+  if (prdcsrLstIt_[SolverID] == prdcsrLst_->end()) return NULL;
+  return prdcsrLstIt_[SolverID].GetEntry()->element;
 }
 
-inline GraphEdge *GraphNode::GetNxtPrdcsrEdge(int SolverID_) {
-  ++prdcsrLstIt_[SolverID_];
-  return prdcsrLstIt_[SolverID_].GetEntry()->element;
+inline GraphEdge *GraphNode::GetNxtPrdcsrEdge(int SolverID) {
+  ++prdcsrLstIt_[SolverID];
+  if (prdcsrLstIt_[SolverID] == prdcsrLst_->end()) return NULL;
+  return prdcsrLstIt_[SolverID].GetEntry()->element;
 }
 
-inline GraphEdge *GraphNode::GetLastPrdcsrEdge(int SolverID_) {
-  prdcsrLstIt_[SolverID_] = scsrLst_->rbegin();
-  return prdcsrLstIt_[SolverID_].GetEntry()->element;
+inline GraphEdge *GraphNode::GetLastPrdcsrEdge(int SolverID) {
+  prdcsrLstIt_[SolverID] = prdcsrLst_->rbegin();
+  return prdcsrLstIt_[SolverID].GetEntry()->element;
 }
 
-inline GraphEdge *GraphNode::GetPrevPrdcsrEdge(int SolverID_) {
-  --prdcsrLstIt_[SolverID_];
-  return prdcsrLstIt_[SolverID_].GetEntry()->element;
+inline GraphEdge *GraphNode::GetPrevPrdcsrEdge(int SolverID) {
+  if (prdcsrLstIt_[SolverID] == prdcsrLst_->begin()) return NULL;
+  --prdcsrLstIt_[SolverID];
+  return prdcsrLstIt_[SolverID].GetEntry()->element;
 }
 
-inline void GraphNode::ResetPrdcsrIterator(int SolverID_ = INVALID_VALUE) {
-  prdcsrLstIt_[SolverID_] = scsrLst_->begin();
+inline void GraphNode::ResetPrdcsrIterator(int SolverID) {
+  prdcsrLstIt_[SolverID] = prdcsrLst_->begin();
 }
 
 
