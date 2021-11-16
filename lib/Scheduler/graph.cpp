@@ -16,14 +16,14 @@ GraphNode::GraphNode(UDT_GNODES num, UDT_GNODES maxNodeCnt, const int NumSolvers
 
   NumSolvers_ = NumSolvers;
 
-  scsrLst_ = new PriorityList<GraphEdge>*[NumSolvers_];
-  prdcsrLst_ = new LinkedList<GraphEdge>*[NumSolvers_];
+  scsrLst_ = new PriorityList<GraphEdge>;
+  prdcsrLst_ = new LinkedList<GraphEdge>;
 
-  for (int SolverID = 0; SolverID < NumSolvers_; SolverID++)
-  {
-    scsrLst_[SolverID] = new PriorityList<GraphEdge>;
-    prdcsrLst_[SolverID] = new LinkedList<GraphEdge>;
-  }
+  scsrLstIt_ = (LinkedListIterator<GraphEdge> *) malloc(sizeof(LinkedListIterator<GraphEdge>) * NumSolvers_);
+  prdcsrLstIt_ = (LinkedListIterator<GraphEdge> *) malloc(sizeof(LinkedListIterator<GraphEdge>) * NumSolvers_);
+  rcrsvScsrLstIt_ = (LinkedListIterator<GraphNode> *) malloc(sizeof(LinkedListIterator<GraphEdge>) * NumSolvers_);
+  rcrsvPrdcsrLstIt_ = (LinkedListIterator<GraphNode> *) malloc(sizeof(LinkedListIterator<GraphEdge>) * NumSolvers_);
+
 
   rcrsvScsrLst_ = NULL;
   rcrsvPrdcsrLst_ = NULL;
@@ -32,37 +32,15 @@ GraphNode::GraphNode(UDT_GNODES num, UDT_GNODES maxNodeCnt, const int NumSolvers
 }
 
 GraphNode::~GraphNode() {
-  for (int i = 0; i < NumSolvers_; i++)
-  {
-    //TODO invalid chunk size
-    if (scsrLst_ != NULL) {
-      if (scsrLst_[i] != NULL) {
-        //DelScsrLst(i);
-        delete scsrLst_[i];
-      }
-    }
-    if (prdcsrLst_ != NULL) {
-      if (prdcsrLst_[i] != NULL) {  
-        //DelPrdcsrLst(i);
-        delete prdcsrLst_[i];
-      }
-    }
-    if (rcrsvScsrLst_ != NULL)
-      if (rcrsvScsrLst_[i] != NULL)
-        delete rcrsvScsrLst_[i];
-    if (rcrsvPrdcsrLst_ != NULL)
-      if (rcrsvPrdcsrLst_[i] != NULL)
-        delete rcrsvPrdcsrLst_[i];
-  }
-  
+ 
   if (scsrLst_ != NULL)
-    delete[] scsrLst_;
+    delete scsrLst_;
   if (prdcsrLst_ != NULL)
-    delete[] prdcsrLst_;
+    delete prdcsrLst_;
   if (rcrsvScsrLst_ != NULL)
-    delete[] rcrsvScsrLst_;
+    delete rcrsvScsrLst_;
   if (rcrsvPrdcsrLst_ != NULL)
-    delete[] rcrsvPrdcsrLst_;
+    delete rcrsvPrdcsrLst_;
   if (isRcrsvScsr_ != NULL)
     delete isRcrsvScsr_;
   if (isRcrsvPrdcsr_ != NULL)
@@ -73,54 +51,65 @@ GraphNode::~GraphNode() {
 void GraphNode::resetGraphNodeThreadWriteFields(int SolverID)
 {
   if (SolverID == -1) {
-  for (int SolverID_ = 0; SolverID_ < NumSolvers_; SolverID_++) {
-      scsrLst_[SolverID_]->ResetIterator();
-      prdcsrLst_[SolverID_]->ResetIterator();
-      rcrsvScsrLst_[SolverID_]->ResetIterator();
-      rcrsvPrdcsrLst_[SolverID_]->ResetIterator();
+    for (int SolverID_ = 0; SolverID_ < NumSolvers_; SolverID_++) {
+      scsrLstIt_[SolverID_] = scsrLst_->begin();
+      prdcsrLstIt_[SolverID_] = prdcsrLst_->begin();
+      rcrsvScsrLstIt_[SolverID_] = rcrsvScsrLst_->begin();
+      rcrsvPrdcsrLstIt_[SolverID_] = rcrsvPrdcsrLst_->begin();
     }
   }
 
   else {
-    scsrLst_[SolverID]->ResetIterator();
-    prdcsrLst_[SolverID]->ResetIterator();
-    rcrsvScsrLst_[SolverID]->ResetIterator();
-    rcrsvPrdcsrLst_[SolverID]->ResetIterator();
+    scsrLstIt_[SolverID] = scsrLst_->begin();
+    prdcsrLstIt_[SolverID] = prdcsrLst_->begin();
+    rcrsvScsrLstIt_[SolverID] = rcrsvScsrLst_->begin();
+    rcrsvPrdcsrLstIt_[SolverID] = rcrsvPrdcsrLst_->begin();
   }
 }
 
-void GraphNode::DelPrdcsrLst(int SolverID) {
-  for (GraphEdge *crntEdge = prdcsrLst_[SolverID]->GetFrstElmnt(); crntEdge != NULL;
-       crntEdge = prdcsrLst_[SolverID]->GetNxtElmnt()) {
+// For parallelization, we need to offer each thread its own iterator
+// for scsrList, etc so that each thread can independently iterate through
+// during scheduling. Some functions that iterate through these lists do not do
+// so during scheduling, or are not used in the current implementation. 
+// These certain functions are assumed to not be used during scheduling and have been
+// noted
+
+// DelPrdcsrLst called only from DataDepSubGraph::DelRootAndLeafInsts_
+// DataDepSubGraph -- assume not thread independent
+void GraphNode::DelPrdcsrLst() {
+  for (GraphEdge *crntEdge = prdcsrLst_->GetFrstElmnt(); crntEdge != NULL;
+       crntEdge = prdcsrLst_->GetNxtElmnt()) {
     delete crntEdge;
   }
 
-  prdcsrLst_[SolverID]->Reset();
+  prdcsrLst_->Reset();
 }
 
-void GraphNode::DelScsrLst(int SolverID) {
-  for (GraphEdge *crntEdge = scsrLst_[SolverID]->GetFrstElmnt(); crntEdge != NULL;
-       crntEdge = scsrLst_[SolverID]->GetNxtElmnt()) {
+// DelScsrLst ever called -- assume not thread independent
+void GraphNode::DelScsrLst() {
+  for (GraphEdge *crntEdge = scsrLst_->GetFrstElmnt(); crntEdge != NULL;
+       crntEdge = scsrLst_->GetNxtElmnt()) {
     delete crntEdge;
   }
 
-  scsrLst_[SolverID]->Reset();
+  scsrLst_->Reset();
 }
 
-// TODO -- not vectorized?
+// DepthFirstVisit called during setupForSchduling and UpdateSetupForSchduling
+// In other words, not called during scheduling -- not thread independent
 void GraphNode::DepthFirstVisit(GraphNode *tplgclOrdr[],
-                                UDT_GNODES &tplgclIndx, int SolverID) {
+                                UDT_GNODES &tplgclIndx) {
   color_ = COL_GRAY;
 
   // Iterate through the successor list of this node and recursively visit them
   // This recursion will bottom up when the exit node is reached, which then
   // gets added to the very bottom of the topological sort list.
-  for (GraphEdge *crntEdge = scsrLst_[SolverID]->GetFrstElmnt(); crntEdge != NULL;
-       crntEdge = scsrLst_[SolverID]->GetNxtElmnt()) {
+  for (GraphEdge *crntEdge = scsrLst_->GetFrstElmnt(); crntEdge != NULL;
+       crntEdge = scsrLst_->GetNxtElmnt()) {
     GraphNode *scsr = crntEdge->GetOtherNode(this);
 
     if (scsr->GetColor() == COL_WHITE) {
-      scsr->DepthFirstVisit(tplgclOrdr, tplgclIndx, SolverID);
+      scsr->DepthFirstVisit(tplgclOrdr, tplgclIndx);
     }
   }
 
@@ -134,8 +123,8 @@ void GraphNode::DepthFirstVisit(GraphNode *tplgclOrdr[],
   tplgclIndx--;
 }
 
-void GraphNode::FindRcrsvNghbrs(DIRECTION dir, DirAcycGraph *graph, int SolverID) {
-  FindRcrsvNghbrs_(this, dir, graph, SolverID);
+void GraphNode::FindRcrsvNghbrs(DIRECTION dir, DirAcycGraph *graph) {
+  FindRcrsvNghbrs_(this, dir, graph);
 }
 
 void GraphNode::AddRcrsvNghbr(GraphNode *nghbr, DIRECTION dir) {
@@ -149,10 +138,7 @@ void GraphNode::AddRcrsvNghbr(GraphNode *nghbr, DIRECTION dir) {
 void GraphNode::AllocRcrsvInfo(DIRECTION dir, UDT_GNODES nodeCnt) {
   if (dir == DIR_FRWRD) {
     if (rcrsvScsrLst_ != NULL) {
-      for (int SolverID = 0; SolverID < NumSolvers_; SolverID++)
-            if (rcrsvScsrLst_[SolverID] != NULL)
-              delete rcrsvScsrLst_[SolverID];
-      delete[] rcrsvScsrLst_;
+      delete rcrsvScsrLst_;
       rcrsvScsrLst_ = NULL;
     }
     if (isRcrsvScsr_ != NULL) {
@@ -161,21 +147,12 @@ void GraphNode::AllocRcrsvInfo(DIRECTION dir, UDT_GNODES nodeCnt) {
     }
     assert(rcrsvScsrLst_ == NULL && isRcrsvScsr_ == NULL);
     
-    rcrsvScsrLst_ = new LinkedList<GraphNode>*[NumSolvers_];
-
-    for (int SolverID = 0; SolverID < NumSolvers_; SolverID++)
-    {
-      rcrsvScsrLst_[SolverID] = new LinkedList<GraphNode>;
-    }
-
-
+    rcrsvScsrLst_ = new LinkedList<GraphNode>;
     isRcrsvScsr_ = new BitVector(nodeCnt);
+
   } else {
     if (rcrsvPrdcsrLst_ != NULL) {
-      for (int SolverID = 0; SolverID < NumSolvers_; SolverID++)
-        if (rcrsvPrdcsrLst_[SolverID] != NULL)
-          delete rcrsvPrdcsrLst_[SolverID];
-      delete[] rcrsvPrdcsrLst_;
+      delete rcrsvPrdcsrLst_;
       rcrsvPrdcsrLst_ = NULL;
     }
     if (isRcrsvPrdcsr_ != NULL) {
@@ -184,14 +161,9 @@ void GraphNode::AllocRcrsvInfo(DIRECTION dir, UDT_GNODES nodeCnt) {
     }
     assert(rcrsvPrdcsrLst_ == NULL && isRcrsvPrdcsr_ == NULL);
     
-    rcrsvPrdcsrLst_ = new LinkedList<GraphNode>*[NumSolvers_];
-
-    for (int SolverID = 0; SolverID < NumSolvers_; SolverID++)
-    {
-      rcrsvPrdcsrLst_[SolverID] = new LinkedList<GraphNode>;
-    }
-
+    rcrsvPrdcsrLst_ = new LinkedList<GraphNode>;
     isRcrsvPrdcsr_ = new BitVector(nodeCnt);
+
   }
 }
 
@@ -252,10 +224,13 @@ bool GraphNode::FindScsr_(GraphNode *&crntScsr, UDT_GNODES trgtNum,
   return false;
 }
 
-// TODO -- maybe not vectorized?
+
+// FindRcrsvNghbrs_ called during setupForSchduling and UpdateSetupForSchduling
+// In other words, not called during scheduling -- not thread independent
+
 void GraphNode::FindRcrsvNghbrs_(GraphNode *root, DIRECTION dir,
-                                 DirAcycGraph *graph, int SolverID) {
-  LinkedList<GraphEdge> *nghbrLst = (dir == DIR_FRWRD) ? scsrLst_[SolverID] : prdcsrLst_[SolverID];
+                                 DirAcycGraph *graph) {
+  LinkedList<GraphEdge> *nghbrLst = (dir == DIR_FRWRD) ? scsrLst_ : prdcsrLst_;
 
   color_ = COL_GRAY;
 
@@ -266,7 +241,7 @@ void GraphNode::FindRcrsvNghbrs_(GraphNode *root, DIRECTION dir,
        crntEdge = nghbrLst->GetNxtElmnt()) {
     GraphNode *nghbr = crntEdge->GetOtherNode(this);
     if (nghbr->GetColor() == COL_WHITE) {
-      nghbr->FindRcrsvNghbrs_(root, dir, graph, SolverID);
+      nghbr->FindRcrsvNghbrs_(root, dir, graph);
     }
   }
 
@@ -341,12 +316,14 @@ bool GraphNode::IsPrdcsrEquvlnt(GraphNode *othrNode, int SolverID) {
   return true;
 }
 
-GraphEdge *GraphNode::FindScsr(GraphNode *trgtNode, int SolverID) {
+// FindScsr called during createEdge -- using thread independece for this is huge overhead
+// In other words, not called during scheduling -- not thread independent
+GraphEdge *GraphNode::FindScsr(GraphNode *trgtNode) {
   GraphEdge *crntEdge;
 
   // Linear search for the target node in the current node's adjacency list.
-  for (crntEdge = scsrLst_[SolverID]->GetFrstElmnt(); crntEdge != NULL;
-      crntEdge = scsrLst_[SolverID]->GetNxtElmnt()) {
+  for (crntEdge = scsrLst_->GetFrstElmnt(); crntEdge != NULL;
+      crntEdge = scsrLst_->GetNxtElmnt()) {
     if (crntEdge->GetOtherNode(this) == trgtNode)
       return crntEdge;
   }
@@ -354,12 +331,14 @@ GraphEdge *GraphNode::FindScsr(GraphNode *trgtNode, int SolverID) {
   return NULL;
 }
 
-GraphEdge *GraphNode::FindPrdcsr(GraphNode *trgtNode, int SolverID) {
+// FindPrdcsr called during createEdge -- using thread independece for this is huge overhead
+// In other words, not called during scheduling -- not thread independent
+GraphEdge *GraphNode::FindPrdcsr(GraphNode *trgtNode) {
   GraphEdge *crntEdge;
 
   // Linear search for the target node in the current node's adjacency list
-  for (crntEdge = prdcsrLst_[SolverID]->GetFrstElmnt(); crntEdge != NULL;
-       crntEdge = prdcsrLst_[SolverID]->GetNxtElmnt())
+  for (crntEdge = prdcsrLst_->GetFrstElmnt(); crntEdge != NULL;
+       crntEdge = prdcsrLst_->GetNxtElmnt())
     if (crntEdge->GetOtherNode(this) == trgtNode) {
       return crntEdge;
     }
@@ -367,9 +346,11 @@ GraphEdge *GraphNode::FindPrdcsr(GraphNode *trgtNode, int SolverID) {
   return NULL; // not found in the neighbor list
 }
 
-void GraphNode::PrntScsrLst(FILE *outFile, int SolverID) {
-  for (GraphEdge *crnt = scsrLst_[SolverID]->GetFrstElmnt(); crnt != NULL;
-       crnt = scsrLst_[SolverID]->GetNxtElmnt()) {
+// PrntScsrLst helper and not used currently -- if needed then up to user to thread indp
+// In other words, not called during scheduling -- not thread independent
+void GraphNode::PrntScsrLst(FILE *outFile) {
+  for (GraphEdge *crnt = scsrLst_->GetFrstElmnt(); crnt != NULL;
+       crnt = scsrLst_->GetNxtElmnt()) {
     UDT_GNODES othrNodeNum = crnt->GetOtherNode(this)->GetNum();
     UDT_GNODES label = crnt->label;
     fprintf(outFile, "%d,%d  ", othrNodeNum + 1, label);
@@ -419,8 +400,7 @@ void DirAcycGraph::CreateEdge_(UDT_GNODES frmNodeNum, UDT_GNODES toNodeNum,
   toNode->AddPrdcsr(newEdg);
 }
 
-FUNC_RESULT DirAcycGraph::DepthFirstSearch(int SolverID) {
-  if (SolverID == INVALID_VALUE) SolverID = 0;
+FUNC_RESULT DirAcycGraph::DepthFirstSearch() {
 
   if (tplgclOrdr_ == NULL)
     tplgclOrdr_ = new GraphNode *[nodeCnt_];
@@ -430,7 +410,7 @@ FUNC_RESULT DirAcycGraph::DepthFirstSearch(int SolverID) {
   }
 
   UDT_GNODES tplgclIndx = nodeCnt_ - 1;
-  root_->DepthFirstVisit(tplgclOrdr_, tplgclIndx, SolverID);
+  root_->DepthFirstVisit(tplgclOrdr_, tplgclIndx);
 
   if (tplgclIndx != -1) {
     Logger::Error("Invalid DAG Format: Ureachable nodes");
@@ -441,7 +421,7 @@ FUNC_RESULT DirAcycGraph::DepthFirstSearch(int SolverID) {
   return RES_SUCCESS;
 }
 
-FUNC_RESULT DirAcycGraph::FindRcrsvNghbrs(DIRECTION dir, int SolverID) {
+FUNC_RESULT DirAcycGraph::FindRcrsvNghbrs(DIRECTION dir) {
   for (UDT_GNODES i = 0; i < nodeCnt_; i++) {
     GraphNode *node = nodes_[i];
 
@@ -453,7 +433,7 @@ FUNC_RESULT DirAcycGraph::FindRcrsvNghbrs(DIRECTION dir, int SolverID) {
 
     node->AllocRcrsvInfo(dir, nodeCnt_);
 
-    node->FindRcrsvNghbrs(dir, this, SolverID);
+    node->FindRcrsvNghbrs(dir, this);
 
     assert((dir == DIR_FRWRD &&
             node->GetRcrsvNghbrLst(dir)->GetFrstElmnt() == leaf_) ||
@@ -472,13 +452,13 @@ FUNC_RESULT DirAcycGraph::FindRcrsvNghbrs(DIRECTION dir, int SolverID) {
     return RES_SUCCESS;
 }
 
-void DirAcycGraph::Print(FILE *outFile, int SolverID) {
+void DirAcycGraph::Print(FILE *outFile) {
   fprintf(outFile, "Number of Nodes= %d    Number of Edges= %d\n", nodeCnt_,
           edgeCnt_);
 
   for (UDT_GNODES i = 0; i < nodeCnt_; i++) {
     fprintf(outFile, "%d:  ", i + 1);
-    nodes_[i]->PrntScsrLst(outFile, SolverID);
+    nodes_[i]->PrntScsrLst(outFile);
   }
 }
 

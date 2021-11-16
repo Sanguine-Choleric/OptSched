@@ -411,9 +411,9 @@ protected:
   void CmputCrtclPaths_();
   void CmputCrtclPathsFrmRoot_();
   void CmputCrtclPathsFrmLeaf_();
-  void CmputCrtclPathsFrmRcrsvScsr_(SchedInstruction *ref, int SolverID = INVALID_VALUE);
-  void CmputCrtclPathsFrmRcrsvPrdcsr_(SchedInstruction *ref, int SolverID = INVALID_VALUE);
-  void CmputRltvCrtclPaths_(DIRECTION dir, int SolverID = INVALID_VALUE);
+  void CmputCrtclPathsFrmRcrsvScsr_(SchedInstruction *ref);
+  void CmputCrtclPathsFrmRcrsvPrdcsr_(SchedInstruction *ref);
+  void CmputRltvCrtclPaths_(DIRECTION dir);
   void CmputBasicLwrBounds_(int SolverID = INVALID_VALUE);
 
   void WriteNodeInfoToF2File_(FILE *file);
@@ -517,8 +517,8 @@ protected:
 
   void AddRoot_(SchedInstruction *inst);
   void AddLeaf_(SchedInstruction *inst);
-  void RmvLastRoot_(SchedInstruction *inst, int SolverID);
-  void RmvLastLeaf_(SchedInstruction *inst, int SolverID);
+  void RmvLastRoot_(SchedInstruction *inst);
+  void RmvLastLeaf_(SchedInstruction *inst);
 
   void PropagateFrwrdLwrBounds_(InstCount frmIndx, InstCount toIndx,
                                 InstCount **LwrBounds, bool reset);

@@ -157,8 +157,8 @@ void SchedInstruction::resetThreadWriteFields(int SolverID, bool full) {
       }
     }
   
-    for (GraphEdge *edge = GetFrstPrdcsrEdge(); edge != NULL;
-        edge = GetNxtPrdcsrEdge()) {
+    for (GraphEdge *edge = GetFrstPrdcsrEdge(0); edge != NULL;
+        edge = GetNxtPrdcsrEdge(0)) {
       for (int SolverID_ = 0; SolverID_ < NumSolvers_; SolverID_++)
         sortedPrdcsrLst_[SolverID_]->InsrtElmnt((SchedInstruction *)edge->GetOtherNode(this),
                                       edge->label, true);
@@ -228,11 +228,10 @@ void SchedInstruction::SetupForSchdulng(InstCount instCnt, bool isCP_FromScsr,
     DeAllocMem_();
   AllocMem_(instCnt, isCP_FromScsr, isCP_FromPrdcsr);
 
-  for (int SolverID = 0; SolverID < NumSolvers_; SolverID++)
-  {
-    SetPrdcsrNums_(SolverID);
-    SetScsrNums_(SolverID);
-  }
+
+    SetPrdcsrNums_();
+    SetScsrNums_();
+
   ComputeAdjustedUseCnt_();
 }
 
@@ -361,8 +360,8 @@ void SchedInstruction::AllocMem_(InstCount instCnt, bool isCP_FromScsr,
 
 
   InstCount predecessorIndex = 0;
-  for (GraphEdge *edge = GetFrstPrdcsrEdge(); edge != NULL;
-       edge = GetNxtPrdcsrEdge()) {
+  for (GraphEdge *edge = GetFrstPrdcsrEdge(0); edge != NULL;
+       edge = GetNxtPrdcsrEdge(0)) {
     ltncyPerPrdcsr_[predecessorIndex++] = edge->label;
     for (int i = 0; i < NumSolvers_; i++)
       sortedPrdcsrLst_[i]->InsrtElmnt((SchedInstruction *)edge->GetOtherNode(this),
@@ -928,11 +927,11 @@ InstCount SchedInstruction::GetFileSchedCycle() const {
 // Called via SetupForSchduling (Sched Region)
 // Done for all threads simultaneously
 // TODO -- do we need to loop?
-void SchedInstruction::SetScsrNums_(int SolverID) {
+void SchedInstruction::SetScsrNums_() {
   InstCount scsrNum = 0;
 
-  for (GraphEdge *edge = GetFrstScsrEdge(SolverID); edge != NULL;
-       edge = GetNxtScsrEdge(SolverID)) {
+  for (GraphEdge *edge = GetFrstScsrEdge(0); edge != NULL;
+       edge = GetNxtScsrEdge(0)) {
     edge->succOrder = scsrNum++;
   }
 
@@ -940,11 +939,11 @@ void SchedInstruction::SetScsrNums_(int SolverID) {
   assert(scsrNum == GetScsrCnt());
 }
 
-void SchedInstruction::SetPrdcsrNums_(int SolverID) {
+void SchedInstruction::SetPrdcsrNums_() {
   InstCount prdcsrNum = 0;
 
-  for (GraphEdge *edge = GetFrstPrdcsrEdge(SolverID); edge != NULL;
-       edge = GetNxtPrdcsrEdge(SolverID)) {
+  for (GraphEdge *edge = GetFrstPrdcsrEdge(0); edge != NULL;
+       edge = GetNxtPrdcsrEdge(0)) {
     edge->predOrder = prdcsrNum++;
   }
 

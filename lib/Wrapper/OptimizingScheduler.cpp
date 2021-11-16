@@ -71,7 +71,7 @@ static ScheduleDAGInstrs *createOptSched(MachineSchedContext *C) {
       new ScheduleDAGOptSched(C, llvm::make_unique<GenericScheduler>(C));
   DAG->addMutation(createCopyConstrainDAGMutation(DAG->TII, DAG->TRI));
   // README: if you need the x86 mutations uncomment the next line.
-  // addMutation(createX86MacroFusionDAGMutation());
+  //DAG->addMutation(createX86MacroFusionDAGMutation());
   // You also need to add the next line somewhere above this function
   //#include "../../../../../llvm/lib/Target/X86/X86MacroFusion.h"
   return DAG;

@@ -275,6 +275,7 @@ public:
   virtual bool FindElmnt(const T *const element, int &hitCnt) const;
 
   LinkedListIterator<T> begin() const { return {this, topEntry_}; }
+  LinkedListIterator<T> rbegin() const { return {this, bottomEntry_}; }
 
   LinkedListIterator<T> end() const { return {this, nullptr}; }
 
