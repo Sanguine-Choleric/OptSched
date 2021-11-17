@@ -670,6 +670,7 @@ inline GraphEdge *GraphNode::GetNxtScsrEdge(int SolverID) {
 // Must be thread depedent
 inline GraphEdge *GraphNode::GetLastScsrEdge(int SolverID) {
   scsrLstIt_[SolverID] = scsrLst_->rbegin();
+  if (scsrLstIt_[SolverID] == scsrLst_->end()) return NULL;
   return scsrLstIt_[SolverID].GetEntry()->element;
 
 }

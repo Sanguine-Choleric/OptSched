@@ -360,10 +360,8 @@ void SchedInstruction::AllocMem_(InstCount instCnt, bool isCP_FromScsr,
 
 
   InstCount predecessorIndex = 0;
-  Logger::Info("about to enter get prdedge loop");
   for (GraphEdge *edge = GetFrstPrdcsrEdge(0); edge != NULL;
        edge = GetNxtPrdcsrEdge(0)) {
-    Logger::Info("found first or next pred edge");
     ltncyPerPrdcsr_[predecessorIndex++] = edge->label;
     for (int i = 0; i < NumSolvers_; i++)
       sortedPrdcsrLst_[i]->InsrtElmnt((SchedInstruction *)edge->GetOtherNode(this),
