@@ -1533,6 +1533,7 @@ BBWorker::BBWorker(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
 
 BBWorker::~BBWorker() {
   //Enumrtr_->deleteNodeAlctr();
+  delete EnumCrntSched_;
 }
 
 void BBWorker::setHeurInfo(InstCount SchedUprBound, InstCount HeuristicCost, 
@@ -1569,7 +1570,7 @@ void BBWorker::setLowerBounds_(InstCount SlilLowerBound) {
 /*****************************************************************************/
 
 void BBWorker::allocSched_() {
-  EnumBestSched_ = new InstSchedule(MachMdl_, DataDepGraph_, VrfySched_);
+  //EnumBestSched_ = new InstSchedule(MachMdl_, DataDepGraph_, VrfySched_);
   EnumCrntSched_ = new InstSchedule(MachMdl_, DataDepGraph_, VrfySched_);
 }
 /*****************************************************************************/
@@ -1813,9 +1814,10 @@ FUNC_RESULT BBWorker::generateAndEnumerate(HalfNode *GlobalPoolNode,
     Enumrtr_->setIsGenerateState(true);
     fsbl = generateStateFromNode(GlobalPoolNode);
     Enumrtr_->setIsGenerateState(false);
+    delete GlobalPoolNode;
     if (!fsbl) {
       //Logger::Info("SolverID %d pruned the globalPoolNode",SolverID_);
-      delete GlobalPoolNode;
+      return RES_SUCCESS;
     }
   }
   return enumerate_(StartTime, RgnTimeout, LngthTimeout, false, fsbl);
@@ -2385,6 +2387,8 @@ BBMaster::BBMaster(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
 
 
 BBMaster::~BBMaster() {
+  delete GlobalPool;
+
   for (int i = 0; i < HistTableSize_; i++) {
     delete HistTableLock[i];
   }
@@ -2398,6 +2402,7 @@ BBMaster::~BBMaster() {
 
   delete[] localPoolLocks;
   delete[] idleTimes;
+  delete[] subspaceLwrBounds_;
 
   Logger::Info("finished deleting master");
   //delete GlobalPool;
@@ -3054,7 +3059,7 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
   Logger::Event("GlobalPoolNodesExplored", "num", globalPoolSizeStart - globalPoolSizeEnd);
 
   //delete[] LaunchNodes;
-  delete GlobalPool;
+  //delete GlobalPool;
 
 
 

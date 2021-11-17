@@ -3865,6 +3865,7 @@ void LengthCostEnumerator::splitNode(HalfNode *&ExploreNode, InstPool4 *fillPool
     tempPrefix2.push(temp->GetNum());
     //Logger::Info("creating halfnode for inst %d", temp->GetNum());
     //Logger::Info("heur is %d", heur[0]);
+
     fillPool->push(new HalfNode(tempPrefix2, heur, bbt_->getCrntSpillCost()));
     bbt_->UpdateSpillInfoForUnSchdul_(temp);
   }
@@ -3878,6 +3879,7 @@ void LengthCostEnumerator::splitNode(HalfNode *&ExploreNode, InstPool4 *fillPool
   rdyLst_->Reset();
   rdyLst_->CopyList(originalRdyLst);
   delete originalRdyLst;
+  delete ExploreNode;
 
 }
 
