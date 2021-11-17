@@ -2401,6 +2401,7 @@ BBMaster::~BBMaster() {
 
   delete[] localPoolLocks;
   delete[] idleTimes;
+  delete[] subspaceLwrBounds_;
 
   Logger::Info("finished deleting master");
   //delete GlobalPool;
