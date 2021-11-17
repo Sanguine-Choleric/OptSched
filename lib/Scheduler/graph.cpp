@@ -39,6 +39,8 @@ GraphNode::GraphNode(UDT_GNODES num, UDT_GNODES maxNodeCnt, const int NumSolvers
 }
 
 GraphNode::~GraphNode() {
+
+  DelScsrLst();
  
   if (scsrLst_ != NULL)
     delete scsrLst_;
@@ -53,6 +55,16 @@ GraphNode::~GraphNode() {
   if (isRcrsvPrdcsr_ != NULL)
     delete isRcrsvPrdcsr_;
   
+
+  if (scsrLstIt_ != NULL)
+    free(scsrLstIt_);
+  if (prdcsrLstIt_ != NULL)
+    free(prdcsrLstIt_);
+  if (rcrsvScsrLstIt_ != NULL)
+    free(rcrsvScsrLstIt_);
+  if (rcrsvPrdcsrLstIt_ != NULL)
+    free(rcrsvPrdcsrLstIt_);
+
 }
 
 void GraphNode::resetGraphNodeThreadWriteFields(int SolverID)
@@ -92,7 +104,7 @@ void GraphNode::DelPrdcsrLst() {
   prdcsrLst_->Reset();
 }
 
-// DelScsrLst ever called -- assume not thread independent
+// DelScsrLst called during destruction of node -- assume not thread independent
 void GraphNode::DelScsrLst() {
   for (GraphEdge *crntEdge = scsrLst_->GetFrstElmnt(); crntEdge != NULL;
        crntEdge = scsrLst_->GetNxtElmnt()) {
