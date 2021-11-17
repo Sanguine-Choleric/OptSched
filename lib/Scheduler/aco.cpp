@@ -584,8 +584,8 @@ void ACOScheduler::writePheromoneGraph(std::string Stage) {
   fprintf(Out, "ranksep=1.0\n");
 
   // find the recursive neighbors
-  dataDepGraph_->FindRcrsvNghbrs(DIR_FRWRD, SolverID_);
-  dataDepGraph_->FindRcrsvNghbrs(DIR_BKWRD, SolverID_);
+  dataDepGraph_->FindRcrsvNghbrs(DIR_FRWRD);
+  dataDepGraph_->FindRcrsvNghbrs(DIR_BKWRD);
 
   writePGraphRecursive(Out, dataDepGraph_->GetRootInst(), Visited);
 

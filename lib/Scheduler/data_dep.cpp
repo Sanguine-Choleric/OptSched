@@ -399,8 +399,8 @@ FUNC_RESULT DataDepGraph::SetupForSchdulng(bool cmputTrnstvClsr) {
       return RES_ERROR;
     if (FindRcrsvNghbrs(DIR_BKWRD) == RES_ERROR)
       return RES_ERROR;
-    CmputRltvCrtclPaths_(DIR_FRWRD, 0);
-    CmputRltvCrtclPaths_(DIR_BKWRD, 0);
+    CmputRltvCrtclPaths_(DIR_FRWRD);
+    CmputRltvCrtclPaths_(DIR_BKWRD);
   }
 
   CmputAbslutUprBound_();
@@ -460,8 +460,8 @@ FUNC_RESULT DataDepGraph::UpdateSetupForSchdulng(bool cmputTrnstvClsr) {
       return RES_ERROR;
     if (FindRcrsvNghbrs(DIR_BKWRD) == RES_ERROR)
       return RES_ERROR;
-    CmputRltvCrtclPaths_(DIR_FRWRD, 0);
-    CmputRltvCrtclPaths_(DIR_BKWRD, 0);
+    CmputRltvCrtclPaths_(DIR_FRWRD);
+    CmputRltvCrtclPaths_(DIR_BKWRD);
   }
 
 
@@ -1063,11 +1063,7 @@ void DataDepGraph::CreateEdge(SchedInstruction *frmNode,
 #endif
 
   GraphEdge *edge;
-  // need to keep iterator states consistent
-  for (int SolverID = 0; SolverID < NumSolvers_; SolverID++)
-  {
-    edge = frmNode->FindScsr(toNode, SolverID);
-  }
+  edge = frmNode->FindScsr(toNode);
 
   int crntLtncy;
 
@@ -1119,12 +1115,8 @@ void DataDepGraph::CreateEdge_(InstCount frmNodeNum, InstCount toNodeNum,
                                         ltncy);
   }
 #endif
-
-  // need to keep iterator states consistent
-  //for (int SolverID = 0; SolverID < NumSolvers_; SolverID++)
-  //{
-    edge = frmNode->FindScsr(toNode,0);//, SolverID);
-  //}
+  
+  edge = frmNode->FindScsr(toNode);
 
   if (edge == NULL) {
 #ifdef IS_DEBUG_DAG
@@ -1325,53 +1317,26 @@ bool DataDepGraph::UseFileBounds() {
   return match;
 }
 
-void DataDepGraph::CmputRltvCrtclPaths_(DIRECTION dir, int SolverID) {
+void DataDepGraph::CmputRltvCrtclPaths_(DIRECTION dir) {
   InstCount i;
 
   if (dir == DIR_FRWRD) {
     for (i = 0; i < instCnt_; i++) {
-      CmputCrtclPathsFrmRcrsvPrdcsr_(insts_[i], SolverID);
+      CmputCrtclPathsFrmRcrsvPrdcsr_(insts_[i]);
     }
   } else {
     assert(dir == DIR_BKWRD);
 
     for (i = 0; i < instCnt_; i++) {
-      CmputCrtclPathsFrmRcrsvScsr_(insts_[i], SolverID);
+      CmputCrtclPathsFrmRcrsvScsr_(insts_[i]);
     }
   }
 }
 
 
 //TODO -- why do we have SolverID == INVALID_VALUE case
-void DataDepGraph::CmputCrtclPathsFrmRcrsvPrdcsr_(SchedInstruction *ref, int SolverID) {
-  
-  if (SolverID == INVALID_VALUE) {
-    for (int SolverID = 0; SolverID < NumSolvers_; SolverID++) {
-   
-      LinkedList<GraphNode> *rcrsvScsrLst = ref->GetRcrsvNghbrLst(DIR_FRWRD, SolverID);
-      SchedInstruction *inst = GetLeafInst();
-      GraphNode *node;
-
-      assert(rcrsvScsrLst != NULL);
-
-      // Visit the nodes in reverse topological order
-      for (node = rcrsvScsrLst->GetLastElmnt(); node != NULL;
-           node = rcrsvScsrLst->GetPrevElmnt()) {
-        inst = (SchedInstruction *)node;
-        inst->CmputCrtclPathFrmRcrsvPrdcsr(ref);
-      }
-
-      assert(inst == GetLeafInst()); // the last instruction must be the leaf
-
-      // The forward CP of the root relative to this entry must be
-      // equal to the backward CP of the entry relative to the leaf
-
-      assert(inst->CmputCrtclPathFrmRcrsvPrdcsr(ref) ==
-             ref->GetCrtclPath(DIR_BKWRD));
-      }
-  }
-  
-  else {
+void DataDepGraph::CmputCrtclPathsFrmRcrsvPrdcsr_(SchedInstruction *ref) {
+ 
     LinkedList<GraphNode> *rcrsvScsrLst = ref->GetRcrsvNghbrLst(DIR_FRWRD);
     SchedInstruction *inst = GetLeafInst();
     GraphNode *node;
@@ -1392,35 +1357,10 @@ void DataDepGraph::CmputCrtclPathsFrmRcrsvPrdcsr_(SchedInstruction *ref, int Sol
 
     assert(inst->CmputCrtclPathFrmRcrsvPrdcsr(ref) ==
            ref->GetCrtclPath(DIR_BKWRD));
-  }
 }
 
-void DataDepGraph::CmputCrtclPathsFrmRcrsvScsr_(SchedInstruction *ref, int SolverID) {
-  if (SolverID == INVALID_VALUE) {
-    for (int SolverID = 0; SolverID < NumSolvers_; SolverID++)
-    {
-      LinkedList<GraphNode> *rcrsvPrdcsrLst = ref->GetRcrsvNghbrLst(DIR_BKWRD);
-      SchedInstruction *inst = GetRootInst();
-      GraphNode *node;
+void DataDepGraph::CmputCrtclPathsFrmRcrsvScsr_(SchedInstruction *ref) {
 
-      assert(rcrsvPrdcsrLst != NULL);
-
-      // Visit the nodes in reverse topological order
-      for (node = rcrsvPrdcsrLst->GetLastElmnt(); node != NULL;
-          node = rcrsvPrdcsrLst->GetPrevElmnt()) {
-        inst = (SchedInstruction *)node;
-        inst->CmputCrtclPathFrmRcrsvScsr(ref);
-      }
-
-      assert(inst == GetRootInst()); // the last instruction must be the root
-
-      // The backward CP of the root relative to this exit must be
-      // equal to the forward CP of th exit relative to the root
-      assert(inst->CmputCrtclPathFrmRcrsvScsr(ref) == ref->GetCrtclPath(DIR_FRWRD));
-    }
-  }
-  
-  else {
     LinkedList<GraphNode> *rcrsvPrdcsrLst = ref->GetRcrsvNghbrLst(DIR_BKWRD);
     SchedInstruction *inst = GetRootInst();
     GraphNode *node;
@@ -1439,7 +1379,7 @@ void DataDepGraph::CmputCrtclPathsFrmRcrsvScsr_(SchedInstruction *ref, int Solve
     // The backward CP of the root relative to this exit must be
     // equal to the forward CP of th exit relative to the root
     assert(inst->CmputCrtclPathFrmRcrsvScsr(ref) == ref->GetCrtclPath(DIR_FRWRD));
-  }
+
 }
 
 void DataDepGraph::PrintLwrBounds(DIRECTION dir, std::ostream &out,
@@ -1839,9 +1779,7 @@ void DataDepSubGraph::DelRootAndLeafInsts_(bool isFinal) {
   }
 
   if (leafInst_ != NULL) {
-    for (int SolverID = 0; SolverID < NumSolvers_; SolverID++) {
-      leafInst_->DelPrdcsrLst(SolverID);
-    }
+    leafInst_->DelPrdcsrLst();
     delete leafInst_;
     leafInst_ = NULL;
   }
@@ -2142,13 +2080,13 @@ void DataDepSubGraph::AddLeaf_(SchedInstruction *inst) {
   leafVctr_->SetBit(inst->GetNum());
 }
 
-void DataDepSubGraph::RmvLastRoot_(SchedInstruction *inst, int SolverID) {
-  rootInst_->RmvLastScsr(inst, true, SolverID);
+void DataDepSubGraph::RmvLastRoot_(SchedInstruction *inst) {
+  rootInst_->RmvLastScsr(inst, true);
   rootVctr_->SetBit(inst->GetNum(), false);
 }
 
-void DataDepSubGraph::RmvLastLeaf_(SchedInstruction *inst, int SolverID) {
-  leafInst_->RmvLastPrdcsr(inst, true, SolverID);
+void DataDepSubGraph::RmvLastLeaf_(SchedInstruction *inst) {
+  leafInst_->RmvLastPrdcsr(inst, true);
   leafVctr_->SetBit(inst->GetNum(), false);
 }
 
@@ -2160,26 +2098,24 @@ void DataDepSubGraph::CreateEdge_(SchedInstruction *frmInst,
   //  assert(frmInst==rootInst_ || toInst==leafInst_);
   GraphEdge *newEdg = new GraphEdge(frmNode, toNode, 1);
 
-  for (int SolverID = 0; SolverID < NumSolvers_; SolverID++)
-  {
+
     if (toInst != leafInst_) {
-      frmNode->ApndScsr(newEdg, SolverID);
+      frmNode->ApndScsr(newEdg);
     }
 
     if (frmInst != rootInst_) {
-      toNode->ApndPrdcsr(newEdg, SolverID);
+      toNode->ApndPrdcsr(newEdg);
     }
-  }
+  
 }
 
 void DataDepSubGraph::RmvEdge_(SchedInstruction *frmInst,
                                SchedInstruction *toInst) {
   GraphNode *frmNode = frmInst;
   GraphNode *toNode = toInst;
-  for (int SolverID = 0; SolverID < NumSolvers_; SolverID++) {
-    frmNode->RmvLastScsr(toInst, false, SolverID);
-    toNode->RmvLastPrdcsr(frmInst, true, SolverID);
-  }
+    frmNode->RmvLastScsr(toInst, false);
+    toNode->RmvLastPrdcsr(frmInst, true);
+
 }
 
 bool DataDepSubGraph::IsRoot_(SchedInstruction *inst) {

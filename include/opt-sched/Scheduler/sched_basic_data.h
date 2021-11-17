@@ -481,6 +481,7 @@ protected:
   // Whether memory has been allocated for this instruction's data structures.
   bool memAllocd_;
 
+  // TODO(JEFF): not sure if these need to be thread indpt
   // The priority list of this instruction's predecessors, sorted by deadline
   // for relaxed scheduling.
   PriorityList<SchedInstruction> **sortedPrdcsrLst_;
@@ -598,10 +599,10 @@ protected:
   void DeAllocMem_();
   // Sets the predecessor order numbers on the edges between this node and its
   // predecessors.
-  void SetPrdcsrNums_(int SolverID);
+  void SetPrdcsrNums_();
   // Sets the successor order numbers on the edges between this node and its
   // successors.
-  void SetScsrNums_(int SolverID);
+  void SetScsrNums_();
   // Computer the adjusted use count. Update "adjustedUseCnt_".
   void ComputeAdjustedUseCnt_();
 
