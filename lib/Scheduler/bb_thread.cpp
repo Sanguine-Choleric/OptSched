@@ -1437,6 +1437,7 @@ BBWithSpill::BBWithSpill(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
 
     timeoutToMemblock_ = timeoutToMemblock;
     IsTimeoutPerInst_ = IsTimeoutPerInst;
+    Logger::Event("FinishedConstBBInterfacer");
 }
 
 Enumerator *BBWithSpill::AllocEnumrtr_(Milliseconds timeout) {
