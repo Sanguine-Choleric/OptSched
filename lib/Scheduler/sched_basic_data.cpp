@@ -816,6 +816,7 @@ InstCount SchedInstruction::GetRlxdCycle(int SolverID) const {
   return IsSchduld(SolverID) ? crntSchedCycle_[SolverID] : crntRlxdCycle_;
 }
 
+// TODO: SHOULD BE THREAD INDEPENDENT FOR 2ND PASS
 void SchedInstruction::SetRlxdCycle(InstCount cycle) { crntRlxdCycle_ = cycle; }
 
 void SchedInstruction::Schedule(InstCount cycleNum, InstCount slotNum, int SolverID) {
