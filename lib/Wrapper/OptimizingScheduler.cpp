@@ -230,6 +230,8 @@ ScheduleDAGOptSched::ScheduleDAGOptSched(
   loadOptSchedConfig();
 
   StringRef ArchName = TM.getTargetTriple().getArchName();
+  Logger::Info("arch");
+  Logger::Info(ArchName.data());
   auto TargetFactory =
       OptSchedTargetRegistry::Registry.getFactoryWithName(ArchName);
 

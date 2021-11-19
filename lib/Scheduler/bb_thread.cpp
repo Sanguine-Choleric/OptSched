@@ -1335,7 +1335,6 @@ FUNC_RESULT BBWithSpill::Enumerate_(Milliseconds StartTime,
   int iterCnt = 0;
   int costLwrBound = 0;
   bool timeout = false;
-  Logger::Info("invoking iterative approach to find best length");
 
   // Non-parallel enumerator, if finds optimal, then SolverID must be this thread
   // Required by SchedRegion which uses SolverID as index when verifying schedule
@@ -1360,8 +1359,10 @@ FUNC_RESULT BBWithSpill::Enumerate_(Milliseconds StartTime,
       timeout = true;
     HandlEnumrtrRslt_(rslt, trgtLngth);
 
+   
+
     if (getBestCost() == 0 || rslt == RES_ERROR ||
-        (lngthDeadline == rgnDeadline && rslt == RES_TIMEOUT) ||
+        rslt == RES_TIMEOUT ||
         (rslt == RES_SUCCESS && isSecondPass())) {
 
       // If doing two pass optsched and on the second pass then terminate if a
@@ -1374,7 +1375,7 @@ FUNC_RESULT BBWithSpill::Enumerate_(Milliseconds StartTime,
                        "schedule with length %d.",
                        trgtLngth, schedUprBound_);
       }
-
+      Logger::Info("breaking out of loop");
       break;
     }
 
@@ -1391,6 +1392,10 @@ FUNC_RESULT BBWithSpill::Enumerate_(Milliseconds StartTime,
       lngthDeadline = rgnDeadline;
   }
 
+  stats::positiveDominationHits.Print(cout);
+  stats::nodeSuperiorityInfeasibilityHits.Print(cout);
+  stats::costInfeasibilityHits.Print(cout);
+
 #ifdef IS_DEBUG_ITERS
   stats::iterations.Record(iterCnt);
   stats::enumerations.Record(enumrtr_->GetSearchCnt());
@@ -1405,7 +1410,6 @@ FUNC_RESULT BBWithSpill::Enumerate_(Milliseconds StartTime,
   if (timeout)
     rslt = RES_TIMEOUT;
 
-  Logger::Info("most recent version of optsched");
   return rslt;
 }
 
