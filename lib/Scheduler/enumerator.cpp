@@ -555,9 +555,9 @@ Enumerator::Enumerator(DataDepGraph *dataDepGraph, MachineModel *machMdl,
   //  #define IS_CORRECT_LOCALPOOL
   //#endif
 
-  #ifndef IS_DEBUG_SEARCH_ORDER
-    #define IS_DEBUG_SEARCH_ORDER
-  #endif
+  //#ifndef IS_DEBUG_SEARCH_ORDER
+  //  #define IS_DEBUG_SEARCH_ORDER
+  //#endif
 
   //#ifndef DEBUG_GP_HISTORY
   //  #define DEBUG_GP_HISTORY
@@ -567,9 +567,9 @@ Enumerator::Enumerator(DataDepGraph *dataDepGraph, MachineModel *machMdl,
   //  #define WORK_STEAL
   //#endif
 
-  //#ifndef INSERT_ON_BACKTRACK
-  //  #define INSERT_ON_BACKTRACK
-  //#endif
+  #ifndef INSERT_ON_BACKTRACK
+    #define INSERT_ON_BACKTRACK
+  #endif
 
   //#ifndef INSERT_ON_STEPFRWRD
   //  #define INSERT_ON_STEPFRWRD
@@ -3163,7 +3163,7 @@ void LengthCostEnumerator::propogateExploration_(EnumTreeNode *propNode) {
       tmpCrntNode->Archive(fullyExplored);
   #ifdef INSERT_ON_BACKTRACK
       if (!tmpCrntNode->getRecyclesHistNode()) {
-        assert(!tmpCrntNode->isInserted() || isSecondPass());        
+        //assert(!tmpCrntNode->isInserted() || isSecondPass());        
         exmndSubProbs_->InsertElement(tmpCrntNode->GetSig(), crntHstry,
                                 hashTblEntryAlctr_, bbt_);
         crntHstry->setInserted(true);
@@ -3227,7 +3227,7 @@ void Enumerator::BackTrackRoot_(EnumTreeNode *tmpCrntNode) {
     tmpCrntNode->Archive(fullyExplored);
     crntNode_->setArchived(true);
     if (!tmpCrntNode->getRecyclesHistNode()) {
-      assert(!tmpCrntNode->isInserted() || isSecondPass());
+      //assert(!tmpCrntNode->isInserted() || isSecondPass());
       exmndSubProbs_->InsertElement(tmpCrntNode->GetSig(), crntHstry,
                                   hashTblEntryAlctr_, bbt_);
       crntHstry->setInserted(true);
