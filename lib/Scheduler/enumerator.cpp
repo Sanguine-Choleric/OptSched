@@ -1449,7 +1449,7 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
       }
 
   if (inst != NULL) {
-    if (inst->GetCrntLwrBound(DIR_FRWRD, SolverID_) > crntCycleNum_) {
+    if (inst->GetCrntLwrBound(DIR_FRWRD) > crntCycleNum_) {
 #ifdef IS_DEBUG_INFSBLTY_TESTS
       stats::forwardLBInfeasibilityHits++;
 #endif
@@ -2365,7 +2365,7 @@ bool Enumerator::TightnLwrBounds_(SchedInstruction *newInst, bool trueTightn) {
     //Logger::Info("inst->GetCrntLwrBound() %d, crntCycleNum_ %d, instNum %d", inst->GetCrntLwrBound(DIR_FRWRD, SolverID_), crntCycleNum_, inst->GetNum());
     if (trueTightn)
       assert(inst != newInst ||
-            inst->GetCrntLwrBound(DIR_FRWRD, SolverID_) == crntCycleNum_);
+            inst->GetCrntLwrBound(DIR_FRWRD) == crntCycleNum_);
       if (inst->IsSchduld(SolverID_) == false) {
       //Logger::Info("inst->GetNum() %d", inst->GetNum());
       //Logger::Info("SolverID_ = %d, inst->IsSchduld = %d, inst->GetNum() %d", SolverID_, inst->IsSchduld(SolverID_), inst->GetNum());
@@ -2374,7 +2374,7 @@ bool Enumerator::TightnLwrBounds_(SchedInstruction *newInst, bool trueTightn) {
         newLwrBound = nxtAvlblCycle[issuType];
 
 
-      if (newLwrBound > inst->GetCrntLwrBound(DIR_FRWRD, SolverID_)) {
+      if (newLwrBound > inst->GetCrntLwrBound(DIR_FRWRD)) {
         //if ((SolverID_) == 2) Logger::Log((Logger::LOG_LEVEL) 4, false, "tlb for inst %d", inst->GetNum()); 
 #ifdef IS_DEBUG_FLOW
         Logger::Info("Tightening LB of inst %d from %d to %d", inst->GetNum(),
@@ -2388,9 +2388,9 @@ bool Enumerator::TightnLwrBounds_(SchedInstruction *newInst, bool trueTightn) {
         }
       }
 
-      assert(inst->GetCrntLwrBound(DIR_FRWRD, SolverID_) >= newLwrBound);
+      assert(inst->GetCrntLwrBound(DIR_FRWRD) >= newLwrBound);
 
-      if (inst->GetCrntLwrBound(DIR_FRWRD, SolverID_) > inst->GetCrntDeadline(SolverID_)) {
+      if (inst->GetCrntLwrBound(DIR_FRWRD) > inst->GetCrntDeadline(SolverID_)) {
         return false;
       }
     }
@@ -2412,9 +2412,9 @@ void Enumerator::UnTightnLwrBounds_(SchedInstruction *newInst) {
 
   for (inst = tightndLst_->GetFrstElmnt(); inst != NULL;
        inst = tightndLst_->GetNxtElmnt()) {
-    inst->UnTightnLwrBounds(SolverID_);
+    inst->UnTightnLwrBounds();
     dataDepGraph_->SetCrntFrwrdLwrBound(inst, SolverID_);
-    assert(inst->IsFxd(SolverID_) == false);
+    assert(inst->IsFxd() == false);
   }
 
   tightndLst_->Reset();
@@ -2427,7 +2427,7 @@ void Enumerator::CmtLwrBoundTightnng_() {
 
   for (inst = tightndLst_->GetFrstElmnt(); inst != NULL;
        inst = tightndLst_->GetNxtElmnt()) {
-    inst->CmtLwrBoundTightnng(SolverID_);
+    inst->CmtLwrBoundTightnng();
   }
 
   tightndLst_->Reset();
@@ -2446,13 +2446,13 @@ bool Enumerator::FixInsts_(SchedInstruction *newInst) {
 
   for (SchedInstruction *inst = fxdLst_->GetFrstElmnt(); inst != NULL;
        inst = fxdLst_->GetNxtElmnt()) {
-    assert(inst->IsFxd(SolverID_));
+    assert(inst->IsFxd());
     assert(inst->IsSchduld(SolverID_) == false || inst == newInst);
-    fsbl = rlxdSchdulr_->FixInst(inst, inst->GetFxdCycle(SolverID_));
+    fsbl = rlxdSchdulr_->FixInst(inst, inst->GetFxdCycle());
 
     if (inst == newInst) {
       newInstFxd = true;
-      assert(inst->GetFxdCycle(SolverID_) == crntCycleNum_);
+      assert(inst->GetFxdCycle() == crntCycleNum_);
     }
 
     if (fsbl == false) {
@@ -2468,7 +2468,7 @@ bool Enumerator::FixInsts_(SchedInstruction *newInst) {
 
   if (fsbl)
     if (!newInstFxd && newInst != NULL) {
-      if (newInst->IsFxd(SolverID_) == false)
+      if (newInst->IsFxd() == false)
       // We need to fix the new inst. only if it has not been fixed before
       {
         fsbl = rlxdSchdulr_->FixInst(newInst, crntCycleNum_);
@@ -2491,8 +2491,8 @@ void Enumerator::UnFixInsts_(SchedInstruction *newInst) {
   for (inst = fxdLst_->GetFrstElmnt(), unfxdInstCnt = 0;
        inst != NULL && unfxdInstCnt < fxdInstCnt_;
        inst = fxdLst_->GetNxtElmnt(), unfxdInstCnt++) {
-    assert(inst->IsFxd(SolverID_) || inst == newInst);
-    InstCount cycle = inst == newInst ? crntCycleNum_ : inst->GetFxdCycle(SolverID_);
+    assert(inst->IsFxd() || inst == newInst);
+    InstCount cycle = inst == newInst ? crntCycleNum_ : inst->GetFxdCycle();
     rlxdSchdulr_->UnFixInst(inst, cycle);
   }
 
@@ -2537,15 +2537,15 @@ void Enumerator::RestoreCrntLwrBounds_(SchedInstruction *unschduldInst, bool tru
   for (InstCount i = 0; i < totInstCnt_; i++) {
     SchedInstruction *inst = dataDepGraph_->GetInstByIndx(i);
     InstCount fxdCycle = 0;
-    bool preFxd = inst->IsFxd(SolverID_);
+    bool preFxd = inst->IsFxd();
 
     if (preFxd) {
-      fxdCycle = inst->GetFxdCycle(SolverID_);
+      fxdCycle = inst->GetFxdCycle();
     }
 
-    inst->SetCrntLwrBound(DIR_FRWRD, frwrdLwrBounds[i], SolverID_);
-    dataDepGraph_->SetCrntFrwrdLwrBound(inst,SolverID_);
-    bool postFxd = inst->IsFxd(SolverID_);
+    inst->SetCrntLwrBound(DIR_FRWRD, frwrdLwrBounds[i]);
+    dataDepGraph_->SetCrntFrwrdLwrBound(inst, SolverID_);
+    bool postFxd = inst->IsFxd();
 
     if (preFxd && !postFxd) { // if got untightened and unfixed
       rlxdSchdulr_->UnFixInst(inst, fxdCycle);
@@ -2563,7 +2563,7 @@ void Enumerator::RestoreCrntLwrBounds_(SchedInstruction *unschduldInst, bool tru
     //Logger::Info("inst %d is schduld? %d", unschduldInst->GetNum(), unschduldInst->IsSchduld(SolverID_));
     assert(unschduldInst->IsSchduld(SolverID_));
 
-    if (unschduldInst->IsFxd(SolverID_) == false)
+    if (unschduldInst->IsFxd() == false)
     // only if the untightening got it unfixed
     {
       rlxdSchdulr_->UnFixInst(unschduldInst, unschduldInst->GetSchedCycle(SolverID_));
@@ -2583,7 +2583,7 @@ bool Enumerator::RlxdSchdul_(EnumTreeNode *newNode) {
   for (SchedInstruction *inst = rsrcFxdLst->GetFrstElmnt(); inst != NULL;
        inst = rsrcFxdLst->GetNxtElmnt()) {
     assert(inst->IsSchduld(SolverID_) == false);
-    fsbl = rlxdSchdulr_->FixInst(inst, inst->GetCrntLwrBound(DIR_FRWRD,SolverID_));
+    fsbl = rlxdSchdulr_->FixInst(inst, inst->GetCrntLwrBound(DIR_FRWRD));
 
     if (fsbl == false) {
       return false;

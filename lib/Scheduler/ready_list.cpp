@@ -35,7 +35,7 @@ ReadyList::ReadyList(DataDepGraph *dataDepGraph, SchedPriorities prirts, int Sol
     switch (prirts.vctr[i]) {
     case LSH_CP:
     case LSH_CPR:
-      maxCrtclPath_ = dataDepGraph->GetRootInst()->GetCrntLwrBound(DIR_BKWRD, SolverID_);
+      maxCrtclPath_ = dataDepGraph->GetRootInst()->GetCrntLwrBound(DIR_BKWRD);
       crtclPathBits_ = Utilities::clcltBitsNeededToHoldNum(maxCrtclPath_);
       totKeyBits += crtclPathBits_;
       break;

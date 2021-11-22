@@ -319,9 +319,9 @@ public:
   void SetRlxdCycle(InstCount cycle);
 
   // Returns the instruction's current lower bound in the given direction.
-  InstCount GetCrntLwrBound(DIRECTION dir, int SolverID) const;
+  InstCount GetCrntLwrBound(DIRECTION dir) const;
   // Sets the instruction's current lower bound in the given direction.
-  void SetCrntLwrBound(DIRECTION dir, InstCount bound, int SolverID);
+  void SetCrntLwrBound(DIRECTION dir, InstCount bound);
 
   // Tightens the lower bound of this instruction to the given new lower bound
   // if it is greater than the current lower bound. Any tightened instruction
@@ -339,9 +339,9 @@ public:
                              LinkedList<SchedInstruction> *fxdLst,
                              bool enforce, int SolverID);
   // Untightens any tightened lower bound.
-  void UnTightnLwrBounds(int SolverID);
+  void UnTightnLwrBounds();
   // Marks the instruction as not tightened.
-  void CmtLwrBoundTightnng(int SolverID);
+  void CmtLwrBoundTightnng();
 
   // Sets the instruction's signature.
   void SetSig(InstSignature sig);
@@ -349,9 +349,9 @@ public:
   InstSignature GetSig() const;
 
   // TODO(ghassan): Document.
-  InstCount GetFxdCycle(int SolverID) const;
+  InstCount GetFxdCycle() const;
   // TODO(ghassan): Document.
-  bool IsFxd(int SolverID) const;
+  bool IsFxd() const;
 
   // Tightens the lower bound and deadline and recursively propagates these
   // tightenings to the neighbors and checking for feasibility at each point.
@@ -536,7 +536,7 @@ protected:
   // during the scheduling process, considering the predecessors that have
   // been scheduled already. These bounds should be larger than the permanent
   // lower bound (range tightening).
-  SchedRange **crntRange_;
+  SchedRange *crntRange_;
 
   // The instruction's signature, used by the enumerator's history table to
   // keep track of partial schedules.

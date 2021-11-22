@@ -511,8 +511,8 @@ void DataDepGraph::SetSttcLwrBounds(int SolverID) {
     SchedInstruction *inst = GetInstByIndx(i);
     InstCount frwrdLwrBound = inst->GetLwrBound(DIR_FRWRD);
     InstCount bkwrdLwrBound = inst->GetLwrBound(DIR_BKWRD);
-    assert(inst->GetCrntLwrBound(DIR_FRWRD, SolverID) >= frwrdLwrBound);
-    assert(inst->GetCrntLwrBound(DIR_BKWRD, SolverID) >= bkwrdLwrBound);
+    assert(inst->GetCrntLwrBound(DIR_FRWRD) >= frwrdLwrBound);
+    assert(inst->GetCrntLwrBound(DIR_BKWRD) >= bkwrdLwrBound);
     //TODO -- since static, can we just memset
     frwrdLwrBounds_[SolverID][i] = frwrdLwrBound;
     bkwrdLwrBounds_[SolverID][i] = bkwrdLwrBound;
@@ -522,8 +522,8 @@ void DataDepGraph::SetSttcLwrBounds(int SolverID) {
 void DataDepGraph::SetDynmcLwrBounds(int SolverID) {
   for (InstCount i = 0; i < instCnt_; i++) {
     SchedInstruction *inst = GetInstByIndx(i);
-    InstCount frwrdLwrBound = inst->GetCrntLwrBound(DIR_FRWRD, SolverID);
-    InstCount bkwrdLwrBound = inst->GetCrntLwrBound(DIR_BKWRD, SolverID);
+    InstCount frwrdLwrBound = inst->GetCrntLwrBound(DIR_FRWRD);
+    InstCount bkwrdLwrBound = inst->GetCrntLwrBound(DIR_BKWRD);
     frwrdLwrBounds_[SolverID][i] = frwrdLwrBound;
     bkwrdLwrBounds_[SolverID][i] = bkwrdLwrBound;
   }
@@ -2576,7 +2576,7 @@ bool DataDepSubGraph::ChkInstRange_(SchedInstruction *inst, InstCount indx,
 
   assert(IsInGraph(inst) == false || inst->IsSchduld(SolverID) == false ||
          dynmcFrwrdLwrBounds_[SolverID][indx] == deadline);
-  assert(IsInGraph(inst) == false || inst->IsFxd(SolverID) == false ||
+  assert(IsInGraph(inst) == false || inst->IsFxd() == false ||
          dynmcFrwrdLwrBounds_[SolverID][indx] == deadline);
   /*
   if (dynmcFrwrdLwrBounds_[indx] == deadline) {
@@ -3423,7 +3423,7 @@ void DataDepGraph::GetCrntLwrBounds(DIRECTION dir, InstCount crntLwrBounds[],
   InstCount i;
 
   for (i = 0; i < instCnt_; i++) {
-    crntLwrBounds[i] = insts_[i]->GetCrntLwrBound(dir, SolverID);
+    crntLwrBounds[i] = insts_[i]->GetCrntLwrBound(dir);
   }
 }
 
@@ -3432,7 +3432,7 @@ void DataDepGraph::SetCrntLwrBounds(DIRECTION dir, InstCount crntLwrBounds[],
   InstCount i;
 
   for (i = 0; i < instCnt_; i++) {
-    insts_[i]->SetCrntLwrBound(dir, crntLwrBounds[i], SolverID);
+    insts_[i]->SetCrntLwrBound(dir, crntLwrBounds[i]);
   }
 }
 
@@ -3476,7 +3476,7 @@ InstCount DataDepGraph::GetInstIndx(SchedInstruction *inst) {
 }
 
 void DataDepGraph::SetCrntFrwrdLwrBound(SchedInstruction *inst, int SolverID) {
-  InstCount bound = inst->GetCrntLwrBound(DIR_FRWRD, SolverID);
+  InstCount bound = inst->GetCrntLwrBound(DIR_FRWRD);
   frwrdLwrBounds_[SolverID][inst->GetNum()] = bound;
 }
 
