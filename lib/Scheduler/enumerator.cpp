@@ -555,9 +555,9 @@ Enumerator::Enumerator(DataDepGraph *dataDepGraph, MachineModel *machMdl,
   //  #define IS_CORRECT_LOCALPOOL
   //#endif
 
-  #ifndef IS_DEBUG_SEARCH_ORDER
-    #define IS_DEBUG_SEARCH_ORDER
-  #endif
+  //#ifndef IS_DEBUG_SEARCH_ORDER
+  //  #define IS_DEBUG_SEARCH_ORDER
+  //#endif
 
   //#ifndef DEBUG_GP_HISTORY
   //  #define DEBUG_GP_HISTORY
@@ -824,7 +824,7 @@ void Enumerator::Reset() {
   tightndLst_->Reset();
   dirctTightndLst_->Reset();
   bkwrdTightndLst_->Reset();
-  dataDepGraph_->SetSttcLwrBounds(SolverID_);
+  dataDepGraph_->SetSttcLwrBounds();
 }
 /****************************************************************************/
 
@@ -873,7 +873,7 @@ bool Enumerator::Initialize_(InstSchedule *sched, InstCount trgtLngth, int Solve
       return false;
     }
 
-    dataDepGraph_->SetDynmcLwrBounds(SolverID);
+    dataDepGraph_->SetDynmcLwrBounds();
   }
 
   if (FixInsts_(NULL) == false) {

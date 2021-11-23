@@ -162,8 +162,8 @@ protected:
   InstCount schedLwrBound_;
   InstCount schedUprBound_;
 
-  InstCount **frwrdLwrBounds_;
-  InstCount **bkwrdLwrBounds_;
+  InstCount *frwrdLwrBounds_;
+  InstCount *bkwrdLwrBounds_;
 
   bool includesUnpipelined_;
 
@@ -270,8 +270,8 @@ public:
   InstCount GetRltvCrtclPath(SchedInstruction *ref, SchedInstruction *inst,
                              DIRECTION dir);
   void SetCrntFrwrdLwrBound(SchedInstruction *inst, int SolverID);
-  void SetSttcLwrBounds(int SolverID);
-  void SetDynmcLwrBounds(int SolverID);
+  void SetSttcLwrBounds();
+  void SetDynmcLwrBounds();
   void CreateEdge(SchedInstruction *frmNode, SchedInstruction *toNode,
                   int ltncy, DependenceType depType);
   InstCount GetDistFrmLeaf(SchedInstruction *inst, int SolverID = INVALID_VALUE);
@@ -414,7 +414,7 @@ protected:
   void CmputCrtclPathsFrmRcrsvScsr_(SchedInstruction *ref);
   void CmputCrtclPathsFrmRcrsvPrdcsr_(SchedInstruction *ref);
   void CmputRltvCrtclPaths_(DIRECTION dir);
-  void CmputBasicLwrBounds_(int SolverID = INVALID_VALUE);
+  void CmputBasicLwrBounds_();
 
   void WriteNodeInfoToF2File_(FILE *file);
   void WriteDepInfoToF2File_(FILE *file, int SolverID);
@@ -423,6 +423,7 @@ protected:
 };
 /*****************************************************************************/
 
+/*
 class DataDepSubGraph : public DataDepStruct {
 protected:
   DataDepGraph *fullGraph_;
@@ -480,7 +481,7 @@ protected:
   void Clear_();
   void InitForLwrBounds_();
   void InitForDynmcLwrBounds_();
-  void UpdtSttcLwrBounds_();
+  //void UpdtSttcLwrBounds_();
   void RmvExtrnlInsts_();
 
   void SetRootsAndLeaves_();
@@ -519,11 +520,13 @@ protected:
   void AddLeaf_(SchedInstruction *inst);
   void RmvLastRoot_(SchedInstruction *inst);
   void RmvLastLeaf_(SchedInstruction *inst);
-
-  void PropagateFrwrdLwrBounds_(InstCount frmIndx, InstCount toIndx,
-                                InstCount **LwrBounds, bool reset);
-  void PropagateBkwrdLwrBounds_(InstCount frmIndx, InstCount toIndx,
-                                InstCount **LwrBounds, bool reset);
+  
+  
+  //void PropagateFrwrdLwrBounds_(InstCount frmIndx, InstCount toIndx,
+  //                              InstCount **LwrBounds, bool reset);
+  //void PropagateBkwrdLwrBounds_(InstCount frmIndx, InstCount toIndx,
+  //                              InstCount **LwrBounds, bool reset);
+  
   void TightnLwrBound_(DIRECTION dir, InstCount indx, InstCount **lwrBounds,
                        int SolverID = INVALID_VALUE);
   void AllocSttcData_();
@@ -541,7 +544,7 @@ protected:
   InstCount CmputExtrnlLtncy_(SchedInstruction *pred, SchedInstruction *scsr,
                               InstCount rejoinCycle, InstCount scsrCycle,
                               bool isSchduld, bool tightnLwrBound, int SolverID);
-  InstCount CmputUnstsfidLtncy_(int SolverID);
+  InstCount CmputUnstsfidLtncy_();
   void AllocRlxdSchdulr_(LB_ALG lbAlg, RelaxedScheduler *&rlxdSchdulr,
                          RelaxedScheduler *&rvrsRlxdSchdulr);
   void FreeRlxdSchdulr_(LB_ALG lbAlg);
@@ -587,6 +590,7 @@ public:
   void UndoInstLost(SchedInstruction *inst);
   InstCount GetAvlblSlots(IssueType issuType);
 };
+*/
 /*****************************************************************************/
 
 // An instance of this class holds all the necessary information about an
