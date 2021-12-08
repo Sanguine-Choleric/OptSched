@@ -284,9 +284,9 @@ public:
   bool ScsrSchduld();
 
   // Schedules the instruction to a given cycle and clot number.
-  void Schedule(InstCount cycleNum, InstCount slotNum, int SolverID);
+  void Schedule(InstCount cycleNum, InstCount slotNum, int SolverID = -1);
   // Mark this instruction as unscheduled.
-  void UnSchedule(int SolverID);
+  void UnSchedule(int SolverID = -1);
 
   // Sets the instruction type to a given value.
   void SetInstType(InstType type);
@@ -300,20 +300,21 @@ public:
   // Returns whether the instruction has been scheduled. If the cycle argument
   // is provided, it is filled with the cycle to which this instruction has
   // been scheduled.
-  bool IsSchduld(int SolverID, InstCount *cycle = NULL) const;
+  bool IsSchduld(int SolverID = -1, InstCount *cycle = NULL) const;
 
   // Returns the cycle to which this instruction has been scheduled.
-  InstCount GetSchedCycle(int SolverID) const;
+  InstCount GetSchedCycle(int SolverID = -1) const;
   // Returns the slot to which this instruction has been scheduled.
   InstCount GetSchedSlot(int SolverID) const;
 
   // Returns the number of the deadline cycle for this instruction.
-  InstCount GetCrntDeadline(int SolverID) const;
+  InstCount GetCrntDeadline(int SolverID = -1) const;
   // Returns the release time for this instruction.
-  InstCount GetCrntReleaseTime(int SolverID) const;
+  InstCount GetCrntReleaseTime(int SolverID = -1) const;
+
   // Returns the relaxed cycle number for this instruction.
   // TODO(ghassan): Elaborate.
-  InstCount GetRlxdCycle(int SolverID) const;
+  InstCount GetRlxdCycle(int SolverID = -1) const;
   // Sets the relaxed cycle number for this instruction.
   // TODO(ghassan): Elaborate.
   void SetRlxdCycle(InstCount cycle);
@@ -322,6 +323,15 @@ public:
   InstCount GetCrntLwrBound(DIRECTION dir) const;
   // Sets the instruction's current lower bound in the given direction.
   void SetCrntLwrBound(DIRECTION dir, InstCount bound);
+
+
+  // These methods are called frequently within TightnLwrBounds method in
+  // Enumerator (very hot code). Unecessarily using arrays for these functions 
+  // (i.e. thread Independent) has shown to result in a significant degraded
+  // performance. Thus, we use special methods to replicate the sequential
+  // algorithm when not invoking parallelism
+  bool IsSchduldSecondPass() const; 
+  InstCount GetCrntDeadlineSecondPass();
 
   // Tightens the lower bound of this instruction to the given new lower bound
   // if it is greater than the current lower bound. Any tightened instruction
@@ -522,8 +532,10 @@ protected:
 
   // The cycle in which this instruction is currently scheduled.
   InstCount *crntSchedCycle_;
+  InstCount crntSchedCycleScalar_;
   // The slot in which this instruction is currently scheduled.
   InstCount *crntSchedSlot_;
+  InstCount crntSchedSlotScalar_;
   // TODO(ghassan): Document.
   InstCount crntRlxdCycle_;
 

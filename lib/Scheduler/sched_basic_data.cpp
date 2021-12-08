@@ -73,7 +73,7 @@ SchedInstruction::~SchedInstruction() {
 
 void SchedInstruction::resetThreadWriteFields(int SolverID, bool full) {
   resetGraphNodeThreadWriteFields(SolverID);
-
+  crntSchedCycleScalar_ = SCHD_UNSCHDULD;
   if (SolverID == -1) {  
     for (int SolverID_ = 0; SolverID_ < NumSolvers_; SolverID_++)
     {
@@ -282,6 +282,7 @@ bool SchedInstruction::InitForSchdulng(int SolverID, InstCount schedLngth,
                                        LinkedList<SchedInstruction> *fxdLst) {
   crntSchedCycle_[SolverID] = SCHD_UNSCHDULD;
   crntRlxdCycle_ = SCHD_UNSCHDULD;
+  crntSchedCycleScalar_ = SCHD_UNSCHDULD;
 
   for (InstCount i = 0; i < prdcsrCnt_; i++) {
     rdyCyclePerPrdcsr_[SolverID][i] = INVALID_VALUE;
@@ -777,28 +778,55 @@ InstType SchedInstruction::GetInstType() const { return instType_; }
 IssueType SchedInstruction::GetIssueType() const { return issuType_; }
 
 bool SchedInstruction::IsSchduld(int SolverID, InstCount *cycle) const {
+  if (SolverID == -1) {
+    if (cycle)
+      *cycle = crntSchedCycleScalar_;
+    return crntSchedCycleScalar_ != SCHD_UNSCHDULD;
+  }
+
   if (cycle)
     *cycle = crntSchedCycle_[SolverID];
   return crntSchedCycle_[SolverID] != SCHD_UNSCHDULD;
 }
 
+bool SchedInstruction::IsSchduldSecondPass() const {
+  return crntSchedCycleScalar_ != SCHD_UNSCHDULD;
+}
+
 InstCount SchedInstruction::GetSchedCycle(int SolverID) const { 
+  if (SolverID == -1) return crntSchedCycleScalar_;
   return crntSchedCycle_[SolverID]; 
 }
 
-InstCount SchedInstruction::GetSchedSlot(int SolverID) const { 
+InstCount SchedInstruction::GetSchedSlot(int SolverID) const {
+   
   return crntSchedSlot_[SolverID]; 
 }
 
 InstCount SchedInstruction::GetCrntDeadline(int SolverID) const {
+  if (SolverID == -1) {
+    return IsSchduldSecondPass() ? crntSchedCycleScalar_ : crntRange_->GetDeadline();
+  }
   return IsSchduld(SolverID) ? crntSchedCycle_[SolverID] : crntRange_->GetDeadline();
 }
 
+InstCount SchedInstruction::GetCrntDeadlineSecondPass() {
+  return IsSchduldSecondPass() ? crntSchedCycleScalar_ : crntRange_->GetDeadline();
+}
+
 InstCount SchedInstruction::GetCrntReleaseTime(int SolverID) const {
+  if (SolverID == -1) {
+    return IsSchduldSecondPass() ? crntSchedCycleScalar_ : GetCrntLwrBound(DIR_FRWRD);
+  }
+
   return IsSchduld(SolverID) ? crntSchedCycle_[SolverID] : GetCrntLwrBound(DIR_FRWRD);
 }
 
 InstCount SchedInstruction::GetRlxdCycle(int SolverID) const {
+  if (SolverID == -1) {
+    return IsSchduldSecondPass() ? crntSchedCycleScalar_ : crntRlxdCycle_;
+  }
+
   return IsSchduld(SolverID) ? crntSchedCycle_[SolverID] : crntRlxdCycle_;
 }
 
@@ -806,6 +834,12 @@ InstCount SchedInstruction::GetRlxdCycle(int SolverID) const {
 void SchedInstruction::SetRlxdCycle(InstCount cycle) { crntRlxdCycle_ = cycle; }
 
 void SchedInstruction::Schedule(InstCount cycleNum, InstCount slotNum, int SolverID) {
+   if (SolverID == -1) {
+    assert(crntSchedCycleScalar_ == SCHD_UNSCHDULD);
+    crntSchedCycleScalar_ = cycleNum;
+    crntSchedSlotScalar_ = slotNum;
+    return;
+  }
   //Logger::Info("SolverID %d Scheduling %d", SolverID, GetNum());
   assert(crntSchedCycle_[SolverID] == SCHD_UNSCHDULD);
   crntSchedCycle_[SolverID] = cycleNum;
@@ -832,6 +866,12 @@ void SchedInstruction::SetCrntLwrBound(DIRECTION dir, InstCount bound) {
 }
 
 void SchedInstruction::UnSchedule(int SolverID) {
+  if (SolverID == -1) {
+    crntSchedCycleScalar_ = SCHD_UNSCHDULD;
+    crntSchedSlotScalar_ = SCHD_UNSCHDULD;
+    return;
+  }
+
   //Logger::Info("solverid %d unscheduling inst %d", SolverID, GetNum());
   assert(crntSchedCycle_[SolverID] != SCHD_UNSCHDULD);
   crntSchedCycle_[SolverID] = SCHD_UNSCHDULD;
@@ -998,7 +1038,7 @@ bool SchedRange::TightnLwrBound(DIRECTION dir, InstCount newBound,
   //Logger::Info("SolverID is %d", SolverID);
   //Logger::Info("!inst_->ISScheduld(SolverID) %d", !inst_->IsSchduld(SolverID));
   //Logger::Info("inst_->getNum() %d", inst_->GetNum());
-  assert(enforce || !inst_->IsSchduld(SolverID));
+  assert(enforce || !inst_->IsSchduldSecondPass());
   assert(enforce || !isFxd_);
 
   // If the range equals exactly one cycle.

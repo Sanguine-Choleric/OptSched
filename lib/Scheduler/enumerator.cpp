@@ -1498,6 +1498,8 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
   }
 
   if (inst != NULL) {
+    if (isSecondPass())
+      inst->Schedule(crntCycleNum_, crntSlotNum_);
     inst->Schedule(crntCycleNum_, crntSlotNum_, SolverID_);
     DoRsrvSlots_(inst);
     state_.instSchduld = true;
@@ -1647,6 +1649,8 @@ void Enumerator::RestoreCrntState_(SchedInstruction *inst,
   if (state_.instSchduld) {
     assert(inst != NULL);
     UndoRsrvSlots_(inst);
+    if (isSecondPass())
+      inst->UnSchedule();
     inst->UnSchedule(SolverID_);
   }
 
@@ -2209,6 +2213,8 @@ bool Enumerator::BackTrack_(bool trueState) {
 
     UndoRsrvSlots_(inst);
     UnSchdulInst_(inst);
+    if (isSecondPass())
+      inst->UnSchedule();
     inst->UnSchedule(SolverID_);
 
     if (inst->GetTplgclOrdr() == minUnschduldTplgclOrdr_ - 1) {
@@ -2366,7 +2372,7 @@ bool Enumerator::TightnLwrBounds_(SchedInstruction *newInst, bool trueTightn) {
     if (trueTightn)
       assert(inst != newInst ||
             inst->GetCrntLwrBound(DIR_FRWRD) == crntCycleNum_);
-      if (inst->IsSchduld(SolverID_) == false) {
+      if (inst->IsSchduldSecondPass() == false) {
       //Logger::Info("inst->GetNum() %d", inst->GetNum());
       //Logger::Info("SolverID_ = %d, inst->IsSchduld = %d, inst->GetNum() %d", SolverID_, inst->IsSchduld(SolverID_), inst->GetNum());
         //if (SolverID_ == 2) Logger::Log((Logger::LOG_LEVEL) 4, false, "inst %d is not scheduled", inst->GetNum());
@@ -2390,7 +2396,7 @@ bool Enumerator::TightnLwrBounds_(SchedInstruction *newInst, bool trueTightn) {
 
       assert(inst->GetCrntLwrBound(DIR_FRWRD) >= newLwrBound);
 
-      if (inst->GetCrntLwrBound(DIR_FRWRD) > inst->GetCrntDeadline(SolverID_)) {
+      if (inst->GetCrntLwrBound(DIR_FRWRD) > inst->GetCrntDeadlineSecondPass()) {
         return false;
       }
     }
