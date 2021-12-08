@@ -567,9 +567,9 @@ Enumerator::Enumerator(DataDepGraph *dataDepGraph, MachineModel *machMdl,
   //  #define WORK_STEAL
   //#endif
 
-  #ifndef INSERT_ON_BACKTRACK
-    #define INSERT_ON_BACKTRACK
-  #endif
+  //#ifndef INSERT_ON_BACKTRACK
+  //  #define INSERT_ON_BACKTRACK
+  //#endif
 
   //#ifndef INSERT_ON_STEPFRWRD
   //  #define INSERT_ON_STEPFRWRD

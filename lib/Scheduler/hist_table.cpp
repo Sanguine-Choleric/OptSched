@@ -660,7 +660,6 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
     // pruning conditions that are specific to the current cost function.
     if (SpillCostFunc == SCF_TARGET || SpillCostFunc == SCF_PRP ||
         SpillCostFunc == SCF_PERP) {
-          assert(false && "incorrect hist cost func");
       ShouldPrune = (!fullyExplored_) ? false : doesHistoryPeakCostDominate(Node->GetCostLwrBound(),
                                                 partialCost_, totalCost_, LCE);
         }
@@ -681,7 +680,6 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
     // by integer divsion does not lead to false domination.
     else if (SpillCostFunc == SCF_PEAK_PLUS_AVG && cost_ == Node->GetCost()) {
       InstCount instCnt = E->GetTotInstCnt();
-      assert(false && "incorrect hist cost func");
       ShouldPrune =
           spillCostSum_ % instCnt >= Node->GetSpillCostSum() % instCnt;
     }
