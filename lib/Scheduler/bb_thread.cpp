@@ -1824,6 +1824,7 @@ FUNC_RESULT BBWorker::generateAndEnumerate(HalfNode *GlobalPoolNode,
       return RES_SUCCESS;
     }
   }
+  ++globalPoolNodes;
   return enumerate_(StartTime, RgnTimeout, LngthTimeout, false, fsbl);
 
 }
@@ -1977,6 +1978,7 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
           break;
         }
         else {
+        ++globalPoolNodes;
         temp = GlobalPool_->front();
         GlobalPool_->pop();
         }
@@ -3030,20 +3032,16 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
 
   for (int j = 0; j < NumThreads_; j++) {
     ThreadManager[j].join();
+    Logger::Info("Solver %d stats: ", j+2);
+    Logger::Info("stepFrwrds %d" , Workers[j]->stepFrwrds);
+    Logger::Info("backTracks %d", Workers[j]->backTracks);
+    Logger::Info("costInfsbl %d", Workers[j]->costInfsbl);
+    Logger::Info("histInfsbl %d" , Workers[j]->histInfsbl);
+    Logger::Info("otherInfsbl %d", Workers[j]->otherInfsbl);
+    Logger::Info("globalPoolNodes %d", Workers[j]->globalPoolNodes);
   }
 
-  //Logger::Info("positive history hits %d", stats::positiveDominationHits);
-  //Logger::Info("node superiority hits %d", stats::nodeSuperiorityInfeasibilityHits);
 
-  stats::positiveDominationHits.Print(cout);
-  stats::nodeSuperiorityInfeasibilityHits.Print(cout);
-  stats::costInfeasibilityHits.Print(cout);
-  stats::forwardLBInfeasibilityHits.Print(cout);
-  stats::backwardLBInfeasibilityHits.Print(cout);
-  stats::slotCountInfeasibilityHits.Print(cout);
-  stats::rangeTighteningInfeasibilityHits.Print(cout);
-  stats::historyDominationInfeasibilityHits.Print(cout);
-  stats::relaxedSchedulingInfeasibilityHits.Print(cout);
 
   for (int j = 0; j < NumThreads_; j++) {
     Milliseconds endTime = Utilities::GetProcessorTime();

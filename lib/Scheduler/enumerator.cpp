@@ -1670,6 +1670,7 @@ void Enumerator::RestoreCrntState_(SchedInstruction *inst,
 /*****************************************************************************/
 
 void Enumerator::StepFrwrd_(EnumTreeNode *&newNode) {
+  ++bbt_->stepFrwrds;
   SchedInstruction *instToSchdul = newNode->GetInst();
   InstCount instNumToSchdul;
 #ifdef IS_CORRECT_LOCALPOOL
@@ -2028,6 +2029,7 @@ bool Enumerator::SetTotalCostsAndSuffixes(EnumTreeNode *const currentNode,
 
 
 bool Enumerator::BackTrack_(bool trueState) {
+  ++bbt_->backTracks;
   bool fsbl = true;
   SchedInstruction *inst = crntNode_->GetInst();
   EnumTreeNode *trgtNode = crntNode_->GetParent();
@@ -2970,6 +2972,7 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
   assert(newNode || !isFsbl);
 
   if (isFsbl == false) {
+    ++bbt_->otherInfsbl;
     assert(isLngthFsbl == false);
     isLngthFsbl = false;
 
@@ -2983,6 +2986,7 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
 
 
   if (isFsbl == false) {
+    ++bbt_->costInfsbl;
 #ifdef IS_DEBUG_SEARCH_ORDER
     Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: cost fail");
 #endif
@@ -2992,6 +2996,7 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
   }
 
   if (IsHistDom() && prune) {
+    ++bbt_->histInfsbl;
 //#ifdef IS_DEBUG_SEARCH_ORDER
 //    Logger::Info("Solver %d IN LCE HIST DOM", SolverID_);
 //#endif

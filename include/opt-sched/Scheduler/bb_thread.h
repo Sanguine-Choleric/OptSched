@@ -133,7 +133,6 @@ private:
   int NumberOfInsts_;
 
 
-
   // A bit vector indexed by register number indicating whether that
   // register is live
   WeightedBitVector *LiveRegs_;
@@ -186,6 +185,14 @@ public:
               bool enblStallEnum, int SCW, SPILL_COST_FUNCTION spillCostFunc,
               SchedulerType HeurSchedType);
   virtual ~BBThread();
+
+  uint64_t stepFrwrds = 0;
+  uint64_t backTracks = 0;
+  uint64_t costInfsbl = 0;
+  uint64_t histInfsbl = 0;
+  uint64_t otherInfsbl = 0;
+  uint64_t globalPoolNodes = 0;
+
 
   int LocalPoolSizeRet = 0;
   SPILL_COST_FUNCTION SpillCostFuncBBT_;
