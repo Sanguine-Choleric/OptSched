@@ -26,7 +26,7 @@ class RegisterFile;
 class BitVector;
 
 
-
+// TODO rename
 class InstPool4 {
 private:
   std::queue<HalfNode *> pool;
