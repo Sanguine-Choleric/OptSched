@@ -2662,6 +2662,15 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
     Logger::Info("SolverID %d launching GlobalPoolNode with inst %d (parent %d)", j+2, LaunchNodes[j]->GetInstNum(), LaunchNodes[j]->prefix_.back()->GetInstNum());
 #endif
     ThreadManager[j] = std::thread([=]{Workers[j]->generateAndEnumerate(LaunchNodes[j], startTime, rgnTimeout, lngthTimeout);});
+    
+    // We want to map each thread to a seperate core. If we let the OS scheduler decide
+    // it will potentially map two threads to the same core (e.g. concurrency) which
+    // results in threads unnecessarily competing for resources (e.g. L1 cache).
+    // This code is architecture specific. Currently, the code assumes that
+    // there are two threads per core, and the logical CPUs (label via /proc/cpuinfo) 
+    // that share a core are offset by the number of cores.
+    // For example, in a 4 core with 2 threads per core machine, this code assumes
+    // that Processor 0 and 4 share the first core (POSIX)
     CPU_ZERO(&cpuset);
     CPU_SET(j, &cpuset);
     CPU_SET(j+NumThreads_, &cpuset); //assume 2 threads per core
