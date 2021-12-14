@@ -120,7 +120,7 @@ public:
 };
 
 
-
+// TODO Document
 class BBThread {
 private:
   // The target machine
@@ -249,9 +249,7 @@ public:
   virtual void setWorkStealOn(bool) = 0;
 
   virtual EnumTreeNode *getStolenNode() = 0;
-  // Thread stealing
-  //virtual LinkedListIterator<EnumTreeNode> localPoolBegin(int SolverID) = 0;
-  //virtual LinkedListIterator<EnumTreeNode> localPoolEnd(int SolverID) = 0 ;    
+  
 
   virtual void localPoolLock(int SolverID) = 0;
   virtual void localPoolUnlock(int SolverID) = 0;
@@ -426,10 +424,6 @@ public:
 
     std::mutex *getAllocatorLock() override;
 
-    // todo -- return nullptr
-    //LinkedListIterator<EnumTreeNode> localPoolBegin(int SolverID) override {/*return nullptr;*/;}
-    //LinkedListIterator<EnumTreeNode> localPoolEnd(int SolverID) override {/*return nullptr;*/;}   
-
     void localPoolLock(int SolverID) override {/*nothing*/;}
     void localPoolUnlock(int SolverID) override {/*nothing*/;}
 
@@ -504,9 +498,6 @@ private:
     SchedPriorities EnumPrirts_;
     SPILL_COST_FUNCTION SpillCostFunc_;
 
-    //vector<int> TakenArr;
-    //vector<BBWorker> *local_pool = NULL;
-
     vector<FUNC_RESULT> *RsltAddr_;
 
 
@@ -535,7 +526,6 @@ private:
     // the best found schedule for the region
     InstSchedule *RegionSched_;
 
-    // TODO replace Count with Cnt
     uint64_t *NodeCount_;
     int *MasterImprvCount_;
 
@@ -578,7 +568,6 @@ private:
       BestCost_ = BestCost;
       }
 
-    // needs to write to master
     InstCount UpdtOptmlSched(InstSchedule *crntSched, LengthCostEnumerator *enumrtr);
 
     void writeBestSchedToMaster(InstSchedule *BestSchedule, InstCount BestCost, InstCount BestSpill);
@@ -664,7 +653,6 @@ public:
     FUNC_RESULT generateAndEnumerate(HalfNode *GlobalPoolNode, Milliseconds StartTime, 
                                      Milliseconds RgnTimeout, Milliseconds LngthTimeout);
 
-    //TODO - clean this up
     inline InstCount CmputNormCost_(InstSchedule *sched, COST_COMP_MODE compMode,
                            InstCount &execCost, bool trackCnflcts)
     {
@@ -701,10 +689,6 @@ public:
     std::mutex *getAllocatorLock() override;
 
     void incrementImprvmntCnt() override;
-
-    // may need to not inline these
-    //LinkedListIterator<EnumTreeNode> localPoolBegin(int SolverID) override;
-    //LinkedListIterator<EnumTreeNode> localPoolEnd(int SolverID) override;  
 
     void localPoolLock(int SolverID) override;
     void localPoolUnlock(int SolverID) override;
@@ -835,9 +819,6 @@ public:
 
     void setWorkStealOn(bool value) override {/*nothing*/};
 
-
-//TODO: destructors, handle resource allocation & deaallocation
-//cleanup the virtual funcs in sched_region
     
 
 };

@@ -1721,6 +1721,8 @@ FUNC_RESULT BBWorker::generateAndEnumerate(HalfNode *GlobalPoolNode,
                                  Milliseconds RgnTimeout,
                                  Milliseconds LngthTimeout) {
 
+  std::cout << "Thread #" << SolverID_ << ": on CPU " << sched_getcpu() << "\n";
+
   bool fsbl = (GlobalPoolNode != nullptr);
   if (fsbl) {
     Enumrtr_->setIsGenerateState(true);
@@ -2655,15 +2657,26 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
   mallopt(M_ARENA_MAX, NumSolvers_ * 2);
   //mallopt(M_ARENA_TEST, 8);
 
+    cpu_set_t cpuset;
   for (int j = 0; j < NumThreadsToLaunch_; j++) {
 #ifdef DEBUG_GP_HISTORY
     Logger::Info("SolverID %d launching GlobalPoolNode with inst %d (parent %d)", j+2, LaunchNodes[j]->GetInstNum(), LaunchNodes[j]->prefix_.back()->GetInstNum());
 #endif
     ThreadManager[j] = std::thread([=]{Workers[j]->generateAndEnumerate(LaunchNodes[j], startTime, rgnTimeout, lngthTimeout);});
+    CPU_ZERO(&cpuset);
+    CPU_SET(j, &cpuset);
+    CPU_SET(j+NumThreads_, &cpuset); //assume 2 threads per core
+    int rc = pthread_setaffinity_np(ThreadManager[j].native_handle(),
+                                    sizeof(cpu_set_t), &cpuset);
   }
 
   for (int j = NumThreadsToLaunch_; j < NumThreads_; j++) {
     ThreadManager[j] = std::thread([=]{Workers[j]->generateAndEnumerate(nullptr, startTime,rgnTimeout,lngthTimeout);});
+    CPU_ZERO(&cpuset);
+    CPU_SET(j, &cpuset);
+    CPU_SET(j+NumThreads_, &cpuset);
+    int rc = pthread_setaffinity_np(ThreadManager[j].native_handle(),
+                                    sizeof(cpu_set_t), &cpuset);
   }
 
 
