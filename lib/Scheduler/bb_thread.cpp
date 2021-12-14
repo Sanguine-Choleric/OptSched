@@ -1721,8 +1721,6 @@ FUNC_RESULT BBWorker::generateAndEnumerate(HalfNode *GlobalPoolNode,
                                  Milliseconds RgnTimeout,
                                  Milliseconds LngthTimeout) {
 
-  std::cout << "Thread #" << SolverID_ << ": on CPU " << sched_getcpu() << "\n";
-
   bool fsbl = (GlobalPoolNode != nullptr);
   if (fsbl) {
     Enumrtr_->setIsGenerateState(true);
@@ -2680,7 +2678,7 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
   }
 
 
-
+  /*
   for (int j = 0; j < NumThreads_; j++) {
     ThreadManager[j].join();
     Logger::Info("Solver %d stats: ", j+2);
@@ -2691,6 +2689,7 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
     Logger::Info("otherInfsbl %d", Workers[j]->otherInfsbl);
     Logger::Info("globalPoolNodes %d", Workers[j]->globalPoolNodes);
   }
+  */
 
 
 
