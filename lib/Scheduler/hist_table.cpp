@@ -160,17 +160,7 @@ void HistEnumTreeNode::SetInstsSchduld_(BitVector *instsSchduld, bool isParallel
   for (crntNode = this; crntNode != NULL; crntNode = crntNode->GetParent()) {
     SchedInstruction *inst = crntNode->inst_;
     if (inst != NULL) {
-      /*
-      if (instsSchduld->GetBit(inst->GetNum())) {
-        HistEnumTreeNode *crntHistNode = this;
-        Logger::Info("HistNode %p found double instruction in setInstsSchduld_ (inst num %d), hist prefix (from tip):", this, inst->GetNum());
-        for (;crntHistNode != NULL; crntHistNode = crntHistNode->GetParent()) {
-          if (crntHistNode->inst_ == NULL) break;
-          Logger::Info("%d", crntHistNode->inst_->GetNum());          
-        }
-      }*/
-      
-      //whats goin on here
+      //TODO why is this assert commented
       //assert(!instsSchduld->GetBit(inst->GetNum()));
       instsSchduld->SetBit(inst->GetNum());
     }
@@ -267,7 +257,6 @@ bool HistEnumTreeNode::DoesDominate_(EnumTreeNode *node,
     }
     return false;
   }
-    //  if (thisTime != othrTime) return false;
 
 #ifdef IS_DEBUG_SPD
   if (thisTime < othrTime)
@@ -522,8 +511,6 @@ bool CostHistEnumTreeNode::DoesDominate(EnumTreeNode *node,
   #endif
   assert(enumrtr->IsCostEnum());
 
-  //Logger::Info("costHist does dominate");
-
   InstCount shft = 0;
 
   // If the history node does not dominate the current node, we cannot
@@ -532,20 +519,14 @@ bool CostHistEnumTreeNode::DoesDominate(EnumTreeNode *node,
   // (Chris): If scheduling for RP only, automatically assume all nodes are
   // feasible and just check for cost domination.
   if (!enumrtr->IsSchedForRPOnly()) {
-    if (DoesDominate_(node, NULL, ETN_ACTIVE, enumrtr, shft) == false)
-    {
-      if (enumrtr->IsTwoPass_ && !enumrtr->isSecondPass()) {
-        Logger::Info("cant dominate -- regular hist");
-      }
+    if (DoesDominate_(node, NULL, ETN_ACTIVE, enumrtr, shft) == false) {
       return false;
     }
 
     // if the history node dominates the current node, and there is
     // no feasible sched below the hist node, there cannot be a feasible
     // sched below the current node. So, prune the current node
-    if (isLngthFsbl_ == false)
-    {
-      Logger::Info("length infeasible, pruning");
+    if (isLngthFsbl_ == false) {
       return true;
     }
   }
@@ -584,16 +565,14 @@ static bool doesHistorySLILCostDominate(InstCount OtherPrefixCost,
 
   
   if (ImprovementOnHistory <= RequiredImprovement) {
-    //Logger::Info("GOODPRUNE");
     OtherNode->SetLocalBestCost(HistTotalCost - ImprovementOnHistory);
-    // possible that we are updating another active tree when work stealing and updating parent
+    // TODO possible that we are updating another active tree when work stealing and updating parent
     // need to change method and synchronize
     OtherNode->GetParent()->SetLocalBestCost(OtherNode->GetLocalBestCost());
   }
 
   // If our improvement does not meet the requirement, then prune
   return ImprovementOnHistory <= RequiredImprovement;
-  //return false;
 }
 
 // For peak cost functions (PERP, PRP, Occupancy) the suffix cost does not
@@ -633,21 +612,6 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
     if (Node->GetParent()) {
       Node->GetParent()->SetLocalBestCost(Node->GetCostLwrBound());
     }
-    /*
-    if (totalCost_ != INVALID_VALUE && fullyExplored_) {
-      if (totalCostIsUseable_) {
-        Node->SetLocalBestCost(totalCost_ + (Node->GetCostLwrBound() - partialCost_));
-        if (Node->GetParent()) {
-          Node->GetParent()->SetLocalBestCost(Node->GetLocalBestCost());
-        }
-      }
-      else { // !totalCostIsUseable_
-        Node->SetLocalBestCost(Node->GetCostLwrBound());
-        if (Node->GetParent()) {
-          Node->GetParent()->SetLocalBestCost(Node->GetLocalBestCost());
-        }
-      }
-    }*/
   }
 
 
@@ -668,7 +632,6 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
       if (Node->getIsFirstPass()) {
         assert(fullyExplored_ || partialCost_ == totalCost_ || totalCostIsActualCost_);
       }
-      //if (partialCost_ != totalCost_) assert(totalCostIsActualCost_);
       if (Node->getIsFirstPass() && totalCostIsUseable_) assert(fullyExplored_);
       ShouldPrune = (partialCost_ == totalCost_ || !fullyExplored_ || !totalCostIsUseable_) ? 
                       false : doesHistorySLILCostDominate(Node->GetCostLwrBound(),
@@ -685,7 +648,6 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
     }
   }
 
-  //if (ShouldPrune) Logger::Log((Logger::LOG_LEVEL) 4, false,"History pruning our node->getCostLwrBound() %d with history partialCost_ %d", Node->GetCostLwrBound(), partialCost_);
   return ShouldPrune;
 }
 
@@ -705,13 +667,10 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
 
 
     if (node->getIsFirstPass()) {
-      if (!(fullyExplored_ && (totalCostIsActualCost_ || totalCost_ == partialCost_))) {
-        Logger::Info("node %p about to fire assert -- fully explored %d\ttotalCostIsActualCost %d\ttotalCost_ (%d) == partialCost (%d) %d", node, fullyExplored_, totalCostIsActualCost_, totalCost_, partialCost_, totalCost_ == partialCost_);
-      }
       assert(fullyExplored_ && (totalCostIsActualCost_ || totalCost_ == partialCost_));
     }
 
-  // the cost used to prune the subspace can be updated by another thread during exploration
+  // the global best cost used to prune the subspace can be updated by another thread during exploration
   // If this occurs, the total cost associated with a subspace is no longer the minimum in the  
   // subspace as we are only updating it if the cost found is less than the global best
   // aka we are not only comparing to other costs within the subspace. Thus, we track
@@ -726,8 +685,6 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
 
   InstCount localBest = node->GetLocalBestCost();
 
-  // complete method
-
   if (fullyExplored_ && enumrtr->IsTwoPass_ && !enumrtr->isSecondPass()) {
     totalCostIsUseable_ = totalCost_ != INVALID_VALUE;
     if (localBest != INVALID_VALUE) {
@@ -735,32 +692,7 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
         totalCost_ = partialCost_ > localBest ? partialCost_ : localBest;
       }
     }
-
-
   }
-  
-
-
-  // simple method
-  /*
-  if (fullyExplored_) {
-    if (totalCostIsActualCost_) {
-      totalCostIsUseable_ = totalCost_ <= node->GetLocalBestCost() && totalCost_ != INVALID_VALUE;
-    }
-    else { //!totalCostISActualCost_
-      if (node->GetLocalBestCost() != INVALID_VALUE) {
-        if (node->getIsFirstPass()) {
-          if (totalCost_ > node->GetLocalBestCost()) Logger::Info("about to fire assert, totalCost_ %d node->GetLocalBestCost() %d", totalCost_, node->GetLocalBestCost());
-          assert(totalCost_ <= node->GetLocalBestCost() && totalCost_ != INVALID_VALUE); //totalcost is DLB of prefix if not actual cost
-          assert(totalCost_ == partialCost_);
-        }
-
-        //totalCost_ = node->GetLocalBestCost();
-      }
-    }
-  }
-  */
-
 
   if (suffix_ == nullptr && node->GetSuffix().size() > 0)
     suffix_ =
@@ -809,9 +741,6 @@ bool HistEnumTreeNode::DoesMatch(EnumTreeNode *node, Enumerator *enumrtr, bool i
 
   assert(instsSchduld != NULL && othrInstsSchduld != NULL);
   
-  //bool useable = SetBothInstsSchduld_(instsSchduld, othrInstsSchduld, node->hstry_, isWorker);
-  // don't preoptimize -- just check;
-
 
   // when constructing state from work stealing, enumerator will
   // have partial schedule that is exactly the same as partial schedule that has already been 
@@ -824,23 +753,13 @@ bool HistEnumTreeNode::DoesMatch(EnumTreeNode *node, Enumerator *enumrtr, bool i
     if (isSameSubspace) {
       return false;
     }
-    /*else {
-      Logger::Info("Found matching node in different subspace");
-    }*/
   }
 
 
   SetInstsSchduld_(instsSchduld, isParallel);
   node->hstry_->SetInstsSchduld_(othrInstsSchduld, isParallel);
 
-
-  /*if (isGlobalPoolNode) {
-    if (!isSameSubspace && (*othrInstsSchduld == *instsSchduld)) {
-      Logger::Info("found a matching history node for global pool node!!!");
-    }
-  }*/
   return !isSameSubspace && (*othrInstsSchduld == *instsSchduld);
-  // return node->GetTime() != time_;
 }
 
 bool HistEnumTreeNode::IsDominated(EnumTreeNode *node, Enumerator *enumrtr) {

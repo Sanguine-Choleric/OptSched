@@ -75,11 +75,7 @@ void SchedInstruction::resetThreadWriteFields(int SolverID, bool full) {
   resetGraphNodeThreadWriteFields(SolverID);
   crntSchedCycleScalar_ = SCHD_UNSCHDULD;
   if (SolverID == -1) {  
-    for (int SolverID_ = 0; SolverID_ < NumSolvers_; SolverID_++)
-    {
-      // currently we dont use sortedScsrLst_
-      /*if (sortedScsrLst_[SolverID] != NULL)
-        delete sortedScsrLst_[SolverID];*/
+    for (int SolverID_ = 0; SolverID_ < NumSolvers_; SolverID_++) {
       if (sortedPrdcsrLst_ != NULL) 
         if (sortedPrdcsrLst_[SolverID_] != NULL) 
           delete sortedPrdcsrLst_[SolverID_]; 
@@ -89,7 +85,7 @@ void SchedInstruction::resetThreadWriteFields(int SolverID, bool full) {
       if (prevMinRdyCyclePerPrdcsr_ != NULL) 
         if (prevMinRdyCyclePerPrdcsr_[SolverID_] != NULL) 
           delete[] prevMinRdyCyclePerPrdcsr_[SolverID_];
-      /*if (crntRange_ != NULL)
+    /*if (crntRange_ != NULL)
         if (crntRange_[SolverID_] != NULL)
           delete crntRange_[SolverID];*/
     }
@@ -137,8 +133,7 @@ void SchedInstruction::resetThreadWriteFields(int SolverID, bool full) {
     prdcsrCnt_ = GetPrdcsrCnt();
   
     // Initialize
-    for (int SolverID_ = 0; SolverID_ < NumSolvers_; SolverID_++)
-    {
+    for (int SolverID_ = 0; SolverID_ < NumSolvers_; SolverID_++) {
       ready_[SolverID_] = false;
       minRdyCycle_[SolverID_] = INVALID_VALUE;
       crntSchedCycle_[SolverID_] = SCHD_UNSCHDULD;
@@ -150,8 +145,7 @@ void SchedInstruction::resetThreadWriteFields(int SolverID, bool full) {
       prevMinRdyCyclePerPrdcsr_[SolverID_] = new InstCount[prdcsrCnt_];
       sortedPrdcsrLst_[SolverID_] = new PriorityList<SchedInstruction>;
   
-      for (int i = 0; i < prdcsrCnt_; i++)
-      {
+      for (int i = 0; i < prdcsrCnt_; i++) {
         rdyCyclePerPrdcsr_[SolverID_][i] = INVALID_VALUE;
         prevMinRdyCyclePerPrdcsr_[SolverID_][i] = INVALID_VALUE;
       }
@@ -164,7 +158,6 @@ void SchedInstruction::resetThreadWriteFields(int SolverID, bool full) {
                                       edge->label, true);
     }
 
-      //if (GetNum() == 2 && SolverID_ == 2) Logger::Info("just set inst2 frwrdLB to %d", crntRange_[SolverID_]->GetLwrBound(DIR_FRWRD));
   }
 
   // We are resetting a specific solver
@@ -176,28 +169,11 @@ void SchedInstruction::resetThreadWriteFields(int SolverID, bool full) {
     //crntRange_[SolverID] = new SchedRange(this);
     unschduldScsrCnt_[SolverID] = scsrCnt_;
     unschduldPrdcsrCnt_[SolverID] = prdcsrCnt_;
-    //rdyCyclePerPrdcsr_[SolverID] = new InstCount[prdcsrCnt_];
-    //prevMinRdyCyclePerPrdcsr_[SolverID] = new InstCount[prdcsrCnt_];
-    //sortedPrdcsrLst_[SolverID] = new PriorityList<SchedInstruction>;
 
-    //if (GetNum() == 1)
-    //  Logger::Info("schedinst %d isScheduld ? %d", GetNum(), IsSchduld(SolverID));
-
-    for (int i = 0; i < prdcsrCnt_; i++)
-    {
+    for (int i = 0; i < prdcsrCnt_; i++) {
       rdyCyclePerPrdcsr_[SolverID][i] = INVALID_VALUE;
       prevMinRdyCyclePerPrdcsr_[SolverID][i] = INVALID_VALUE;
     }
- 
-    /*
-    for (GraphEdge *edge = GetFrstPrdcsrEdge(SolverID); edge != NULL;
-         edge = GetNxtPrdcsrEdge(SolverID)) {
-
-        sortedPrdcsrLst_[SolverID]->InsrtElmnt((SchedInstruction *)edge->GetOtherNode(this),
-                                      edge->label, true);
-    }*/
-
-
 
 
     if (full) {
@@ -328,8 +304,7 @@ void SchedInstruction::AllocMem_(InstCount instCnt, bool isCP_FromScsr,
   scsrCnt_ = GetScsrCnt();
   prdcsrCnt_ = GetPrdcsrCnt();
 
-  for (int SolverID = 0; SolverID < NumSolvers_; SolverID++)
-  {
+  for (int SolverID = 0; SolverID < NumSolvers_; SolverID++) {
     // Each thread needs their own memory
     ready_[SolverID] = false;
     minRdyCycle_[SolverID] = INVALID_VALUE;
@@ -388,11 +363,7 @@ void SchedInstruction::AllocMem_(InstCount instCnt, bool isCP_FromScsr,
 void SchedInstruction::DeAllocMem_() {
   assert(memAllocd_);
 
-  for (int SolverID = 0; SolverID < NumSolvers_; SolverID++)
-  {
-    // currently we dont use sortedScsrLst_
-    /*if (sortedScsrLst_[SolverID] != NULL)
-      delete sortedScsrLst_[SolverID];*/
+  for (int SolverID = 0; SolverID < NumSolvers_; SolverID++) {
     if (sortedPrdcsrLst_ != NULL)
       if (sortedPrdcsrLst_[SolverID] != NULL)
         delete sortedPrdcsrLst_[SolverID];
@@ -721,14 +692,14 @@ void SchedInstruction::SetLwrBound(DIRECTION dir, InstCount bound, bool isAbslut
   }
 }
 
-//Doesnt need to be thread independent since 2nd pass not parallelized
+// TODO: SHOULD BE THREAD INDEPENDENT FOR 2ND PASS
 void SchedInstruction::RestoreAbsoluteBounds() {
     frwrdLwrBound_ = abslutFrwrdLwrBound_;
     bkwrdLwrBound_ = abslutBkwrdLwrBound_;
     crntRange_->SetBounds(frwrdLwrBound_, bkwrdLwrBound_);
 }
 
-//Doesnt need to be thread independent since 2nd pass not parallelized
+// TODO: SHOULD BE THREAD INDEPENDENT FOR 2ND PASS
 void SchedInstruction::SetBounds(InstCount flb, InstCount blb) {
   frwrdLwrBound_ = flb;
   bkwrdLwrBound_ = blb;
@@ -840,12 +811,9 @@ void SchedInstruction::Schedule(InstCount cycleNum, InstCount slotNum, int Solve
     crntSchedSlotScalar_ = slotNum;
     return;
   }
-  //Logger::Info("SolverID %d Scheduling %d", SolverID, GetNum());
   assert(crntSchedCycle_[SolverID] == SCHD_UNSCHDULD);
   crntSchedCycle_[SolverID] = cycleNum;
   crntSchedSlot_[SolverID] = slotNum;
-
-  //if (GetNum() == 1) Logger::Info("just set sched cycle for inst 1 to %d", cycleNum);
 }
 
 bool SchedInstruction::IsInReadyList(int SolverID) const { return ready_[SolverID]; }
@@ -855,7 +823,7 @@ void SchedInstruction::PutInReadyList(int SolverID) { ready_[SolverID] = true; }
 void SchedInstruction::RemoveFromReadyList(int SolverID) { ready_[SolverID] = false; }
 
 
-// TODO many functions below this point (those that use crntRange) dont need SolverID as arg
+// TODO: SHOULD BE THREAD INDEPENDENT FOR 2ND PASS (many functions below)
 
 InstCount SchedInstruction::GetCrntLwrBound(DIRECTION dir) const {
   return crntRange_->GetLwrBound(dir);
@@ -872,12 +840,10 @@ void SchedInstruction::UnSchedule(int SolverID) {
     return;
   }
 
-  //Logger::Info("solverid %d unscheduling inst %d", SolverID, GetNum());
   assert(crntSchedCycle_[SolverID] != SCHD_UNSCHDULD);
   crntSchedCycle_[SolverID] = SCHD_UNSCHDULD;
   crntSchedSlot_[SolverID] = SCHD_UNSCHDULD;
 
-  //if (GetNum() == 1) Logger::Info("just unscheduled inst 1");
 }
 
 void SchedInstruction::UnTightnLwrBounds() { 
@@ -954,9 +920,6 @@ InstCount SchedInstruction::GetFileSchedCycle() const {
   return fileSchedCycle_;
 }
 
-// Called via SetupForSchduling (Sched Region)
-// Done for all threads simultaneously
-// TODO -- do we need to loop?
 void SchedInstruction::SetScsrNums_() {
   InstCount scsrNum = 0;
 
@@ -1035,9 +998,6 @@ bool SchedRange::TightnLwrBound(DIRECTION dir, InstCount newBound,
       return false;
   }
 
-  //Logger::Info("SolverID is %d", SolverID);
-  //Logger::Info("!inst_->ISScheduld(SolverID) %d", !inst_->IsSchduld(SolverID));
-  //Logger::Info("inst_->getNum() %d", inst_->GetNum());
   assert(enforce || !inst_->IsSchduldSecondPass());
   assert(enforce || !isFxd_);
 
@@ -1100,11 +1060,6 @@ bool SchedRange::TightnLwrBoundRcrsvly(DIRECTION dir, InstCount newBound,
       InstCount nghbrNewBound = newBound + edgLbl;
 
      if (nghbrNewBound > nghbr->GetCrntLwrBound(dir)) {
-       //if (SolverID == 2) {
-       //   Logger::Log((Logger::LOG_LEVEL) 4, false, "need to tightn nghbr %d to LB %d (currently %d)",nghbr->GetNum(), nghbrNewBound, nghbr->GetCrntLwrBound(dir, SolverID));
-       //}
-        //Logger::Info("nghbr->GetNum() %d", nghbr->GetNum());
-        //Logger::Info("nghbr->IsScheduld(SolverID) %d", nghbr->IsSchduld(SolverID));
         bool nghbrFsblty = nghbr->TightnLwrBoundRcrsvly(
             dir, nghbrNewBound, tightndLst, fxdLst, enforce, SolverID);
         if (!nghbrFsblty) {

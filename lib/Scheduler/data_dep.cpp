@@ -224,75 +224,19 @@ DataDepGraph::~DataDepGraph() {
   }
   
 
-  // TODO -- memoryleak 
-
-  /*if (frwrdLwrBounds_)
-    delete[] frwrdLwrBounds_;
-
-  if (bkwrdLwrBounds_)
-    delete[] bkwrdLwrBounds_;
-  */
-  /*
-  for (int SolverID = 0; SolverID < NumSolvers_; SolverID++)
-  {
-    if (frwrdLwrBounds_[SolverID] != NULL)
-      delete[] frwrdLwrBounds_[SolverID];
-    
-    if (bkwrdLwrBounds_[SolverID] != NULL)
-      delete[] bkwrdLwrBounds_[SolverID];
-  }*/
-
-  /* TODOdouble free detected here
-  if (frwrdLwrBounds_ != NULL)
-    delete[] frwrdLwrBounds_;
-  
-    
-  if (bkwrdLwrBounds_ != NULL)
-    delete[] bkwrdLwrBounds_;
-   */
-
   if (instCntPerType_ != NULL)
     delete[] instCntPerType_;
  
   Logger::Info("finished deleting the DDG");
 }
 
-void DataDepGraph::resetThreadWriteFields(int SolverID, bool full)
-{
+void DataDepGraph::resetThreadWriteFields(int SolverID, bool full) {
   if (SolverID == -1) {
     InstCount i;
     for (i = 0; i < instCnt_; i++) {
       SchedInstruction *inst = insts_[i];
       inst->resetThreadWriteFields(full);
     }
-
-
-  /*
-  if (frwrdLwrBounds_ != NULL) {
-    delete frwrdLwrBounds_;
-  }
-  if (bkwrdLwrBounds_ != NULL) {
-    for (int i = 0; i < NumSolvers_; i++)
-      delete[] bkwrdLwrBounds_[i];
-    delete[] bkwrdLwrBounds_;
-  }
-  
-    frwrdLwrBounds_ = new InstCount*[NumSolvers_];
-    bkwrdLwrBounds_ = new InstCount*[NumSolvers_];
-
-
-    for (int SolverID_ = 0; SolverID_ < NumSolvers_; SolverID_++)
-    {
-      frwrdLwrBounds_[SolverID_] = new InstCount[instCnt_];
-      bkwrdLwrBounds_[SolverID_] = new InstCount[instCnt_];
-      
-      for (InstCount i = 0; i < instCnt_; i++) {
-        SchedInstruction *inst = insts_[i];
-        frwrdLwrBounds_[SolverID_][i] = inst->GetLwrBound(DIR_FRWRD);
-        bkwrdLwrBounds_[SolverID_][i] = inst->GetLwrBound(DIR_BKWRD);
-      }
-    }
-    */
   }
 
   else {
@@ -301,23 +245,6 @@ void DataDepGraph::resetThreadWriteFields(int SolverID, bool full)
       SchedInstruction *inst = insts_[i];
       inst->resetThreadWriteFields(SolverID, full);
     }
-
-    /*
-    //DepthFirstSearch(SolverID);
-    if (full) {
-      delete frwrdLwrBounds_[SolverID];
-      delete bkwrdLwrBounds_[SolverID];
-      frwrdLwrBounds_[SolverID] = new InstCount[instCnt_];
-      bkwrdLwrBounds_[SolverID] = new InstCount[instCnt_];
-
-      for (InstCount i = 0; i < instCnt_; i++) {
-          SchedInstruction *inst = insts_[i];
-          frwrdLwrBounds_[SolverID][i] = inst->GetLwrBound(DIR_FRWRD);
-          bkwrdLwrBounds_[SolverID][i] = inst->GetLwrBound(DIR_BKWRD);
-      }
-    }
-    */
-
   }
 }
 
@@ -1264,7 +1191,6 @@ void DataDepGraph::CmputRltvCrtclPaths_(DIRECTION dir) {
 }
 
 
-//TODO -- why do we have SolverID == INVALID_VALUE case
 void DataDepGraph::CmputCrtclPathsFrmRcrsvPrdcsr_(SchedInstruction *ref) {
  
     LinkedList<GraphNode> *rcrsvScsrLst = ref->GetRcrsvNghbrLst(DIR_FRWRD);
