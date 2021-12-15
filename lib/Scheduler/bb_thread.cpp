@@ -27,6 +27,7 @@
 #include <sys/mman.h>
 #include <malloc.h>
 #include <atomic>
+#include <sched.h>
 
 
 extern bool OPTSCHED_gPrintSpills;
@@ -2656,7 +2657,12 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
   mallopt(M_ARENA_MAX, NumSolvers_ * 2);
   //mallopt(M_ARENA_TEST, 8);
 
-    cpu_set_t cpuset;
+  cpu_set_t cpuset;
+  //int *affinityMask = new int(NumThreads_);
+  //memset(affinityMask, 0, NumThreads_*sizeof(int));
+
+  for (int k = 0; k < NumThreadsToLaunch_ * 2; k++) CPU_SET(k, &cpuset);
+
   for (int j = 0; j < NumThreadsToLaunch_; j++) {
 #ifdef DEBUG_GP_HISTORY
     Logger::Info("SolverID %d launching GlobalPoolNode with inst %d (parent %d)", j+2, LaunchNodes[j]->GetInstNum(), LaunchNodes[j]->prefix_.back()->GetInstNum());
@@ -2671,20 +2677,21 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
     // that share a core are offset by the number of cores.
     // For example, in a 4 core with 2 threads per core machine, this code assumes
     // that Processor 0 and 4 share the first core (POSIX)
-    CPU_ZERO(&cpuset);
-    CPU_SET(j, &cpuset);
-    CPU_SET(j+NumThreads_, &cpuset); //assume 2 threads per core
+    
+    //CPU_SET(j+NumThreads_, &cpuset); //assume 2 threads per core
     int rc = pthread_setaffinity_np(ThreadManager[j].native_handle(),
                                     sizeof(cpu_set_t), &cpuset);
+    CPU_CLR(Workers[j]->getCpu(), &cpuset);
+    CPU_CLR((Workers[j]->getCpu() + NumThreads_) % (NumThreads_/2), &cpuset);
   }
 
   for (int j = NumThreadsToLaunch_; j < NumThreads_; j++) {
     ThreadManager[j] = std::thread([=]{Workers[j]->generateAndEnumerate(nullptr, startTime,rgnTimeout,lngthTimeout);});
-    CPU_ZERO(&cpuset);
-    CPU_SET(j, &cpuset);
-    CPU_SET(j+NumThreads_, &cpuset);
+
     int rc = pthread_setaffinity_np(ThreadManager[j].native_handle(),
                                     sizeof(cpu_set_t), &cpuset);
+    CPU_CLR(Workers[j]->getCpu(), &cpuset);
+    CPU_CLR((Workers[j]->getCpu() + NumThreads_) % (NumThreads_/2), &cpuset);
   }
 
 

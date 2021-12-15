@@ -616,6 +616,7 @@ public:
     void allocSched_();
 
     inline void destroy() {Enumrtr_->destroy();}
+    inline int getCpu() {return sched_getcpu();}
 
     void setBestSched(InstSchedule *sched);
     void setCrntSched(InstSchedule *sched);
