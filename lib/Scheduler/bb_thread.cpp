@@ -2658,6 +2658,7 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
   //mallopt(M_ARENA_TEST, 8);
 
   cpu_set_t cpuset;
+  cpu_set_t cpuset2;
   //int *affinityMask = new int(NumThreads_);
   //memset(affinityMask, 0, NumThreads_*sizeof(int));
 
@@ -2678,18 +2679,28 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
     // For example, in a 4 core with 2 threads per core machine, this code assumes
     // that Processor 0 and 4 share the first core (POSIX)
     
-    //CPU_SET(j+NumThreads_, &cpuset); //assume 2 threads per core
-    int rc = pthread_setaffinity_np(ThreadManager[j].native_handle(),
+    CPU_ZERO(&cpuset2); 
+
+    pthread_setaffinity_np(ThreadManager[j].native_handle(),
                                     sizeof(cpu_set_t), &cpuset);
+    CPU_SET(Workers[j]->getCpu(), &cpuset2);
+    CPU_SET((Workers[j]->getCpu() + NumThreads_) % (NumThreads_/2), &cpuset2);
+    pthread_setaffinity_np(ThreadManager[j].native_handle(),
+                                    sizeof(cpu_set_t), &cpuset2);
     CPU_CLR(Workers[j]->getCpu(), &cpuset);
     CPU_CLR((Workers[j]->getCpu() + NumThreads_) % (NumThreads_/2), &cpuset);
   }
 
   for (int j = NumThreadsToLaunch_; j < NumThreads_; j++) {
+    CPU_ZERO(&cpuset2);
     ThreadManager[j] = std::thread([=]{Workers[j]->generateAndEnumerate(nullptr, startTime,rgnTimeout,lngthTimeout);});
 
-    int rc = pthread_setaffinity_np(ThreadManager[j].native_handle(),
+    pthread_setaffinity_np(ThreadManager[j].native_handle(),
                                     sizeof(cpu_set_t), &cpuset);
+    CPU_SET(Workers[j]->getCpu(), &cpuset2);
+    CPU_SET((Workers[j]->getCpu() + NumThreads_) % (NumThreads_/2), &cpuset2);
+    pthread_setaffinity_np(ThreadManager[j].native_handle(),
+                                    sizeof(cpu_set_t), &cpuset2);
     CPU_CLR(Workers[j]->getCpu(), &cpuset);
     CPU_CLR((Workers[j]->getCpu() + NumThreads_) % (NumThreads_/2), &cpuset);
   }
