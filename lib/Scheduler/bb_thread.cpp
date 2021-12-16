@@ -94,14 +94,14 @@ InstPool4::InstPool4(int SortMethod) {
 
 // TODO refactor to use comparator instead of flag
 void InstPool4::sort() {
-  std::queue<HalfNode *> sortedQueue;
+  std::queue<std::shared_ptr<HalfNode>> sortedQueue;
 
 
   if (SortMethod_ == 0) {
     //sorting by cost
 	  while (!pool.empty()) {
-		  HalfNode *tempNode;
-      HalfNode *tempNode2;
+		  std::shared_ptr<HalfNode> tempNode;
+      std::shared_ptr<HalfNode> tempNode2;
 		  int size = pool.size();
       bool firstIter = true;
       for (int i = 0; i < size; i++) {
@@ -132,8 +132,8 @@ void InstPool4::sort() {
 
   else {
     while (!pool.empty()) {
-		  HalfNode *tempNode;
-      HalfNode *tempNode2;
+		  std::shared_ptr<HalfNode> tempNode;
+      std::shared_ptr<HalfNode> tempNode2;
 		  int size = pool.size();
       bool firstIter = true;
       for (int i = 0; i < size; i++) {
@@ -1591,7 +1591,7 @@ InstCount BBWorker::UpdtOptmlSched(InstSchedule *crntSched,
 
 
 /*****************************************************************************/
-bool BBWorker::generateStateFromNode(HalfNode *GlobalPoolNode){ 
+bool BBWorker::generateStateFromNode(std::shared_ptr<HalfNode> &GlobalPoolNode){ 
   assert(GlobalPoolNode != NULL);
   bool fsbl = true;
   
@@ -1716,18 +1716,18 @@ bool BBWorker::generateStateFromNode(EnumTreeNode *GlobalPoolNode, bool isGlobal
   return true;
 }
 /*****************************************************************************/
-FUNC_RESULT BBWorker::generateAndEnumerate(HalfNode *GlobalPoolNode,
+FUNC_RESULT BBWorker::generateAndEnumerate(std::shared_ptr<HalfNode> GlobalPoolNode,
                                  Milliseconds StartTime, 
                                  Milliseconds RgnTimeout,
                                  Milliseconds LngthTimeout) {
 
 
-  bool fsbl = (GlobalPoolNode != nullptr);
+  bool fsbl = (GlobalPoolNode == NULL);
   if (fsbl) {
     Enumrtr_->setIsGenerateState(true);
     fsbl = generateStateFromNode(GlobalPoolNode);
     Enumrtr_->setIsGenerateState(false);
-    delete GlobalPoolNode;
+    //delete GlobalPoolNode;
   }
   ++globalPoolNodes;
   return enumerate_(StartTime, RgnTimeout, LngthTimeout, false, fsbl);
@@ -1829,7 +1829,7 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
   if (!GlobalPool_->empty()) {
     if (RegionSched_->GetCost() == 0) return RES_SUCCESS;
 
-    HalfNode *temp;
+    std::shared_ptr<HalfNode> temp;
     while (true) {
       GlobalPoolLock_->lock();
         if (GlobalPool_->empty()) {
@@ -2282,9 +2282,9 @@ bool BBMaster::initGlobalPool() {
   // receive at most one thread
   
   
-  HalfNode *temp, temp2;
+  std::shared_ptr<HalfNode> temp, temp2;
   bool fsbl;
-  HalfNode *exploreNode = nullptr;
+  std::shared_ptr<HalfNode> exploreNode;
 
   Enumrtr_->checkTreeFsblty(fsbl);
 
@@ -2300,7 +2300,7 @@ bool BBMaster::initGlobalPool() {
   firstLevelSize_ = firstInsts->size();
 
 
-  HalfNode *loopTemp;
+  std::shared_ptr<HalfNode> loopTemp;
     for (int i = 0; i < firstLevelSize_; i++) {
       loopTemp = firstInsts->front();
       firstInsts->pop();
@@ -2583,13 +2583,13 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
                               
 
 
- HalfNode *Temp;
+ std::shared_ptr<HalfNode> Temp;
 
   for (int i = 0; i < NumThreads_; i++) { 
     Workers[i]->setMasterSched(enumBestSched_);
   }
 
-  std::vector<HalfNode *> LaunchNodes(NumThreads_);
+  std::vector<std::shared_ptr<HalfNode>> LaunchNodes(NumThreads_);
   int NumNodesPicked = 0;
 
   bool *subspaceRepresented;
@@ -2679,7 +2679,8 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
   }
 
   for (int j = NumThreadsToLaunch_; j < NumThreads_; j++) {
-    ThreadManager[j] = std::thread([=]{Workers[j]->generateAndEnumerate(nullptr, startTime,rgnTimeout,lngthTimeout);});
+    std::shared_ptr<HalfNode> nullNode = NULL;
+    ThreadManager[j] = std::thread([=]{Workers[j]->generateAndEnumerate(nullNode, startTime,rgnTimeout,lngthTimeout);});
     CPU_ZERO(&cpuset);
     CPU_SET(j, &cpuset);
     CPU_SET(j+NumThreads_, &cpuset);

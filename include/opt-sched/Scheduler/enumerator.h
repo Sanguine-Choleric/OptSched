@@ -909,7 +909,7 @@ public:
   void schedulePrefixInst_(SchedInstruction *instToSchdul, std::stack<InstCount> &costStack);
   void unschedulePrefixInst_(SchedInstruction *instToSchdul, std::stack<InstCount> &costStack);
 
-  void splitNode(HalfNode *&ExploreNode, InstPool4 *fillPool, int depth);
+  void splitNode(std::shared_ptr<HalfNode> &ExploreNode, InstPool4 *fillPool, int depth);
 
   void getRdyListAsNodes(std::pair<EnumTreeNode *, unsigned long *> *ExploreNode, InstPool *fillQueue, int depth);
 

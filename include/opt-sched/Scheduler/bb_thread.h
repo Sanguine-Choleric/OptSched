@@ -26,10 +26,10 @@ class RegisterFile;
 class BitVector;
 
 
-// TODO rename
+// TODO rename -- diversity pools
 class InstPool4 {
 private:
-  std::queue<HalfNode *> pool;
+  std::queue<std::shared_ptr<HalfNode>> pool;
   int maxSize_;
   int SortMethod_;
   int Depth_;
@@ -37,9 +37,9 @@ public:
   InstPool4();
   ~InstPool4();
   InstPool4(int SortMethod);
-  void push(HalfNode *n) {pool.push(n);}
+  void push(std::shared_ptr<HalfNode> n) {pool.push(n);}
   int size() {return pool.size();}
-  HalfNode *front() {return pool.front();}
+  std::shared_ptr<HalfNode> front() {return pool.front();}
   void pop() {pool.pop();}
   bool empty() {return pool.empty();}
   void sort();
@@ -640,7 +640,7 @@ public:
 
     bool generateStateFromNode(EnumTreeNode *GlobalPoolNode, bool isGlobalPoolNode = true);
 
-    bool generateStateFromNode(HalfNode *GlobalPoolNode);
+    bool generateStateFromNode(std::shared_ptr<HalfNode> &GlobalPoolNode);
 
     FUNC_RESULT enumerate_(EnumTreeNode *GlobalPoolNode, Milliseconds StartTime, 
                            Milliseconds RgnTimeout, Milliseconds LngthTimeout, 
@@ -650,7 +650,7 @@ public:
                            Milliseconds RgnTimeout, Milliseconds LngthTimeout,
                            bool isWorkStealing = false, bool isNodeFsbl = true);
 
-    FUNC_RESULT generateAndEnumerate(HalfNode *GlobalPoolNode, Milliseconds StartTime, 
+    FUNC_RESULT generateAndEnumerate(std::shared_ptr<HalfNode> GlobalPoolNode, Milliseconds StartTime, 
                                      Milliseconds RgnTimeout, Milliseconds LngthTimeout);
 
     inline InstCount CmputNormCost_(InstSchedule *sched, COST_COMP_MODE compMode,

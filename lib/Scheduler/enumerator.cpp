@@ -3580,7 +3580,7 @@ void LengthCostEnumerator::unschedulePrefixInst_(SchedInstruction *instToUnschdu
 }
 
 /*****************************************************************************/
-void LengthCostEnumerator::splitNode(HalfNode *&ExploreNode, InstPool4 *fillPool, int depth) {
+void LengthCostEnumerator::splitNode(std::shared_ptr<HalfNode> &ExploreNode, InstPool4 *fillPool, int depth) {
   std::queue<int> tempPrefix;
   std::stack<SchedInstruction *> tempStack;
   std::stack<InstCount> costStack;
@@ -3593,7 +3593,7 @@ void LengthCostEnumerator::splitNode(HalfNode *&ExploreNode, InstPool4 *fillPool
 
   int prefixLength = 0;
   
-  if (ExploreNode != nullptr) prefixLength = ExploreNode->getPrefixSize();
+  if (ExploreNode.get() != nullptr) prefixLength = ExploreNode->getPrefixSize();
 
   for (int i = 0; i < prefixLength; i++) {
     tempInstNum = ExploreNode->getAndRemoveNextPrefixInst();
@@ -3616,7 +3616,7 @@ void LengthCostEnumerator::splitNode(HalfNode *&ExploreNode, InstPool4 *fillPool
       heur = new unsigned long[depth];
       heur[0] = nextKey;
       unsigned long *prevHeur = nullptr;
-      if (ExploreNode != nullptr) prevHeur = ExploreNode->getHeuristic();
+      if (ExploreNode.get() != nullptr) prevHeur = ExploreNode->getHeuristic();
       for (int i = 1; i < depth; i++) {
         assert(prevHeur != nullptr);
         heur[i] = prevHeur[i-1];
@@ -3630,7 +3630,7 @@ void LengthCostEnumerator::splitNode(HalfNode *&ExploreNode, InstPool4 *fillPool
     bbt_->UpdateSpillInfoForSchdul_(temp, false);
     tempPrefix2.push(temp->GetNum());
 
-    fillPool->push(new HalfNode(tempPrefix2, heur, bbt_->getCrntSpillCost()));
+    fillPool->push(std::make_shared<HalfNode>(tempPrefix2, heur, bbt_->getCrntSpillCost()));
     bbt_->UpdateSpillInfoForUnSchdul_(temp);
   }
 
@@ -3643,8 +3643,6 @@ void LengthCostEnumerator::splitNode(HalfNode *&ExploreNode, InstPool4 *fillPool
   rdyLst_->Reset();
   rdyLst_->CopyList(originalRdyLst);
   delete originalRdyLst;
-  delete ExploreNode;
-
 }
 
 /*****************************************************************************/
