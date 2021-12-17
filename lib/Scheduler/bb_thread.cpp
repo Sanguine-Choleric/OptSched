@@ -2173,6 +2173,7 @@ BBMaster::~BBMaster() {
   delete[] localPoolLocks;
   delete[] idleTimes;
   delete[] subspaceLwrBounds_;
+  delete[] nodeCounts;
 
   Logger::Info("finished deleting master");
 }
