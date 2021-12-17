@@ -3593,7 +3593,10 @@ void LengthCostEnumerator::splitNode(std::shared_ptr<HalfNode> &ExploreNode, Ins
 
   int prefixLength = 0;
   
-  if (ExploreNode.get() != nullptr) prefixLength = ExploreNode->getPrefixSize();
+  if (ExploreNode.get() != nullptr) {
+    prefixLength = ExploreNode->getPrefixSize();
+  }
+
 
   for (int i = 0; i < prefixLength; i++) {
     tempInstNum = ExploreNode->getAndRemoveNextPrefixInst();
@@ -3630,7 +3633,7 @@ void LengthCostEnumerator::splitNode(std::shared_ptr<HalfNode> &ExploreNode, Ins
     bbt_->UpdateSpillInfoForSchdul_(temp, false);
     tempPrefix2.push(temp->GetNum());
 
-    fillPool->push(std::make_shared<HalfNode>(tempPrefix2, heur, bbt_->getCrntSpillCost()));
+    fillPool->push(std::move(std::make_shared<HalfNode>(tempPrefix2, heur, bbt_->getCrntSpillCost())));
     bbt_->UpdateSpillInfoForUnSchdul_(temp);
   }
 

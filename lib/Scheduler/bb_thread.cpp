@@ -168,7 +168,6 @@ void InstPool4::sort() {
                 continue;
             }
           }
-
         pool.push(tempNode2);
 		  }
 		  sortedQueue.push(tempNode);
@@ -1722,12 +1721,15 @@ FUNC_RESULT BBWorker::generateAndEnumerate(std::shared_ptr<HalfNode> GlobalPoolN
                                  Milliseconds LngthTimeout) {
 
 
-  bool fsbl = (GlobalPoolNode == NULL);
+  bool fsbl = (GlobalPoolNode.get() != nullptr);
   if (fsbl) {
     Enumrtr_->setIsGenerateState(true);
     fsbl = generateStateFromNode(GlobalPoolNode);
     Enumrtr_->setIsGenerateState(false);
     //delete GlobalPoolNode;
+  }
+  else {
+    Logger::Info("SolverID %d not given a GP Node", SolverID_);
   }
   ++globalPoolNodes;
   return enumerate_(StartTime, RgnTimeout, LngthTimeout, false, fsbl);
@@ -2284,7 +2286,7 @@ bool BBMaster::initGlobalPool() {
   
   std::shared_ptr<HalfNode> temp, temp2;
   bool fsbl;
-  std::shared_ptr<HalfNode> exploreNode;
+  std::shared_ptr<HalfNode> exploreNode(nullptr);
 
   Enumrtr_->checkTreeFsblty(fsbl);
 
