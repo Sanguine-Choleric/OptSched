@@ -635,6 +635,8 @@ Enumerator::Enumerator(DataDepGraph *dataDepGraph, MachineModel *machMdl,
 
   // Dont bother constructing if its a worker
   if (IsHistDom() && SolverID <= 1) {
+    UDT_HASHTBL_CPCTY maxSize = 32 * 1024 * 1024 * 256 * 3; // 32GB * 3/4
+    maxSize /= (sizeof(BinHashTblEntry<CostHistEnumTreeNode>) + sizeof(CostHistEnumTreeNode));
     exmndSubProbs_ =
         new BinHashTable<HistEnumTreeNode>(sigSize, sigHashSize, true, NumSolvers_);
   }
