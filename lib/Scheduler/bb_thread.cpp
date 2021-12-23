@@ -339,7 +339,7 @@ BBThread::BBThread(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
   EntryInstCnt_ = dataDepGraph->GetEntryInstCnt();
   ExitInstCnt_ = dataDepGraph->GetExitInstCnt();
 
-  SpillCostFunc = spillCostFunc;
+  SpillCostFunc_ = spillCostFunc;
 
   RegTypeCnt_ = OST->MM->GetRegTypeCnt();
   RegFiles_ = dataDepGraph->getRegFiles();
@@ -464,7 +464,7 @@ InstCount BBThread::CmputCost_(InstSchedule *sched, COST_COMP_MODE compMode,
 /*****************************************************************************/
 
 void BBThread::cmputCrntSpillCost_() {
-  switch (SpillCostFunc) {
+  switch (SpillCostFunc_) {
   case SCF_PERP:
   case SCF_PRP:
   case SCF_PEAK_PER_TYPE:
@@ -523,7 +523,7 @@ void BBThread::updateSpillInfoForSchdul(SchedInstruction *inst,
       // (Chris): The SLIL calculation below the def and use for-loops doesn't
       // consider the last use of a register. Thus, an additional increment must
       // happen here.
-      if (SpillCostFunc == SCF_SLIL) {
+      if (SpillCostFunc_ == SCF_SLIL) {
         SumOfLiveIntervalLengths_[regType]++;
         if (!use->IsInInterval(inst) && !use->IsInPossibleInterval(inst)) {
           ++DynamicSlilLowerBound_;
@@ -595,7 +595,7 @@ void BBThread::updateSpillInfoForSchdul(SchedInstruction *inst,
       PeakRegPressures_[i] = liveRegs;
 
     // (Chris): Compute sum of live range lengths at this point
-    if (SpillCostFunc == SCF_SLIL) {
+    if (SpillCostFunc_ == SCF_SLIL) {
       SumOfLiveIntervalLengths_[i] += LiveRegs_[i].GetOneCnt();
       for (int j = 0; j < LiveRegs_[i].GetSize(); ++j) {
         if (LiveRegs_[i].GetBit(j)) {
@@ -608,29 +608,29 @@ void BBThread::updateSpillInfoForSchdul(SchedInstruction *inst,
     }
 
     // FIXME: Can this be taken out of this loop?
-    if (SpillCostFunc == SCF_SLIL) {
+    if (SpillCostFunc_ == SCF_SLIL) {
       SlilSpillCost_ = std::accumulate(SumOfLiveIntervalLengths_.begin(),
                                        SumOfLiveIntervalLengths_.end(), 0);
     }
   }
 
-  if (SpillCostFunc == SCF_TARGET) {
+  if (SpillCostFunc_ == SCF_TARGET) {
     newSpillCost = OST->getCost(RegPressures_);
     SubspaceLwrBound_ = (int64_t)std::accumulate(RegPressures_.begin(), RegPressures_.end(), 0);
 
 
-  } else if (SpillCostFunc == SCF_SLIL) {
+  } else if (SpillCostFunc_ == SCF_SLIL) {
     SlilSpillCost_ = std::accumulate(SumOfLiveIntervalLengths_.begin(),
                                      SumOfLiveIntervalLengths_.end(), 0);
     SubspaceLwrBound_ = (int64_t)SlilSpillCost_;
 
-  } else if (SpillCostFunc == SCF_PRP) {
+  } else if (SpillCostFunc_ == SCF_PRP) {
     newSpillCost =
         std::accumulate(RegPressures_.begin(), RegPressures_.end(), 0);
 
     SubspaceLwrBound_ = (int64_t)newSpillCost;
 
-  } else if (SpillCostFunc == SCF_PEAK_PER_TYPE) {
+  } else if (SpillCostFunc_ == SCF_PEAK_PER_TYPE) {
     for (int i = 0; i < RegTypeCnt_; i++) {
       newSpillCost +=
           std::max(0, PeakRegPressures_[i] - OST->MM->GetPhysRegCnt(i));
@@ -692,7 +692,7 @@ void BBThread::updateSpillInfoForUnSchdul(SchedInstruction *inst) {
 #endif
 
   // (Chris): Update the SLIL for all live regs at this point.
-  if (SpillCostFunc == SCF_SLIL) {
+  if (SpillCostFunc_ == SCF_SLIL) {
     for (int i = 0; i < RegTypeCnt_; ++i) {
       for (int j = 0; j < LiveRegs_[i].GetSize(); ++j) {
         if (LiveRegs_[i].GetBit(j)) {
@@ -754,7 +754,7 @@ void BBThread::updateSpillInfoForUnSchdul(SchedInstruction *inst) {
     if (isLive == false) {
       // (Chris): Since this was the last use, the above SLIL calculation didn't
       // take this instruction into account.
-      if (SpillCostFunc == SCF_SLIL) {
+      if (SpillCostFunc_ == SCF_SLIL) {
         SumOfLiveIntervalLengths_[regType]--;
         if (!use->IsInInterval(inst) && !use->IsInPossibleInterval(inst)) {
           --DynamicSlilLowerBound_;
@@ -872,7 +872,7 @@ bool BBThread::chkCostFsblty(InstCount trgtLngth, EnumTreeNode *&node, bool isGl
   
   bool fsbl = true;
   InstCount crntCost, dynmcCostLwrBound;
-  if (SpillCostFunc == SCF_SLIL) {
+  if (SpillCostFunc_ == SCF_SLIL) {
     crntCost = DynamicSlilLowerBound_ * SCW_ + trgtLngth * SchedCostFactor_;
   } else {
     crntCost = CrntSpillCost_ * SCW_ + trgtLngth * SchedCostFactor_;
@@ -2291,7 +2291,7 @@ bool BBMaster::initGlobalPool() {
 
   if (!fsbl) return fsbl;
 
-  SpillCostFunc = GlobalPoolSCF_;
+  SpillCostFunc_ = GlobalPoolSCF_;
 
   InstPool4 *firstInsts = new InstPool4;
 
@@ -2382,7 +2382,7 @@ bool BBMaster::initGlobalPool() {
   
   Logger::Info("global pool has %d nodes", GlobalPool->size());
   MasterNodeCount_ += Enumrtr_->GetNodeCnt();
-  SpillCostFunc = TempSCF;
+  SpillCostFunc_ = TempSCF;
   return true;
 
 

@@ -203,8 +203,7 @@ public:
   // Global Pool Nodes explored
   uint64_t GlobalPoolNodes = 0;
 
-  // The spill cost function used for enumeration
-  SPILL_COST_FUNCTION SpillCostFunc;
+
 
   // Allocate register structures needed to track cost
   void setupForSchdulng();
@@ -222,7 +221,7 @@ public:
   // Unset schedule cycle / slot and update cost info
   void unschdulInst(SchedInstruction *inst, InstCount cycleNum,
                     InstCount slotNum, EnumTreeNode *trgtNode);
-  // Unset schedule cycle / slot and rever cost to value passed in
+  // Unset schedule cycle / slot and revert cost to value passed in
   // This is primarily used when we are not maintaining the active tree 
   // (e.g. there is no trgtNode to grab the cost from)
   void unschdulInstAndRevert(SchedInstruction *inst, InstCount cycleNum,
@@ -310,6 +309,8 @@ protected:
 
   int SCW_;
   int SchedCostFactor_;
+  // The spill cost function used for enumeration
+  SPILL_COST_FUNCTION SpillCostFunc_;
 
   InstCount MaxLatency_;
   bool SimpleMachineModel_;
