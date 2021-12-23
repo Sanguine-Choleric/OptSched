@@ -102,7 +102,7 @@ bool SequentialListScheduler::ChkInstLglty_(SchedInstruction *inst) const {
     return false;
 
   // Do region-specific legality check
-  if (bbt_->ChkInstLgltyBBThread(inst) == false)
+  if (bbt_->chkInstLgltyBBThread(inst) == false)
     return false;
 
   // Account for instructions that block the whole cycle.

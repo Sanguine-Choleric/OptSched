@@ -121,12 +121,15 @@ public:
 
 
 // TODO Document
+// BBThread contains the minimum required interface from the Enumerator point of view.
+// It is a pure virtual class from which our workers, master, and the single threaded
+// classes derive.
 class BBThread {
 private:
   // The target machine
   const OptSchedTarget *OST;
 
-  int IssueRate;
+  int IssueRate_;
   
   int EntryInstCnt_;
   int ExitInstCnt_;
@@ -166,14 +169,14 @@ private:
 
 
     // BBWithSpill-specific Functions:
-  InstCount CmputCostLwrBound_(InstCount schedLngth);
-  void InitForCostCmputtn_();
-  InstCount CmputDynmcCost_();
+  InstCount cmputCostLwrBound_(InstCount schedLngth);
+  void initForCostCmputtn_();
+  InstCount cmputDynmcCost_();
 
   
-  void SetupPhysRegs_();
-  void CmputCrntSpillCost_();
-  void CmputCnflcts_(InstSchedule *sched);
+  void setupPhysRegs_();
+  void cmputCrntSpillCost_();
+  void cmputCnflcts_(InstSchedule *sched);
 
 
 
@@ -186,44 +189,60 @@ public:
               SchedulerType HeurSchedType);
   virtual ~BBThread();
 
-  uint64_t stepFrwrds = 0;
-  uint64_t backTracks = 0;
-  uint64_t costInfsbl = 0;
-  uint64_t histInfsbl = 0;
-  uint64_t otherInfsbl = 0;
-  uint64_t globalPoolNodes = 0;
+  // Stats on the number of nodes examined
+  // Number of calls to stepfrwrd
+  uint64_t StepFrwrds = 0;
+  // NUmber of calls to backtrack
+  uint64_t BackTracks = 0;
+  // Number of cost infsbl insts
+  uint64_t CostInfsbl = 0;
+  // Number of hist infsbl insts
+  uint64_t HistInfsbl = 0;
+  // Number of other infsbl ints
+  uint64_t OtherInfsbl = 0;
+  // Global Pool Nodes explored
+  uint64_t GlobalPoolNodes = 0;
 
+  // The spill cost function used for enumeration
+  SPILL_COST_FUNCTION SpillCostFunc;
 
-  int LocalPoolSizeRet = 0;
-  SPILL_COST_FUNCTION SpillCostFuncBBT_;
-  // non-virtual
-
-  int CmputCostLwrBound();
-
-  bool ChkCostFsblty(InstCount trgtLngth, EnumTreeNode *&treeNode, bool isGlobalPoolNode = false);
-  void SchdulInstBBThread(SchedInstruction *inst, InstCount cycleNum, InstCount slotNum,
-                  bool trackCnflcts);
-  void UnschdulInstBBThread(SchedInstruction *inst, InstCount cycleNum,
-                    InstCount slotNum, EnumTreeNode *trgtNode);
-  void UnschdulInstBBThread2(SchedInstruction *inst, InstCount cycleNum,
-                    InstCount slotNum, InstCount prevPeakSpillCost);  
-  void UpdateSpillInfoForUnSchdul_(SchedInstruction *inst);
+  // Allocate register structures needed to track cost
+  void setupForSchdulng();
+  // Initialize cost and register information (e.g register pressure)
+  void initForSchdulng();
+  // Not Implemented
   void setSttcLwrBounds(EnumTreeNode *node);
-  bool ChkInstLgltyBBThread(SchedInstruction *inst);
-
-  void InitForSchdulngBBThread();
-
-  InstSchedule *allocNewSched_();
-
-  void UpdateSpillInfoForSchdul_(SchedInstruction *inst, bool trackCnflcts);
-  
-  InstCount cmputNormCostBBThread_(InstSchedule *sched, COST_COMP_MODE compMode,
-                           InstCount &execCost, bool trackCnflcts);
-
+  // Allocate schedule of instructions
+  InstSchedule *allocNewSched();
+  // Set schedule cycle / slot and update cost info
+  void schdulInst(SchedInstruction *inst, InstCount cycleNum, InstCount slotNum,
+                  bool trackCnflcts);
+  // Update register uses and defs for cost computation
+  void updateSpillInfoForSchdul(SchedInstruction *inst, bool trackCnflcts);
+  // Unset schedule cycle / slot and update cost info
+  void unschdulInst(SchedInstruction *inst, InstCount cycleNum,
+                    InstCount slotNum, EnumTreeNode *trgtNode);
+  // Unset schedule cycle / slot and rever cost to value passed in
+  // This is primarily used when we are not maintaining the active tree 
+  // (e.g. there is no trgtNode to grab the cost from)
+  void unschdulInstAndRevert(SchedInstruction *inst, InstCount cycleNum,
+                    InstCount slotNum, InstCount prevPeakSpillCost);
+  // Revert register uses and defs to undo changes to cost
+  void updateSpillInfoForUnSchdul(SchedInstruction *inst);
+  // Compute cost and "normalize" it (i.e. subtract the lower bound)
+  InstCount cmputNormCost(InstSchedule *sched, COST_COMP_MODE compMode,
+                          InstCount &execCost, bool trackCnflcts);
+  // Check if the partial schedule does not violate cost constraint
+  bool chkCostFsblty(InstCount trgtLngth, EnumTreeNode *&treeNode, bool isGlobalPoolNode = false);
+  // Not Implemented
+  bool chkInstLgltyBBThread(SchedInstruction *inst);
+  // Returns the current best spill cost
   inline InstCount getCrntSpillCost() {return CrntSpillCost_;}
+  // Returns the current best peak spill cost
   inline InstCount getCrntPeakSpillCost() {return PeakSpillCost_;}
+  // Whether or not we are using two pass version of the algorithm
+  inline bool getIsTwoPass() {return TwoPassEnabled_;}
 
-  inline bool getIsTwoPass() {return twoPassEnabled_;}
   // virtuals
   virtual InstCount getBestCost() = 0;
 
@@ -271,10 +290,7 @@ public:
 
   virtual int getGlobalPoolSortMethod() {return -1;};
   // Needed by aco
-  virtual InstCount getHeuristicCost() = 0;
-
-  void SetupForSchdulngBBThread_();
-  
+  virtual InstCount getHeuristicCost() = 0; 
 
 protected:
   LengthCostEnumerator *Enumrtr_;
@@ -306,7 +322,7 @@ protected:
   InstCount StaticLowerBound_ = 0;
   
   int64_t SubspaceLwrBound_ = INVALID_VALUE;
-  bool twoPassEnabled_;
+  bool TwoPassEnabled_;
   
 
   // Needed to override SchedRegion virtuals
@@ -335,7 +351,7 @@ class BBInterfacer : public SchedRegion, public BBThread {
 private:
     void CmputAbslutUprBound_();
 
-    InstCount CmputCostLwrBound();
+    InstCount cmputCostLwrBound();
 
 protected:
     InstCount *BestCost_;
@@ -346,13 +362,13 @@ protected:
     void CmputSchedUprBound_();
 
       // override SchedRegion virtual
-    void InitForSchdulng() override {return InitForSchdulngBBThread();}
+    void InitForSchdulng() override {return initForSchdulng();}
 
-    void SetupForSchdulng_() override {return SetupForSchdulngBBThread_();}
+    void SetupForSchdulng_() override {return setupForSchdulng();}
 
     bool ChkInstLglty(SchedInstruction *inst) override
     {
-      return ChkInstLgltyBBThread(inst);
+      return chkInstLgltyBBThread(inst);
     }
 
     bool ChkSchedule_(InstSchedule *bestSched, InstSchedule *lstSched) override
@@ -391,19 +407,19 @@ public:
     inline void SchdulInst(SchedInstruction *inst, InstCount cycleNum, InstCount slotNum,
                   bool trackCnflcts)
     {
-      SchdulInstBBThread(inst, cycleNum, slotNum, trackCnflcts);
+      schdulInst(inst, cycleNum, slotNum, trackCnflcts);
     }
 
     inline void UnschdulInst(SchedInstruction *inst, InstCount cycleNum,
                     InstCount slotNum, EnumTreeNode *trgtNode)
     {
-      UnschdulInstBBThread(inst, cycleNum, slotNum, trgtNode);
+      unschdulInst(inst, cycleNum, slotNum, trgtNode);
     }
 
     inline InstCount CmputNormCost_(InstSchedule *sched, COST_COMP_MODE compMode,
                            InstCount &execCost, bool trackCnflcts)
     {
-      return cmputNormCostBBThread_(sched, compMode, execCost, trackCnflcts);
+      return cmputNormCost(sched, compMode, execCost, trackCnflcts);
     }
 
     static InstCount ComputeSLILStaticLowerBound(int64_t regTypeCnt_,
@@ -656,7 +672,7 @@ public:
     inline InstCount CmputNormCost_(InstSchedule *sched, COST_COMP_MODE compMode,
                            InstCount &execCost, bool trackCnflcts)
     {
-      return cmputNormCostBBThread_(sched, compMode, execCost, trackCnflcts);
+      return cmputNormCost(sched, compMode, execCost, trackCnflcts);
     }
 
     bool isSecondPass() override { return IsSecondPass_;}

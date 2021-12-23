@@ -331,7 +331,7 @@ BBThread::BBThread(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
   SimpleMachineModel_ = OST_->MM->IsSimple();
   MaxLatency_ = dataDepGraph->GetMaxLtncy();
   NumberOfInsts_ = dataDepGraph->GetInstCnt();
-  IssueRate = OST_->MM->GetIssueRate();
+  IssueRate_ = OST_->MM->GetIssueRate();
 
   MachMdl_ = OST_->MM;
   DataDepGraph_ = dataDepGraph;
@@ -339,7 +339,7 @@ BBThread::BBThread(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
   EntryInstCnt_ = dataDepGraph->GetEntryInstCnt();
   ExitInstCnt_ = dataDepGraph->GetExitInstCnt();
 
-  SpillCostFuncBBT_ = spillCostFunc;
+  SpillCostFunc = spillCostFunc;
 
   RegTypeCnt_ = OST->MM->GetRegTypeCnt();
   RegFiles_ = dataDepGraph->getRegFiles();
@@ -370,7 +370,7 @@ BBThread::~BBThread() {
 }
 /*****************************************************************************/
 
-void BBThread::SetupPhysRegs_() {
+void BBThread::setupPhysRegs_() {
   int physRegCnt;
   for (int i = 0; i < RegTypeCnt_; i++) {
     physRegCnt = RegFiles_[i].FindPhysRegCnt();
@@ -381,8 +381,8 @@ void BBThread::SetupPhysRegs_() {
 
 /*****************************************************************************/
 
-void BBThread::InitForSchdulngBBThread() {
-  InitForCostCmputtn_();
+void BBThread::initForSchdulng() {
+  initForCostCmputtn_();
 
   SchduldEntryInstCnt_ = 0;
   SchduldExitInstCnt_ = 0;
@@ -390,7 +390,7 @@ void BBThread::InitForSchdulngBBThread() {
 }
 /*****************************************************************************/
 
-void BBThread::InitForCostCmputtn_() {
+void BBThread::initForCostCmputtn_() {
   int i;
 
   CrntCycleNum_ = 0;
@@ -425,7 +425,7 @@ void BBThread::InitForCostCmputtn_() {
 }
 /*****************************************************************************/
 
-InstCount BBThread::cmputNormCostBBThread_(InstSchedule *sched,
+InstCount BBThread::cmputNormCost(InstSchedule *sched,
                                       COST_COMP_MODE compMode,
                                       InstCount &execCost, bool trackCnflcts) {
   InstCount cost = CmputCost_(sched, compMode, execCost, trackCnflcts);
@@ -463,8 +463,8 @@ InstCount BBThread::CmputCost_(InstSchedule *sched, COST_COMP_MODE compMode,
 }
 /*****************************************************************************/
 
-void BBThread::CmputCrntSpillCost_() {
-  switch (SpillCostFuncBBT_) {
+void BBThread::cmputCrntSpillCost_() {
+  switch (SpillCostFunc) {
   case SCF_PERP:
   case SCF_PRP:
   case SCF_PEAK_PER_TYPE:
@@ -488,7 +488,7 @@ void BBThread::CmputCrntSpillCost_() {
 }
 /*****************************************************************************/
 
-void BBThread::UpdateSpillInfoForSchdul_(SchedInstruction *inst,
+void BBThread::updateSpillInfoForSchdul(SchedInstruction *inst,
                                             bool trackCnflcts) {
   int16_t regType;
   int regNum, physRegNum;
@@ -523,7 +523,7 @@ void BBThread::UpdateSpillInfoForSchdul_(SchedInstruction *inst,
       // (Chris): The SLIL calculation below the def and use for-loops doesn't
       // consider the last use of a register. Thus, an additional increment must
       // happen here.
-      if (SpillCostFuncBBT_ == SCF_SLIL) {
+      if (SpillCostFunc == SCF_SLIL) {
         SumOfLiveIntervalLengths_[regType]++;
         if (!use->IsInInterval(inst) && !use->IsInPossibleInterval(inst)) {
           ++DynamicSlilLowerBound_;
@@ -595,7 +595,7 @@ void BBThread::UpdateSpillInfoForSchdul_(SchedInstruction *inst,
       PeakRegPressures_[i] = liveRegs;
 
     // (Chris): Compute sum of live range lengths at this point
-    if (SpillCostFuncBBT_ == SCF_SLIL) {
+    if (SpillCostFunc == SCF_SLIL) {
       SumOfLiveIntervalLengths_[i] += LiveRegs_[i].GetOneCnt();
       for (int j = 0; j < LiveRegs_[i].GetSize(); ++j) {
         if (LiveRegs_[i].GetBit(j)) {
@@ -608,29 +608,29 @@ void BBThread::UpdateSpillInfoForSchdul_(SchedInstruction *inst,
     }
 
     // FIXME: Can this be taken out of this loop?
-    if (SpillCostFuncBBT_ == SCF_SLIL) {
+    if (SpillCostFunc == SCF_SLIL) {
       SlilSpillCost_ = std::accumulate(SumOfLiveIntervalLengths_.begin(),
                                        SumOfLiveIntervalLengths_.end(), 0);
     }
   }
 
-  if (SpillCostFuncBBT_ == SCF_TARGET) {
+  if (SpillCostFunc == SCF_TARGET) {
     newSpillCost = OST->getCost(RegPressures_);
     SubspaceLwrBound_ = (int64_t)std::accumulate(RegPressures_.begin(), RegPressures_.end(), 0);
 
 
-  } else if (SpillCostFuncBBT_ == SCF_SLIL) {
+  } else if (SpillCostFunc == SCF_SLIL) {
     SlilSpillCost_ = std::accumulate(SumOfLiveIntervalLengths_.begin(),
                                      SumOfLiveIntervalLengths_.end(), 0);
     SubspaceLwrBound_ = (int64_t)SlilSpillCost_;
 
-  } else if (SpillCostFuncBBT_ == SCF_PRP) {
+  } else if (SpillCostFunc == SCF_PRP) {
     newSpillCost =
         std::accumulate(RegPressures_.begin(), RegPressures_.end(), 0);
 
     SubspaceLwrBound_ = (int64_t)newSpillCost;
 
-  } else if (SpillCostFuncBBT_ == SCF_PEAK_PER_TYPE) {
+  } else if (SpillCostFunc == SCF_PEAK_PER_TYPE) {
     for (int i = 0; i < RegTypeCnt_; i++) {
       newSpillCost +=
           std::max(0, PeakRegPressures_[i] - OST->MM->GetPhysRegCnt(i));
@@ -671,7 +671,7 @@ void BBThread::UpdateSpillInfoForSchdul_(SchedInstruction *inst,
 
   PeakSpillCost_ = std::max(PeakSpillCost_, newSpillCost);
 
-  CmputCrntSpillCost_();
+  cmputCrntSpillCost_();
 
   SchduldInstCnt_++;
   if (inst->MustBeInBBEntry())
@@ -681,7 +681,7 @@ void BBThread::UpdateSpillInfoForSchdul_(SchedInstruction *inst,
 }
 /*****************************************************************************/
 
-void BBThread::UpdateSpillInfoForUnSchdul_(SchedInstruction *inst) {
+void BBThread::updateSpillInfoForUnSchdul(SchedInstruction *inst) {
   int16_t regType;
   int regNum, physRegNum;
   bool isLive;
@@ -692,7 +692,7 @@ void BBThread::UpdateSpillInfoForUnSchdul_(SchedInstruction *inst) {
 #endif
 
   // (Chris): Update the SLIL for all live regs at this point.
-  if (SpillCostFuncBBT_ == SCF_SLIL) {
+  if (SpillCostFunc == SCF_SLIL) {
     for (int i = 0; i < RegTypeCnt_; ++i) {
       for (int j = 0; j < LiveRegs_[i].GetSize(); ++j) {
         if (LiveRegs_[i].GetBit(j)) {
@@ -704,7 +704,7 @@ void BBThread::UpdateSpillInfoForUnSchdul_(SchedInstruction *inst) {
         }
       }
       //assert(sumOfLiveIntervalLengths_[i] >= 0 &&
-      //       "UpdateSpillInfoForUnSchdul_: SLIL negative!");
+      //       "updateSpillInfoForUnSchdul: SLIL negative!");
     }
   }
 
@@ -754,14 +754,14 @@ void BBThread::UpdateSpillInfoForUnSchdul_(SchedInstruction *inst) {
     if (isLive == false) {
       // (Chris): Since this was the last use, the above SLIL calculation didn't
       // take this instruction into account.
-      if (SpillCostFuncBBT_ == SCF_SLIL) {
+      if (SpillCostFunc == SCF_SLIL) {
         SumOfLiveIntervalLengths_[regType]--;
         if (!use->IsInInterval(inst) && !use->IsInPossibleInterval(inst)) {
           --DynamicSlilLowerBound_;
         }
         //TODO why is this assert commented
         //assert(sumOfLiveIntervalLengths_[regType] >= 0 &&
-        //       "UpdateSpillInfoForUnSchdul_: SLIL negative!");
+        //       "updateSpillInfoForUnSchdul: SLIL negative!");
       }
       LiveRegs_[regType].SetBit(regNum, true, use->GetWght());
 
@@ -790,22 +790,22 @@ void BBThread::UpdateSpillInfoForUnSchdul_(SchedInstruction *inst) {
 }
 /*****************************************************************************/
 
-void BBThread::SchdulInstBBThread(SchedInstruction *inst, InstCount cycleNum,
+void BBThread::schdulInst(SchedInstruction *inst, InstCount cycleNum,
                              InstCount slotNum, bool trackCnflcts) {
   CrntCycleNum_ = cycleNum;
   CrntSlotNum_ = slotNum;
   if (inst == NULL)
     return;
   assert(inst != NULL);
-  UpdateSpillInfoForSchdul_(inst, trackCnflcts);
+  updateSpillInfoForSchdul(inst, trackCnflcts);
 }
 /*****************************************************************************/
 
-void BBThread::UnschdulInstBBThread(SchedInstruction *inst, InstCount cycleNum,
+void BBThread::unschdulInst(SchedInstruction *inst, InstCount cycleNum,
                                InstCount slotNum, EnumTreeNode *trgtNode) {
   if (slotNum == 0) {
     CrntCycleNum_ = cycleNum - 1;
-    CrntSlotNum_ = IssueRate - 1;
+    CrntSlotNum_ = IssueRate_ - 1;
   } else {
     CrntCycleNum_ = cycleNum;
     CrntSlotNum_ = slotNum - 1;
@@ -815,16 +815,16 @@ void BBThread::UnschdulInstBBThread(SchedInstruction *inst, InstCount cycleNum,
     return;
   }
 
-  UpdateSpillInfoForUnSchdul_(inst);
+  updateSpillInfoForUnSchdul(inst);
   PeakSpillCost_ = trgtNode->GetPeakSpillCost();
-  CmputCrntSpillCost_();
+  cmputCrntSpillCost_();
 }
 /*****************************************************************************/
-void BBThread::UnschdulInstBBThread2(SchedInstruction *inst, InstCount cycleNum,
+void BBThread::unschdulInstAndRevert(SchedInstruction *inst, InstCount cycleNum,
                                InstCount slotNum, InstCount prevPeakSpillCost) {
   if (slotNum == 0) {
     CrntCycleNum_ = cycleNum - 1;
-    CrntSlotNum_ = IssueRate - 1;
+    CrntSlotNum_ = IssueRate_ - 1;
   } else {
     CrntCycleNum_ = cycleNum;
     CrntSlotNum_ = slotNum - 1;
@@ -834,9 +834,9 @@ void BBThread::UnschdulInstBBThread2(SchedInstruction *inst, InstCount cycleNum,
     return;
   }
 
-  UpdateSpillInfoForUnSchdul_(inst);
+  updateSpillInfoForUnSchdul(inst);
   PeakSpillCost_ = prevPeakSpillCost;
-  CmputCrntSpillCost_();
+  cmputCrntSpillCost_();
 }
 
 /*****************************************************************************/
@@ -849,12 +849,12 @@ void BBThread::FinishOptmlBBThread_() {
 }
 /*****************************************************************************/
 
-void BBThread::SetupForSchdulngBBThread_() {
+void BBThread::setupForSchdulng() {
   for (int i = 0; i < RegTypeCnt_; i++) {
     LiveRegs_[i].Construct(RegFiles_[i].GetRegCnt());
   }
 
-  SetupPhysRegs_();
+  setupPhysRegs_();
 
   SchduldEntryInstCnt_ = 0;
   SchduldExitInstCnt_ = 0;
@@ -868,11 +868,11 @@ void BBThread::SetupForSchdulngBBThread_() {
 }
 /*****************************************************************************/
 
-bool BBThread::ChkCostFsblty(InstCount trgtLngth, EnumTreeNode *&node, bool isGlobalPoolNode) {
+bool BBThread::chkCostFsblty(InstCount trgtLngth, EnumTreeNode *&node, bool isGlobalPoolNode) {
   
   bool fsbl = true;
   InstCount crntCost, dynmcCostLwrBound;
-  if (SpillCostFuncBBT_ == SCF_SLIL) {
+  if (SpillCostFunc == SCF_SLIL) {
     crntCost = DynamicSlilLowerBound_ * SCW_ + trgtLngth * SchedCostFactor_;
   } else {
     crntCost = CrntSpillCost_ * SCW_ + trgtLngth * SchedCostFactor_;
@@ -908,7 +908,7 @@ void BBThread::setSttcLwrBounds(EnumTreeNode *) {
 
 /*****************************************************************************/
 
-bool BBThread::ChkInstLgltyBBThread(SchedInstruction *inst) {
+bool BBThread::chkInstLgltyBBThread(SchedInstruction *inst) {
   return true;
   /*
   int16_t regType;
@@ -990,8 +990,8 @@ bool BBThread::ChkScheduleBBThread_(InstSchedule *bestSched,
     }
   }
   if (chkCnflcts_) {
-    CmputCnflcts_(lstSched);
-    CmputCnflcts_(bestSched);
+    cmputCnflcts_(lstSched);
+    cmputCnflcts_(bestSched);
 
 #ifdef IS_DEBUG_CONFLICTS
     Logger::Info("Heuristic conflicts : %d, best conflicts : %d. ",
@@ -1015,11 +1015,11 @@ bool BBThread::ChkScheduleBBThread_(InstSchedule *bestSched,
   */
 }
 
-void BBThread::CmputCnflcts_(InstSchedule *sched) {
+void BBThread::cmputCnflcts_(InstSchedule *sched) {
   int cnflctCnt = 0;
   InstCount execCost;
 
-  cmputNormCostBBThread_(sched, CCM_STTC, execCost, true);
+  cmputNormCost(sched, CCM_STTC, execCost, true);
   for (int i = 0; i < RegTypeCnt_; i++) {
     cnflctCnt += RegFiles_[i].GetConflictCnt();
   }
@@ -1038,9 +1038,8 @@ bool BBThread::EnableEnumBBThread_() {
   */
 }
 
-InstSchedule *BBThread::allocNewSched_() {
-    //Logger::Info("Allocating new sched");
-    InstSchedule *newSched = new InstSchedule(MachMdl_, DataDepGraph_, VrfySched_);
+InstSchedule *BBThread::allocNewSched() {
+  InstSchedule *newSched = new InstSchedule(MachMdl_, DataDepGraph_, VrfySched_);
   return newSched;
 }
 
@@ -1096,7 +1095,7 @@ void BBInterfacer::CmputAbslutUprBound_() {
 }
 
 
-InstCount BBInterfacer::CmputCostLwrBound() {
+InstCount BBInterfacer::cmputCostLwrBound() {
   InstCount spillCostLwrBound = 0;
 
   if (GetSpillCostFunc() == SCF_SLIL) {
@@ -1388,7 +1387,7 @@ BBWithSpill::BBWithSpill(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
                              enblStallEnum, SCW, spillCostFunc, HeurSchedType) {
     SolverID_ = 0;
     NumSolvers_ = 1;
-    twoPassEnabled_ = twoPassEnabled;
+    TwoPassEnabled_ = twoPassEnabled;
 
     timeoutToMemblock_ = timeoutToMemblock;
     IsTimeoutPerInst_ = IsTimeoutPerInst;
@@ -1431,7 +1430,6 @@ BBWorker::BBWorker(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
               enblStallEnum, SCW, spillCostFunc, HeurSchedType) {
   assert(SolverID > 0); // do not overwrite master threads structures
   
-  LocalPoolSizeRet = LocalPoolSize;
   DataDepGraph_ = dataDepGraph;
   MachMdl_ = OST_->MM;
   EnumPrirts_ = enumPrirts;
@@ -1440,7 +1438,7 @@ BBWorker::BBWorker(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
   SigHashSize_ = sigHashSize;
 
   IsSecondPass_ = IsSecondPass;
-  twoPassEnabled_ = twoPassEnabled;
+  TwoPassEnabled_ = twoPassEnabled;
   NumSolvers_ = NumSolvers; // NumSolvers_ is the number of Threads
 
   // Shared Fields
@@ -1731,7 +1729,7 @@ FUNC_RESULT BBWorker::generateAndEnumerate(std::shared_ptr<HalfNode> GlobalPoolN
   else {
     Logger::Info("SolverID %d not given a GP Node", SolverID_);
   }
-  ++globalPoolNodes;
+  ++GlobalPoolNodes;
   return enumerate_(StartTime, RgnTimeout, LngthTimeout, false, fsbl);
 
 }
@@ -1842,7 +1840,7 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
           break;
         }
         else {
-        ++globalPoolNodes;
+        ++GlobalPoolNodes;
         temp = GlobalPool_->front();
         GlobalPool_->pop();
         }
@@ -1886,7 +1884,7 @@ if (isWorkSteal()) {
       DataDepGraph_->resetThreadWriteFields(SolverID_, false);
       Enumrtr_->Reset();
       EnumCrntSched_->Reset();
-      InitForSchdulngBBThread();
+      initForSchdulng();
       initEnumrtr_();
     }
 
@@ -2112,7 +2110,7 @@ BBMaster::BBMaster(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
   WorkSteal_ = WorkSteal;
   WorkStealOn_ = false;
 
-  twoPassEnabled_ = twoPassEnabled;
+  TwoPassEnabled_ = twoPassEnabled;
 
   HistTableSize_ = 1 + (UDT_HASHVAL)(((int64_t)(1) << sigHashSize) - 1);
   HistTableLock = new std::mutex*[HistTableSize_];
@@ -2143,7 +2141,7 @@ BBMaster::BBMaster(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
   timeoutToMemblock_ = timeoutToMemblock;
                 
   initWorkers(OST_, dataDepGraph, rgnNum, sigHashSize, lbAlg, hurstcPrirts, enumPrirts,
-              vrfySched, PruningStrategy, SchedForRPOnly, enblStallEnum, SCW, spillCostFunc, twoPassEnabled_,
+              vrfySched, PruningStrategy, SchedForRPOnly, enblStallEnum, SCW, spillCostFunc, TwoPassEnabled_,
               HeurSchedType, BestCost_, schedLwrBound_, enumBestSched_, &OptmlSpillCost_, 
               &bestSchedLngth_, GlobalPool, &MasterNodeCount_, HistTableLock, &GlobalPoolLock, &BestSchedLock, 
               &NodeCountLock, &ImprvCountLock, &RegionSchedLock, &AllocatorLock, &results, idleTimes,
@@ -2293,7 +2291,7 @@ bool BBMaster::initGlobalPool() {
 
   if (!fsbl) return fsbl;
 
-  SpillCostFuncBBT_ = GlobalPoolSCF_;
+  SpillCostFunc = GlobalPoolSCF_;
 
   InstPool4 *firstInsts = new InstPool4;
 
@@ -2384,7 +2382,7 @@ bool BBMaster::initGlobalPool() {
   
   Logger::Info("global pool has %d nodes", GlobalPool->size());
   MasterNodeCount_ += Enumrtr_->GetNodeCnt();
-  SpillCostFuncBBT_ = TempSCF;
+  SpillCostFunc = TempSCF;
   return true;
 
 
@@ -2559,8 +2557,8 @@ bool BBMaster::init() {
   InitForSchdulng();
   for (int i = 0; i < NumThreads_; i++) {
     Workers[i]->setLowerBounds_(StaticSlilLowerBound_);
-    Workers[i]->SetupForSchdulngBBThread_();
-    Workers[i]->InitForSchdulngBBThread();
+    Workers[i]->setupForSchdulng();
+    Workers[i]->initForSchdulng();
   }
 
   // Master Enumerator has solverID of 1
@@ -2695,15 +2693,15 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
 
   for (int j = 0; j < NumThreads_; j++) {
     ThreadManager[j].join();
-    /*
+    
     Logger::Info("Solver %d stats: ", j+2);
-    Logger::Info("stepFrwrds %d" , Workers[j]->stepFrwrds);
-    Logger::Info("backTracks %d", Workers[j]->backTracks);
-    Logger::Info("costInfsbl %d", Workers[j]->costInfsbl);
-    Logger::Info("histInfsbl %d" , Workers[j]->histInfsbl);
-    Logger::Info("otherInfsbl %d", Workers[j]->otherInfsbl);
-    Logger::Info("globalPoolNodes %d", Workers[j]->globalPoolNodes);
-    */
+    Logger::Info("StepFrwrds %d" , Workers[j]->StepFrwrds);
+    Logger::Info("BackTracks %d", Workers[j]->BackTracks);
+    Logger::Info("CostInfsbl %d", Workers[j]->CostInfsbl);
+    Logger::Info("HistInfsbl %d" , Workers[j]->HistInfsbl);
+    Logger::Info("OtherInfsbl %d", Workers[j]->OtherInfsbl);
+    Logger::Info("GlobalPoolNodes %d", Workers[j]->GlobalPoolNodes);
+    
   }
 
 

@@ -490,7 +490,7 @@ protected:
   friend class HistEnumTreeNode;
   friend class CostHistEnumTreeNode;
 
-  uint64_t costInfsbl = 0;
+  uint64_t CostInfsbl = 0;
   uint64_t rlxdInfsbl = 0;
   uint64_t bkwrdLBInfsbl = 0;
   uint64_t frwrdLBInfsbl = 0;

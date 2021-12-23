@@ -207,7 +207,7 @@ std::unique_ptr<InstSchedule> ACOScheduler::FindOneSchedule() {
   if (maxPriority == 0)
     maxPriority = 1; // divide by 0 is bad
   Initialize_();
-  bbt_->InitForSchdulngBBThread();
+  bbt_->initForSchdulng();
 
   SchedInstruction *waitFor = NULL;
   InstCount waitTime = 0;
@@ -316,7 +316,7 @@ std::unique_ptr<InstSchedule> ACOScheduler::FindOneSchedule() {
       instNum = inst->GetNum();
       SchdulInst_(inst, crntCycleNum_);
       inst->Schedule(crntCycleNum_, crntSlotNum_, SolverID_);
-      bbt_->SchdulInstBBThread(inst, crntCycleNum_, crntSlotNum_, false);
+      bbt_->schdulInst(inst, crntCycleNum_, crntSlotNum_, false);
       DoRsrvSlots_(inst);
       // this is annoying
       SchedInstruction *blah = rdyLst_->GetNextPriorityInst();
@@ -336,7 +336,7 @@ std::unique_ptr<InstSchedule> ACOScheduler::FindOneSchedule() {
   }
   
   InstCount crntExecCost;
-  bbt_->cmputNormCostBBThread_(schedule.get(), CCM_STTC, crntExecCost, false);
+  bbt_->cmputNormCost(schedule.get(), CCM_STTC, crntExecCost, false);
   return schedule;
 }
 

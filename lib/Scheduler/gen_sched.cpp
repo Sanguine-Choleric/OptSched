@@ -132,7 +132,7 @@ bool ConstrainedScheduler::Initialize_(InstCount trgtSchedLngth,
   crntRealSlotNum_ = 0;
   crntCycleNum_ = 0;
   InitNewCycle_();
-  bbt_->InitForSchdulngBBThread();
+  bbt_->initForSchdulng();
 
   return true;
 }
@@ -298,7 +298,7 @@ bool ConstrainedScheduler::ChkInstLglty_(SchedInstruction *inst) const {
     return true;
 
   // Do region-specific legality check
-  if (bbt_->ChkInstLgltyBBThread(inst) == false)
+  if (bbt_->chkInstLgltyBBThread(inst) == false)
     return false;
 
   // Account for instructions that block the whole cycle.

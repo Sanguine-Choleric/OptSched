@@ -22,7 +22,7 @@ class BBThread;
 
 typedef unsigned int UDT_HASHVAL;
 typedef unsigned long UDT_HASHKEY;
-typedef unsigned int UDT_HASHTBL_CPCTY;
+typedef unsigned long long UDT_HASHTBL_CPCTY;
 
 const int DFLT_HASHTBL_SIZE = 4048;
 const int MAX_HASHBITS = 22;

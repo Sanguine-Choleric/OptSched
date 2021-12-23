@@ -635,10 +635,11 @@ Enumerator::Enumerator(DataDepGraph *dataDepGraph, MachineModel *machMdl,
 
   // Dont bother constructing if its a worker
   if (IsHistDom() && SolverID <= 1) {
-    UDT_HASHTBL_CPCTY maxSize = 32 * 1024 * 1024 * 256 * 3; // 32GB * 3/4
+    UDT_HASHTBL_CPCTY maxSize = 24000000000; // 32GB * 3/4
     maxSize /= (sizeof(BinHashTblEntry<CostHistEnumTreeNode>) + sizeof(CostHistEnumTreeNode));
+    Logger::Info("max size fo hist table %llu", maxSize);
     exmndSubProbs_ =
-        new BinHashTable<HistEnumTreeNode>(sigSize, sigHashSize, true, NumSolvers_);
+        new BinHashTable<HistEnumTreeNode>(sigSize, sigHashSize, true, NumSolvers_, maxSize);
   }
 
   histTableInitTime = Utilities::GetProcessorTime() - histTableInitTime;
@@ -1018,7 +1019,7 @@ void AppendAndCheckSuffixSchedules(
   // For each matching history node, concatenate the suffix with the
   // current schedule and check to see if it's better than the best
   // schedule found so far.
-  auto concatSched = std::unique_ptr<InstSchedule>(bbt_->allocNewSched_());
+  auto concatSched = std::unique_ptr<InstSchedule>(bbt_->allocNewSched());
   // Get the prefix.
   concatSched->Copy(crntSched_);
 
@@ -1100,12 +1101,12 @@ void AppendAndCheckSuffixSchedules(
 
   // Before backtracking, reset the SchedRegion state to where it was before
   // concatenation.
-  bbt_->InitForSchdulngBBThread();
+  bbt_->initForSchdulng();
   InstCount cycleNum, slotNum;
   for (auto instNum = crntSched_->GetFrstInst(cycleNum, slotNum);
        instNum != INVALID_VALUE;
        instNum = crntSched_->GetNxtInst(cycleNum, slotNum)) {
-    bbt_->SchdulInstBBThread(dataDepGraph_->GetInstByIndx(instNum), cycleNum, slotNum,
+    bbt_->schdulInst(dataDepGraph_->GetInstByIndx(instNum), cycleNum, slotNum,
                      false);
   }
 }
@@ -1610,7 +1611,7 @@ void Enumerator::RestoreCrntState_(SchedInstruction *inst,
 /*****************************************************************************/
 
 void Enumerator::StepFrwrd_(EnumTreeNode *&newNode) {
-  ++bbt_->stepFrwrds;
+  ++bbt_->StepFrwrds;
   SchedInstruction *instToSchdul = newNode->GetInst();
   InstCount instNumToSchdul;
 #ifdef IS_CORRECT_LOCALPOOL
@@ -1940,7 +1941,7 @@ bool Enumerator::SetTotalCostsAndSuffixes(EnumTreeNode *const currentNode,
 
 
 bool Enumerator::BackTrack_(bool trueState) {
-  ++bbt_->backTracks;
+  ++bbt_->BackTracks;
   bool fsbl = true;
   SchedInstruction *inst = crntNode_->GetInst();
   EnumTreeNode *trgtNode = crntNode_->GetParent();
@@ -2547,7 +2548,7 @@ bool Enumerator::EnumStall_() { return enblStallEnum_; }
 // TODO remove
 void Enumerator::printInfsbltyHits() {
   
-  Logger::Info("Cost Infeasibility Hits = %d",costInfsbl);
+  Logger::Info("Cost Infeasibility Hits = %d",CostInfsbl);
   Logger::Info("Relaxed Infeasibility Hits = %d",rlxdInfsbl);
   Logger::Info("Backward LB Infeasibility Hits = %d",bkwrdLBInfsbl);
   Logger::Info("Forward LB Infeasibility Hits = %d",frwrdLBInfsbl);
@@ -2818,7 +2819,7 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
   assert(newNode || !isFsbl);
 
   if (isFsbl == false) {
-    ++bbt_->otherInfsbl;
+    ++bbt_->OtherInfsbl;
     assert(isLngthFsbl == false);
     isLngthFsbl = false;
 
@@ -2832,7 +2833,7 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
 
 
   if (isFsbl == false) {
-    ++bbt_->costInfsbl;
+    ++bbt_->CostInfsbl;
 #ifdef IS_DEBUG_SEARCH_ORDER
     Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: cost fail");
 #endif
@@ -2842,7 +2843,7 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
   }
 
   if (IsHistDom() && prune) {
-    ++bbt_->histInfsbl;
+    ++bbt_->HistInfsbl;
 
     assert(newNode);
     EnumTreeNode *parent = newNode->GetParent();
@@ -2855,7 +2856,7 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
       stats::historyDominationInfeasibilityHits++;
 #endif
   stats::historyDominationInfeasibilityHits;
-      bbt_->UnschdulInstBBThread(inst, crntCycleNum_, crntSlotNum_, parent);
+      bbt_->unschdulInst(inst, crntCycleNum_, crntSlotNum_, parent);
 #ifdef IS_DEBUG_SEARCH_ORDER
       Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: LCE history fail");
 #endif
@@ -2879,10 +2880,10 @@ bool LengthCostEnumerator::ChkCostFsblty_(SchedInstruction *inst,
 
   costChkCnt_++;
 
-  bbt_->SchdulInstBBThread(inst, crntCycleNum_, crntSlotNum_, false);
+  bbt_->schdulInst(inst, crntCycleNum_, crntSlotNum_, false);
 
   if (prune_.spillCost) {
-    isFsbl = bbt_->ChkCostFsblty(trgtSchedLngth_, newNode, !trueState);
+    isFsbl = bbt_->chkCostFsblty(trgtSchedLngth_, newNode, !trueState);
 
     if (!isFsbl && trueState) {
       stats::costInfeasibilityHits++;
@@ -2890,8 +2891,8 @@ bool LengthCostEnumerator::ChkCostFsblty_(SchedInstruction *inst,
       Logger::Info("Detected cost infeasibility of inst %d in cycle %d",
                    inst == NULL ? -2 : inst->GetNum(), crntCycleNum_);
 #endif
-  costInfsbl++;
-      bbt_->UnschdulInstBBThread(inst, crntCycleNum_, crntSlotNum_,
+  CostInfsbl++;
+      bbt_->unschdulInst(inst, crntCycleNum_, crntSlotNum_,
                          newNode->GetParent());
     }
   }
@@ -2903,7 +2904,7 @@ bool LengthCostEnumerator::ChkCostFsblty_(SchedInstruction *inst,
 bool LengthCostEnumerator::BackTrack_(bool trueState) {
   SchedInstruction *inst = crntNode_->GetInst();
 
-  bbt_->UnschdulInstBBThread(inst, crntCycleNum_, crntSlotNum_, crntNode_->GetParent());
+  bbt_->unschdulInst(inst, crntCycleNum_, crntSlotNum_, crntNode_->GetParent());
 
   bool fsbl = Enumerator::BackTrack_(trueState);
 
@@ -3556,7 +3557,7 @@ void LengthCostEnumerator::getAndRemoveInstFromRdyLst(int instNum, SchedInstruct
 /*****************************************************************************/
 void LengthCostEnumerator::schedulePrefixInst_(SchedInstruction *instToSchdul, std::stack<InstCount> &costStack) {
   instToSchdul->Schedule(crntCycleNum_, crntSlotNum_, SolverID_);
-  bbt_->SchdulInstBBThread(instToSchdul, crntCycleNum_, crntSlotNum_, false);
+  bbt_->schdulInst(instToSchdul, crntCycleNum_, crntSlotNum_, false);
   costStack.push(bbt_->getCrntPeakSpillCost());
   
   ConstrainedScheduler::SchdulInst_(instToSchdul, crntCycleNum_);
@@ -3572,7 +3573,7 @@ void LengthCostEnumerator::schedulePrefixInst_(SchedInstruction *instToSchdul, s
 void LengthCostEnumerator::unschedulePrefixInst_(SchedInstruction *instToUnschdul, std::stack<InstCount> &costStack) {
   InstCount tempCost = costStack.top();
   costStack.pop();
-  bbt_->UnschdulInstBBThread2(instToUnschdul, crntCycleNum_, crntSlotNum_, tempCost);
+  bbt_->unschdulInstAndRevert(instToUnschdul, crntCycleNum_, crntSlotNum_, tempCost);
   rdyLst_->RemoveLatestSubList();
   rdyLst_->AddInst(instToUnschdul);
   MovToPrevSlot_(crntSlotNum_);
@@ -3632,11 +3633,11 @@ void LengthCostEnumerator::splitNode(std::shared_ptr<HalfNode> &ExploreNode, Ins
       heur[0] = nextKey;
     }
 
-    bbt_->UpdateSpillInfoForSchdul_(temp, false);
+    bbt_->updateSpillInfoForSchdul(temp, false);
     tempPrefix2.push(temp->GetNum());
 
     fillPool->push(std::move(std::make_shared<HalfNode>(tempPrefix2, heur, bbt_->getCrntSpillCost())));
-    bbt_->UpdateSpillInfoForUnSchdul_(temp);
+    bbt_->updateSpillInfoForUnSchdul(temp);
   }
 
   for (int i = 0; i < prefixLength; i++) {
@@ -3729,7 +3730,7 @@ void LengthCostEnumerator::getRdyListAsNodes(std::pair<EnumTreeNode *, unsigned 
   SchedInstruction *inst = node->GetInst();
 
   if (flag) {
-    bbt_->UnschdulInstBBThread(inst, crntCycleNum_, crntSlotNum_, crntNode_->GetParent());
+    bbt_->unschdulInst(inst, crntCycleNum_, crntSlotNum_, crntNode_->GetParent());
 
     EnumTreeNode *trgtNode = crntNode_->GetParent();
     crntNode_ = trgtNode;
@@ -3892,7 +3893,7 @@ EnumTreeNode *LengthCostEnumerator::allocAndInitNextNode(std::pair<SchedInstruct
 
   //BACKTRACK
 
-  bbt_->UnschdulInstBBThread(inst, crntCycleNum_, crntSlotNum_, crntNode_->GetParent());
+  bbt_->unschdulInst(inst, crntCycleNum_, crntSlotNum_, crntNode_->GetParent());
 
   EnumTreeNode *trgtNode = crntNode_->GetParent();
 

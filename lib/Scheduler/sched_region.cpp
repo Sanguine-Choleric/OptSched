@@ -319,7 +319,7 @@ FUNC_RESULT SchedRegion::FindOptimalSchedule(
   // This must be done after SetupForSchdulng() or UpdateSetupForSchdulng() to
   // avoid resetting lower bound values.
   if (!BbSchedulerEnabled)
-    costLwrBound_ = CmputCostLwrBound();
+    costLwrBound_ = cmputCostLwrBound();
   else
     CmputLwrBounds_(false, 0);
   //TODO JEFF do we need to re CmputLwrBounds_ after resetting DDG?
@@ -871,7 +871,7 @@ void SchedRegion::CmputLwrBounds_(bool useFileBounds, int SolverID) {
   if (useFileBounds)
     UseFileBounds_();
 
-  costLwrBound_ = CmputCostLwrBound();
+  costLwrBound_ = cmputCostLwrBound();
 
   delete rlxdSchdulr;
   delete rvrsRlxdSchdulr;

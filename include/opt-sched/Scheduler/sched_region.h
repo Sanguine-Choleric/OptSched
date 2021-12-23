@@ -75,12 +75,12 @@ public:
   // External abstract functions.
 
   // TODO(max): Document.
-  virtual int CmputCostLwrBound() = 0;
+  virtual int cmputCostLwrBound() = 0;
   // TODO(max): Document.
   virtual InstCount UpdtOptmlSched(InstSchedule *crntSched,
                                    LengthCostEnumerator *enumrtr) = 0;
   // TODO(max): Document.
-  //virtual bool ChkCostFsblty(InstCount trgtLngth, EnumTreeNode *treeNode) = 0;
+  //virtual bool chkCostFsblty(InstCount trgtLngth, EnumTreeNode *treeNode) = 0;
   // TODO(max): Document.
   virtual void SchdulInst(SchedInstruction *inst, InstCount cycleNum,
                           InstCount slotNum, bool trackCnflcts) = 0;
