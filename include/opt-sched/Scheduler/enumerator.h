@@ -501,6 +501,8 @@ protected:
   uint64_t relaxedSchedInfsbl = 0;
   
 
+  bool OOMFlag = false;
+
   // TODO(max): Document.
   bool isCnstrctd_;
 

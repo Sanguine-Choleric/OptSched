@@ -105,6 +105,65 @@ class Register;
 // There is a circular dependence between SchedInstruction and SchedRange.
 class SchedRange;
 
+class SchedInstruction;
+
+
+
+// a subclass containing the SI fields that are modified during scheduling
+// Currently, only the RP pass is parallelized so only the fields modified in first 
+// pass are contained here. Things like frwrdLwrBounds which are modified during 
+// ILP pass scheduling are not included.
+class SISchedFields {
+private:
+  bool ready_;
+  InstCount *rdyCyclePerPrdcsr_;
+  InstCount minRdyCycle_;
+  InstCount *prevMinRdyCyclePerPrdcsr_;
+  InstCount unschduldPrdcsrCnt_;
+  InstCount unschduldScsrCnt_;
+  int16_t lastUseCnt_;
+  InstCount crntSchedCycle_;
+  InstCount crntSchedSlot_;
+
+public:
+  SISchedFields();
+  ~SISchedFields();
+
+  inline void allocMem(InstCount prdCnt, InstCount sucCnt);
+  inline void deallocMem();
+
+  inline void init(InstCount prdCnt, InstCount sucCnt); 
+  inline void reset(InstCount prdCnt, InstCount sucCnt) ;
+
+  inline bool getReady() {return ready_;};
+  inline void setReady(bool ready) {ready_ = ready;};
+
+  inline InstCount getMinRdyCycle() {return minRdyCycle_;};
+  inline void setMinRdyCycle(InstCount value) {minRdyCycle_ = value;};
+
+  inline InstCount getRdyCyclePerPrdcsr(int prdNum) {return rdyCyclePerPrdcsr_[prdNum];};
+  inline void setRdyCyclePerPrdcsr(int prdNum, InstCount value) {rdyCyclePerPrdcsr_[prdNum] = value;};
+
+  inline InstCount getPrevMinRdyCyclePerPrdcsr(int prdNum)  {return prevMinRdyCyclePerPrdcsr_[prdNum];};
+  inline void setPrevMinRdyCyclePerPrdcsr(int prdNum, InstCount value)  {prevMinRdyCyclePerPrdcsr_[prdNum] = value;};
+
+  inline InstCount getUnschduldPrdcsrCnt()  {return unschduldPrdcsrCnt_;};
+  inline void setUnschduldPrdcsrCnt(InstCount value)  {unschduldPrdcsrCnt_ = value;};
+
+  inline InstCount getUnschduldScsrCnt(int )  {return unschduldScsrCnt_;};
+  inline void setUnschduldScsrCnt(InstCount value)  {unschduldScsrCnt_ = value;};
+
+  inline InstCount getCrntSchedSlot() {return crntSchedSlot_;};
+  inline void setCrntSchedSlot(InstCount value) {crntSchedSlot_ = value;};
+
+  inline InstCount getCrntSchedCycle() {return crntSchedCycle_;};
+  inline void setCrntSchedCycle(InstCount value)  {crntSchedCycle_ = value;};
+
+  inline int16_t getLastUseCnt() {return lastUseCnt_;};
+  inline void setLastUseCnt(int16_t value) {lastUseCnt_ = value;};
+};
+
+
 // An object of this class contains all the information that a scheduler
 // needs to keep track of for an instruction. This class is derived from
 // GraphNode, since, from the scheduler's point of view, an instruction is a
@@ -439,7 +498,7 @@ public:
   void ComputeAdjustedUseCnt(SchedInstruction *inst);
 
   int16_t CmputLastUseCnt(int SolverID);
-  int16_t GetLastUseCnt(int SolverID) { return lastUseCnt_[SolverID]; }
+  int16_t GetLastUseCnt(int SolverID) { return DynamicFields_[SolverID]->getLastUseCnt(); }
 
   InstType GetCrtclPathFrmRoot() { return crtclPathFrmRoot_; }
 
@@ -507,34 +566,35 @@ protected:
   /***************************************************************************
    * Used during scheduling                                                  *
    ***************************************************************************/
+  SISchedFields **DynamicFields_;
   // Whether the instruction is currently in the Ready List.
-  bool *ready_;
+  //bool *ready_;
   // Each entry in this array holds the cycle in which this instruction will
   // become partially ready by satisfying the dependence of one predecessor.
   // For a predecessor that has not been scheduled the corresponding entry is
   // set to -1.
-  InstCount **rdyCyclePerPrdcsr_;
+  //InstCount **rdyCyclePerPrdcsr_;
   // A lower bound on the cycle in which this instruction will be ready. This
   // is the maximum entry in the "readyCyclePerPrdcsr_" array. When all
   // predecessors have been scheduled, this value gives the cycle in which
   // this instruction will actually become ready.
-  InstCount *minRdyCycle_;
+  // InstCount *minRdyCycle_;
   // The previous value of the minRdyCycle_, saved before the scheduling of a
   // predecessor to enable backtracking if this predecessor is unscheduled.
-  InstCount **prevMinRdyCyclePerPrdcsr_;
+  // InstCount **prevMinRdyCyclePerPrdcsr_;
   // An array of predecessor latencies indexed by predecessor number.
   InstCount *ltncyPerPrdcsr_;
   // The number of unscheduled predecessors.
-  InstCount *unschduldPrdcsrCnt_;
+  //InstCount *unschduldPrdcsrCnt_;
   // The number of unscheduled successors.
-  InstCount *unschduldScsrCnt_;
+  //InstCount *unschduldScsrCnt_;
   /***************************************************************************/
 
   // The cycle in which this instruction is currently scheduled.
-  InstCount *crntSchedCycle_;
+  //InstCount *crntSchedCycle_;
   InstCount crntSchedCycleScalar_;
   // The slot in which this instruction is currently scheduled.
-  InstCount *crntSchedSlot_;
+  //InstCount *crntSchedSlot_;
   InstCount crntSchedSlotScalar_;
   // TODO(ghassan): Document.
   InstCount crntRlxdCycle_;
@@ -585,7 +645,7 @@ protected:
   int16_t adjustedUseCnt_;
   // The number of live virtual registers for which this instruction is
   // the last use. This value changes dynamically during scheduling
-  int16_t *lastUseCnt_;
+  //int16_t *lastUseCnt_;
   /***************************************************************************/
 
   // Whether this instruction blocks its cycle, i.e. does not allow other

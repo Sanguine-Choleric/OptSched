@@ -203,8 +203,6 @@ public:
   // Global Pool Nodes explored
   uint64_t GlobalPoolNodes = 0;
 
-
-
   // Allocate register structures needed to track cost
   void setupForSchdulng();
   // Initialize cost and register information (e.g register pressure)
@@ -235,9 +233,9 @@ public:
   bool chkCostFsblty(InstCount trgtLngth, EnumTreeNode *&treeNode, bool isGlobalPoolNode = false);
   // Not Implemented
   bool chkInstLgltyBBThread(SchedInstruction *inst);
-  // Returns the current best spill cost
+  // Returns the spill cost from last partial schedule cost calculation
   inline InstCount getCrntSpillCost() {return CrntSpillCost_;}
-  // Returns the current best peak spill cost
+  // Returns the peak spill cost from last partial schedule cost calculation
   inline InstCount getCrntPeakSpillCost() {return PeakSpillCost_;}
   // Whether or not we are using two pass version of the algorithm
   inline bool getIsTwoPass() {return TwoPassEnabled_;}

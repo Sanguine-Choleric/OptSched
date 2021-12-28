@@ -7,6 +7,76 @@
 
 using namespace llvm::opt_sched;
 
+
+
+SISchedFields::SISchedFields() {
+  //sortedPrdcsrLst_ = NULL;
+  rdyCyclePerPrdcsr_ = NULL;
+  minRdyCycle_ = INVALID_VALUE;
+  prevMinRdyCyclePerPrdcsr_ = NULL;
+  ready_ = false;
+  lastUseCnt_ = 0; 
+  crntSchedCycle_ = SCHD_UNSCHDULD;
+}
+
+
+void SISchedFields::init(InstCount prdCnt, InstCount sucCnt) {
+  ready_ = false;
+  minRdyCycle_ = INVALID_VALUE;
+  unschduldPrdcsrCnt_ = prdCnt;
+  crntSchedCycle_ = SCHD_UNSCHDULD;
+  lastUseCnt_= 0;
+
+  for (InstCount i = 0; i < prdCnt; i++) {
+    rdyCyclePerPrdcsr_[i] = INVALID_VALUE;
+    prevMinRdyCyclePerPrdcsr_[i] = INVALID_VALUE;
+  }
+}
+
+void SISchedFields::reset(InstCount prdCnt, InstCount sucCnt) {
+  ready_ = false;
+  minRdyCycle_ = INVALID_VALUE;
+  unschduldPrdcsrCnt_ = prdCnt;
+  unschduldScsrCnt_ = sucCnt;
+  crntSchedCycle_ = SCHD_UNSCHDULD;
+  lastUseCnt_ = 0;
+
+  for (int i = 0; i < prdCnt; i++) {
+      rdyCyclePerPrdcsr_[i] = INVALID_VALUE;
+      prevMinRdyCyclePerPrdcsr_[i] = INVALID_VALUE;
+  }
+
+}
+
+
+
+void SISchedFields::allocMem(int prdCnt, int sucCnt) {
+  rdyCyclePerPrdcsr_ = new InstCount[prdCnt];
+  prevMinRdyCyclePerPrdcsr_ = new InstCount[prdCnt];
+
+  unschduldPrdcsrCnt_ = prdCnt;
+  unschduldScsrCnt_ = sucCnt;
+  crntSchedCycle_ = SCHD_UNSCHDULD;
+
+  lastUseCnt_ = 0;
+
+  for (int i = 0; i < prdCnt; i++)  {
+      rdyCyclePerPrdcsr_[i] = INVALID_VALUE;
+      prevMinRdyCyclePerPrdcsr_[i] = INVALID_VALUE;
+  }
+}
+
+void SISchedFields::deallocMem() {
+  if (rdyCyclePerPrdcsr_ != NULL)
+    delete[] rdyCyclePerPrdcsr_;
+
+  if (prevMinRdyCyclePerPrdcsr_ != NULL)
+    delete[] prevMinRdyCyclePerPrdcsr_;
+}
+
+
+
+
 SchedInstruction::SchedInstruction(InstCount num, const string &name,
                                    InstType instType, const string &opCode,
                                    InstCount maxInstCnt, int nodeID,
@@ -17,6 +87,10 @@ SchedInstruction::SchedInstruction(InstCount num, const string &name,
     : GraphNode(num, maxInstCnt, NumSolvers) {
 
   NumSolvers_ = NumSolvers;
+  DynamicFields_ = new SISchedFields*[NumSolvers_];
+  for (int SolverID = 0; SolverID < NumSolvers_; SolverID++) {
+    DynamicFields_[SolverID] = new SISchedFields();
+  }
   
   // Static data that is computed only once.
   name_ = name;
@@ -39,10 +113,10 @@ SchedInstruction::SchedInstruction(InstCount num, const string &name,
   crtclPathFrmRcrsvPrdcsr_ = NULL;
 
   // Dynamic data that changes during scheduling.
-  rdyCyclePerPrdcsr_ = NULL;
-  prevMinRdyCyclePerPrdcsr_ = NULL;
-  unschduldPrdcsrCnt_ = NULL;
-  unschduldScsrCnt_ = NULL;
+  //rdyCyclePerPrdcsr_ = NULL;
+  // prevMinRdyCyclePerPrdcsr_ = NULL;
+  //unschduldPrdcsrCnt_ = NULL;
+  //unschduldScsrCnt_ = NULL;
 
   crntRlxdCycle_ = SCHD_UNSCHDULD;
   sig_ = 0;
@@ -76,24 +150,25 @@ void SchedInstruction::resetThreadWriteFields(int SolverID, bool full) {
   crntSchedCycleScalar_ = SCHD_UNSCHDULD;
   if (SolverID == -1) {  
     for (int SolverID_ = 0; SolverID_ < NumSolvers_; SolverID_++) {
+      DynamicFields_[SolverID]->reset(prdcsrCnt_, scsrCnt_);
       if (sortedPrdcsrLst_ != NULL) 
         if (sortedPrdcsrLst_[SolverID_] != NULL) 
           delete sortedPrdcsrLst_[SolverID_]; 
-      if (rdyCyclePerPrdcsr_ != NULL) 
-        if (rdyCyclePerPrdcsr_[SolverID_] != NULL) 
-          delete[] rdyCyclePerPrdcsr_[SolverID_]; 
-      if (prevMinRdyCyclePerPrdcsr_ != NULL) 
-        if (prevMinRdyCyclePerPrdcsr_[SolverID_] != NULL) 
-          delete[] prevMinRdyCyclePerPrdcsr_[SolverID_];
+      //if (rdyCyclePerPrdcsr_ != NULL) 
+      //  if (rdyCyclePerPrdcsr_[SolverID_] != NULL) 
+      //    delete[] rdyCyclePerPrdcsr_[SolverID_]; 
+      //if (prevMinRdyCyclePerPrdcsr_ != NULL) 
+      //  if (prevMinRdyCyclePerPrdcsr_[SolverID_] != NULL) 
+      //    delete[] prevMinRdyCyclePerPrdcsr_[SolverID_];
     /*if (crntRange_ != NULL)
         if (crntRange_[SolverID_] != NULL)
           delete crntRange_[SolverID];*/
     }
   
-    if (rdyCyclePerPrdcsr_ != NULL)
-      delete[] rdyCyclePerPrdcsr_; 
-    if (prevMinRdyCyclePerPrdcsr_ != NULL) 
-      delete[] prevMinRdyCyclePerPrdcsr_;
+    //if (rdyCyclePerPrdcsr_ != NULL)
+    //  delete[] rdyCyclePerPrdcsr_; 
+    //if (prevMinRdyCyclePerPrdcsr_ != NULL) 
+    //  delete[] prevMinRdyCyclePerPrdcsr_;
     if (sortedPrdcsrLst_ != NULL) 
       delete[] sortedPrdcsrLst_;
     if (sortedScsrLst_ != NULL) 
@@ -101,54 +176,54 @@ void SchedInstruction::resetThreadWriteFields(int SolverID, bool full) {
     //if (crntRange_ != NULL)
     //  delete[] crntRange_;
     
-    if (crntSchedSlot_ != NULL) 
-      delete[] crntSchedSlot_;
-    if (ready_ != NULL) 
-      delete[] ready_;
-    if (minRdyCycle_ != NULL) 
-      delete[] minRdyCycle_;
-    if (crntSchedCycle_ != NULL) 
-      delete[] crntSchedCycle_;
-    if (lastUseCnt_ != NULL) 
-      delete[] lastUseCnt_;
-    if (unschduldScsrCnt_ != NULL)
-      delete[] unschduldScsrCnt_; 
-    if (unschduldPrdcsrCnt_ != NULL)
-      delete[] unschduldPrdcsrCnt_;
+    //if (crntSchedSlot_ != NULL) 
+    //  delete[] crntSchedSlot_;
+    //if (ready_ != NULL) 
+    //  delete[] ready_;
+    //if (minRdyCycle_ != NULL) 
+    //  delete[] minRdyCycle_;
+    //if (crntSchedCycle_ != NULL) 
+    //  delete[] crntSchedCycle_;
+    //if (lastUseCnt_ != NULL) 
+    //  delete[] lastUseCnt_;
+    //if (unschduldScsrCnt_ != NULL)
+    //  delete[] unschduldScsrCnt_; 
+    //if (unschduldPrdcsrCnt_ != NULL)
+    //  delete[] unschduldPrdcsrCnt_;
   
     // Alloc Fields
-    ready_ = new bool[NumSolvers_];
-    minRdyCycle_ = new InstCount[NumSolvers_];
-    crntSchedCycle_ = new InstCount[NumSolvers_];
-    lastUseCnt_ = new int16_t[NumSolvers_];
+    //ready_ = new bool[NumSolvers_];
+    //minRdyCycle_ = new InstCount[NumSolvers_];
+    //crntSchedCycle_ = new InstCount[NumSolvers_];
+    //lastUseCnt_ = new int16_t[NumSolvers_];
     //crntRange_ = new SchedRange*[NumSolvers_];
-    unschduldScsrCnt_ = new InstCount[NumSolvers_];
-    unschduldPrdcsrCnt_ = new InstCount[NumSolvers_];
-    rdyCyclePerPrdcsr_ = new InstCount*[NumSolvers_];
-    prevMinRdyCyclePerPrdcsr_ = new InstCount*[NumSolvers_];
+    //unschduldScsrCnt_ = new InstCount[NumSolvers_];
+    //unschduldPrdcsrCnt_ = new InstCount[NumSolvers_];
+    //rdyCyclePerPrdcsr_ = new InstCount*[NumSolvers_];
+    //prevMinRdyCyclePerPrdcsr_ = new InstCount*[NumSolvers_];
     sortedPrdcsrLst_ = new PriorityList<SchedInstruction>*[NumSolvers_];
-    crntSchedSlot_ = new InstCount[NumSolvers_];
+    //crntSchedSlot_ = new InstCount[NumSolvers_];
   
     scsrCnt_ = GetScsrCnt();
     prdcsrCnt_ = GetPrdcsrCnt();
   
     // Initialize
     for (int SolverID_ = 0; SolverID_ < NumSolvers_; SolverID_++) {
-      ready_[SolverID_] = false;
-      minRdyCycle_[SolverID_] = INVALID_VALUE;
-      crntSchedCycle_[SolverID_] = SCHD_UNSCHDULD;
-      lastUseCnt_[SolverID_] = 0;
+      //ready_[SolverID_] = false;
+      //minRdyCycle_[SolverID_] = INVALID_VALUE;
+      //crntSchedCycle_[SolverID_] = SCHD_UNSCHDULD;
+      //lastUseCnt_[SolverID_] = 0;
       //crntRange_[SolverID_] = new SchedRange(this);
-      unschduldScsrCnt_[SolverID_] = scsrCnt_;
-      unschduldPrdcsrCnt_[SolverID_] = prdcsrCnt_;
-      rdyCyclePerPrdcsr_[SolverID_] = new InstCount[prdcsrCnt_];
-      prevMinRdyCyclePerPrdcsr_[SolverID_] = new InstCount[prdcsrCnt_];
+      //unschduldScsrCnt_[SolverID_] = scsrCnt_;
+      //unschduldPrdcsrCnt_[SolverID_] = prdcsrCnt_;
+      //rdyCyclePerPrdcsr_[SolverID_] = new InstCount[prdcsrCnt_];
+      //prevMinRdyCyclePerPrdcsr_[SolverID_] = new InstCount[prdcsrCnt_];
       sortedPrdcsrLst_[SolverID_] = new PriorityList<SchedInstruction>;
   
-      for (int i = 0; i < prdcsrCnt_; i++) {
-        rdyCyclePerPrdcsr_[SolverID_][i] = INVALID_VALUE;
-        prevMinRdyCyclePerPrdcsr_[SolverID_][i] = INVALID_VALUE;
-      }
+      //for (int i = 0; i < prdcsrCnt_; i++) {
+        //rdyCyclePerPrdcsr_[SolverID_][i] = INVALID_VALUE;
+        //prevMinRdyCyclePerPrdcsr_[SolverID_][i] = INVALID_VALUE;
+      //}
     }
   
     for (GraphEdge *edge = GetFrstPrdcsrEdge(0); edge != NULL;
@@ -162,18 +237,19 @@ void SchedInstruction::resetThreadWriteFields(int SolverID, bool full) {
 
   // We are resetting a specific solver
   else {
-    ready_[SolverID] = false;
-    minRdyCycle_[SolverID] = INVALID_VALUE;
-    crntSchedCycle_[SolverID] = SCHD_UNSCHDULD;
-    lastUseCnt_[SolverID] = 0;
+    DynamicFields_[SolverID]->reset(prdcsrCnt_, scsrCnt_);
+    //ready_[SolverID] = false;
+    //minRdyCycle_[SolverID] = INVALID_VALUE;
+    //crntSchedCycle_[SolverID] = SCHD_UNSCHDULD;
+    //lastUseCnt_[SolverID] = 0;
     //crntRange_[SolverID] = new SchedRange(this);
-    unschduldScsrCnt_[SolverID] = scsrCnt_;
-    unschduldPrdcsrCnt_[SolverID] = prdcsrCnt_;
+    //unschduldScsrCnt_[SolverID] = scsrCnt_;
+    //unschduldPrdcsrCnt_[SolverID] = prdcsrCnt_;
 
-    for (int i = 0; i < prdcsrCnt_; i++) {
-      rdyCyclePerPrdcsr_[SolverID][i] = INVALID_VALUE;
-      prevMinRdyCyclePerPrdcsr_[SolverID][i] = INVALID_VALUE;
-    }
+    //for (int i = 0; i < prdcsrCnt_; i++) {
+      //rdyCyclePerPrdcsr_[SolverID][i] = INVALID_VALUE;
+      //prevMinRdyCyclePerPrdcsr_[SolverID][i] = INVALID_VALUE;
+    //}
 
 
     if (full) {
@@ -256,20 +332,21 @@ bool SchedInstruction::UseFileBounds() {
 
 bool SchedInstruction::InitForSchdulng(int SolverID, InstCount schedLngth, 
                                        LinkedList<SchedInstruction> *fxdLst) {
-  crntSchedCycle_[SolverID] = SCHD_UNSCHDULD;
+  DynamicFields_[SolverID]->init(prdcsrCnt_, scsrCnt_);
+  //crntSchedCycle_[SolverID] = SCHD_UNSCHDULD;
   crntRlxdCycle_ = SCHD_UNSCHDULD;
   crntSchedCycleScalar_ = SCHD_UNSCHDULD;
 
-  for (InstCount i = 0; i < prdcsrCnt_; i++) {
-    rdyCyclePerPrdcsr_[SolverID][i] = INVALID_VALUE;
-    prevMinRdyCyclePerPrdcsr_[SolverID][i] = INVALID_VALUE;
-  }
+  //for (InstCount i = 0; i < prdcsrCnt_; i++) {
+    //rdyCyclePerPrdcsr_[SolverID][i] = INVALID_VALUE;
+    //prevMinRdyCyclePerPrdcsr_[SolverID][i] = INVALID_VALUE;
+  //}
 
-  ready_[SolverID] = false;
-  minRdyCycle_[SolverID] = INVALID_VALUE;
-  unschduldPrdcsrCnt_[SolverID] = prdcsrCnt_;
-  unschduldScsrCnt_[SolverID] = scsrCnt_;
-  lastUseCnt_[SolverID] = 0;
+  //ready_[SolverID] = false;
+  //minRdyCycle_[SolverID] = INVALID_VALUE;
+  //unschduldPrdcsrCnt_[SolverID] = prdcsrCnt_;
+  //unschduldScsrCnt_[SolverID] = scsrCnt_;
+  //lastUseCnt_[SolverID] = 0;
 
 
   if (schedLngth != INVALID_VALUE) {
@@ -289,41 +366,41 @@ void SchedInstruction::AllocMem_(InstCount instCnt, bool isCP_FromScsr,
   
   // Thread dependent structures
   // TODO: cacheline dep, combine to struct
-  ready_ = new bool[NumSolvers_];
-  minRdyCycle_ = new InstCount[NumSolvers_];
-  crntSchedCycle_ = new InstCount[NumSolvers_];
-  lastUseCnt_ = new int16_t[NumSolvers_];
+  //ready_ = new bool[NumSolvers_];
+  //minRdyCycle_ = new InstCount[NumSolvers_];
+  //crntSchedCycle_ = new InstCount[NumSolvers_];
+  //lastUseCnt_ = new int16_t[NumSolvers_];
 
   crntRange_ = new SchedRange(this);
-  unschduldScsrCnt_ = new InstCount[NumSolvers_];
-  unschduldPrdcsrCnt_ = new InstCount[NumSolvers_];
-  rdyCyclePerPrdcsr_ = new InstCount*[NumSolvers_];
-  prevMinRdyCyclePerPrdcsr_ = new InstCount*[NumSolvers_];
+  //unschduldScsrCnt_ = new InstCount[NumSolvers_];
+  //unschduldPrdcsrCnt_ = new InstCount[NumSolvers_];
+  //rdyCyclePerPrdcsr_ = new InstCount*[NumSolvers_];
+  //prevMinRdyCyclePerPrdcsr_ = new InstCount*[NumSolvers_];
   sortedPrdcsrLst_ = new PriorityList<SchedInstruction>*[NumSolvers_];
 
   scsrCnt_ = GetScsrCnt();
   prdcsrCnt_ = GetPrdcsrCnt();
 
   for (int SolverID = 0; SolverID < NumSolvers_; SolverID++) {
+    DynamicFields_[SolverID]->allocMem(prdcsrCnt_, scsrCnt_);
     // Each thread needs their own memory
-    ready_[SolverID] = false;
-    minRdyCycle_[SolverID] = INVALID_VALUE;
-    crntSchedCycle_[SolverID] = SCHD_UNSCHDULD;
-    lastUseCnt_[SolverID] = 0;
-    unschduldScsrCnt_[SolverID] = scsrCnt_;
-    unschduldPrdcsrCnt_[SolverID] = prdcsrCnt_;
-    rdyCyclePerPrdcsr_[SolverID] = new InstCount[prdcsrCnt_];
-    prevMinRdyCyclePerPrdcsr_[SolverID] = new InstCount[prdcsrCnt_];
+    //ready_[SolverID] = false;
+    //minRdyCycle_[SolverID] = INVALID_VALUE;
+    //crntSchedCycle_[SolverID] = SCHD_UNSCHDULD;
+    //lastUseCnt_[SolverID] = 0;
+    //unschduldScsrCnt_[SolverID] = scsrCnt_;
+    //unschduldPrdcsrCnt_[SolverID] = prdcsrCnt_;
+    //rdyCyclePerPrdcsr_[SolverID] = new InstCount[prdcsrCnt_];
+    //prevMinRdyCyclePerPrdcsr_[SolverID] = new InstCount[prdcsrCnt_];
     sortedPrdcsrLst_[SolverID] = new PriorityList<SchedInstruction>;
 
-    for (int i = 0; i < prdcsrCnt_; i++)
-    {
-      rdyCyclePerPrdcsr_[SolverID][i] = INVALID_VALUE;
-      prevMinRdyCyclePerPrdcsr_[SolverID][i] = INVALID_VALUE;
-    }
+    //for (int i = 0; i < prdcsrCnt_; i++) {
+      //rdyCyclePerPrdcsr_[SolverID][i] = INVALID_VALUE;
+      //prevMinRdyCyclePerPrdcsr_[SolverID][i] = INVALID_VALUE;
+    //}
   }
 
-  crntSchedSlot_ = new InstCount[NumSolvers_];
+  //crntSchedSlot_ = new InstCount[NumSolvers_];
 
   ltncyPerPrdcsr_ = new InstCount[prdcsrCnt_];
 
@@ -364,21 +441,22 @@ void SchedInstruction::DeAllocMem_() {
   assert(memAllocd_);
 
   for (int SolverID = 0; SolverID < NumSolvers_; SolverID++) {
+    DynamicFields_[SolverID]->deallocMem();
     if (sortedPrdcsrLst_ != NULL)
       if (sortedPrdcsrLst_[SolverID] != NULL)
         delete sortedPrdcsrLst_[SolverID];
-    if (rdyCyclePerPrdcsr_ != NULL)
-      if (rdyCyclePerPrdcsr_[SolverID] != NULL)
-        delete[] rdyCyclePerPrdcsr_[SolverID];
-    if (prevMinRdyCyclePerPrdcsr_ != NULL)
-      if (prevMinRdyCyclePerPrdcsr_[SolverID] != NULL)
-        delete[] prevMinRdyCyclePerPrdcsr_[SolverID];
+    //if (rdyCyclePerPrdcsr_ != NULL)
+    //  if (rdyCyclePerPrdcsr_[SolverID] != NULL)
+    //    delete[] rdyCyclePerPrdcsr_[SolverID];
+    //if (prevMinRdyCyclePerPrdcsr_ != NULL)
+    //  if (prevMinRdyCyclePerPrdcsr_[SolverID] != NULL)
+    //    delete[] prevMinRdyCyclePerPrdcsr_[SolverID];
   }
 
-  if (rdyCyclePerPrdcsr_ != NULL)
-    delete[] rdyCyclePerPrdcsr_;
-  if (prevMinRdyCyclePerPrdcsr_ != NULL)
-    delete[] prevMinRdyCyclePerPrdcsr_;
+  //if (rdyCyclePerPrdcsr_ != NULL)
+  //  delete[] rdyCyclePerPrdcsr_;
+  //if (prevMinRdyCyclePerPrdcsr_ != NULL)
+  //  delete[] prevMinRdyCyclePerPrdcsr_;
   if (sortedPrdcsrLst_ != NULL)
     delete[] sortedPrdcsrLst_;
   if (sortedScsrLst_ != NULL)
@@ -392,20 +470,20 @@ void SchedInstruction::DeAllocMem_() {
     delete[] crtclPathFrmRcrsvScsr_;
   if (crtclPathFrmRcrsvPrdcsr_ != NULL)
     delete[] crtclPathFrmRcrsvPrdcsr_;
-  if (crntSchedSlot_ != NULL)
-    delete[] crntSchedSlot_;
-  if (ready_ != NULL)
-    delete[] ready_;
-  if (minRdyCycle_ != NULL)
-    delete[] minRdyCycle_;
-  if (crntSchedCycle_ != NULL)
-    delete[] crntSchedCycle_;
-  if (lastUseCnt_ != NULL)
-    delete[] lastUseCnt_;
-  if (unschduldScsrCnt_ != NULL)
-    delete[] unschduldScsrCnt_;
-  if (unschduldPrdcsrCnt_ != NULL)
-    delete[] unschduldPrdcsrCnt_;
+  //if (crntSchedSlot_ != NULL)
+  //  delete[] crntSchedSlot_;
+  //if (ready_ != NULL)
+  //  delete[] ready_;
+  //if (minRdyCycle_ != NULL)
+  //  delete[] minRdyCycle_;
+  //if (crntSchedCycle_ != NULL)
+  //  delete[] crntSchedCycle_;
+  //if (lastUseCnt_ != NULL)
+  //  delete[] lastUseCnt_;
+  //if (unschduldScsrCnt_ != NULL)
+  //  delete[] unschduldScsrCnt_;
+  //if (unschduldPrdcsrCnt_ != NULL)
+  //  delete[] unschduldPrdcsrCnt_;
 
   memAllocd_ = false;
 
@@ -711,33 +789,36 @@ void SchedInstruction::SetBounds(InstCount flb, InstCount blb) {
 bool SchedInstruction::PrdcsrSchduld(InstCount prdcsrNum, InstCount cycle,
                                      InstCount &rdyCycle, int SolverID) {
   assert(prdcsrNum < prdcsrCnt_);
-  rdyCyclePerPrdcsr_[SolverID][prdcsrNum] = cycle + ltncyPerPrdcsr_[prdcsrNum];
-  prevMinRdyCyclePerPrdcsr_[SolverID][prdcsrNum] = minRdyCycle_[SolverID];
+  DynamicFields_[SolverID]->setRdyCyclePerPrdcsr(prdcsrNum, cycle + ltncyPerPrdcsr_[prdcsrNum]);
+  DynamicFields_[SolverID]->setPrevMinRdyCyclePerPrdcsr(prdcsrNum, DynamicFields_[SolverID]->getMinRdyCycle());
 
-  if (rdyCyclePerPrdcsr_[SolverID][prdcsrNum] > minRdyCycle_[SolverID]) {
-    minRdyCycle_[SolverID] = rdyCyclePerPrdcsr_[SolverID][prdcsrNum];
+  if (DynamicFields_[SolverID]->getRdyCyclePerPrdcsr(prdcsrNum) > DynamicFields_[SolverID]->getMinRdyCycle()) {
+    DynamicFields_[SolverID]->setMinRdyCycle(DynamicFields_[SolverID]->getRdyCyclePerPrdcsr(prdcsrNum));
   }
 
-  rdyCycle = minRdyCycle_[SolverID];
-  unschduldPrdcsrCnt_[SolverID]--;
-  return (unschduldPrdcsrCnt_[SolverID] == 0);
+  rdyCycle = DynamicFields_[SolverID]->getMinRdyCycle();
+  DynamicFields_[SolverID]->setUnschduldPrdcsrCnt(DynamicFields_[SolverID]->getUnschduldPrdcsrCnt()-1);
+  return (DynamicFields_[SolverID]->getUnschduldPrdcsrCnt() == 0);
 }
 
 bool SchedInstruction::PrdcsrUnSchduld(InstCount prdcsrNum,
                                        InstCount &rdyCycle, int SolverID) {
   assert(prdcsrNum < prdcsrCnt_);
-  assert(rdyCyclePerPrdcsr_[SolverID][prdcsrNum] != INVALID_VALUE);
-  rdyCycle = minRdyCycle_[SolverID];
-  minRdyCycle_[SolverID] = prevMinRdyCyclePerPrdcsr_[SolverID][prdcsrNum];
-  rdyCyclePerPrdcsr_[SolverID][prdcsrNum] = INVALID_VALUE;
-  unschduldPrdcsrCnt_[SolverID]++;
-  assert(unschduldPrdcsrCnt_[SolverID] != prdcsrCnt_ || minRdyCycle_[SolverID] == INVALID_VALUE);
-  return (unschduldPrdcsrCnt_[SolverID] == 1);
+  assert(DynamicFields_[SolverID]->getRdyCyclePerPrdcsr(prdcsrNum) != INVALID_VALUE);
+  rdyCycle = DynamicFields_[SolverID]->getMinRdyCycle();
+  DynamicFields_[SolverID]->setMinRdyCycle(DynamicFields_[SolverID]->getPrevMinRdyCyclePerPrdcsr(prdcsrNum));
+  DynamicFields_[SolverID]->setRdyCyclePerPrdcsr(prdcsrNum, INVALID_VALUE);
+  DynamicFields_[SolverID]->setUnschduldPrdcsrCnt(DynamicFields_[SolverID]->getUnschduldPrdcsrCnt()+1);
+  assert(DynamicFields_[SolverID]->getUnschduldPrdcsrCnt() != prdcsrCnt_ || DynamicFields_[SolverID]->getMinRdyCycle() == INVALID_VALUE);
+  return (DynamicFields_[SolverID]->getUnschduldPrdcsrCnt() == 1);
 }
 
+// TODO(jeff) not implemented?
 bool SchedInstruction::ScsrSchduld() {
-  unschduldScsrCnt_--;
-  return unschduldScsrCnt_ == 0;
+  //DynamicFields_[0]->getUnsch
+  //unschduldScsrCnt_--;
+  //return unschduldScsrCnt_ == 0;
+  return true;
 }
 
 void SchedInstruction::SetInstType(InstType type) { instType_ = type; }
@@ -755,9 +836,11 @@ bool SchedInstruction::IsSchduld(int SolverID, InstCount *cycle) const {
     return crntSchedCycleScalar_ != SCHD_UNSCHDULD;
   }
 
+  DynamicFields_[SolverID]->getCrntSchedCycle();
+
   if (cycle)
-    *cycle = crntSchedCycle_[SolverID];
-  return crntSchedCycle_[SolverID] != SCHD_UNSCHDULD;
+    *cycle = DynamicFields_[SolverID]->getCrntSchedCycle();
+  return DynamicFields_[SolverID]->getCrntSchedCycle() != SCHD_UNSCHDULD;
 }
 
 bool SchedInstruction::IsSchduldSecondPass() const {
@@ -766,19 +849,18 @@ bool SchedInstruction::IsSchduldSecondPass() const {
 
 InstCount SchedInstruction::GetSchedCycle(int SolverID) const { 
   if (SolverID == -1) return crntSchedCycleScalar_;
-  return crntSchedCycle_[SolverID]; 
+  return DynamicFields_[SolverID]->getCrntSchedCycle(); 
 }
 
 InstCount SchedInstruction::GetSchedSlot(int SolverID) const {
-   
-  return crntSchedSlot_[SolverID]; 
+  return DynamicFields_[SolverID]->getCrntSchedSlot(); 
 }
 
 InstCount SchedInstruction::GetCrntDeadline(int SolverID) const {
   if (SolverID == -1) {
     return IsSchduldSecondPass() ? crntSchedCycleScalar_ : crntRange_->GetDeadline();
   }
-  return IsSchduld(SolverID) ? crntSchedCycle_[SolverID] : crntRange_->GetDeadline();
+  return IsSchduld(SolverID) ? DynamicFields_[SolverID]->getCrntSchedCycle() : crntRange_->GetDeadline();
 }
 
 InstCount SchedInstruction::GetCrntDeadlineSecondPass() {
@@ -790,7 +872,7 @@ InstCount SchedInstruction::GetCrntReleaseTime(int SolverID) const {
     return IsSchduldSecondPass() ? crntSchedCycleScalar_ : GetCrntLwrBound(DIR_FRWRD);
   }
 
-  return IsSchduld(SolverID) ? crntSchedCycle_[SolverID] : GetCrntLwrBound(DIR_FRWRD);
+  return IsSchduld(SolverID) ? DynamicFields_[SolverID]->getCrntSchedCycle() : GetCrntLwrBound(DIR_FRWRD);
 }
 
 InstCount SchedInstruction::GetRlxdCycle(int SolverID) const {
@@ -798,7 +880,7 @@ InstCount SchedInstruction::GetRlxdCycle(int SolverID) const {
     return IsSchduldSecondPass() ? crntSchedCycleScalar_ : crntRlxdCycle_;
   }
 
-  return IsSchduld(SolverID) ? crntSchedCycle_[SolverID] : crntRlxdCycle_;
+  return IsSchduld(SolverID) ? DynamicFields_[SolverID]->getCrntSchedCycle() : crntRlxdCycle_;
 }
 
 // TODO: SHOULD BE THREAD INDEPENDENT FOR 2ND PASS
@@ -811,16 +893,16 @@ void SchedInstruction::Schedule(InstCount cycleNum, InstCount slotNum, int Solve
     crntSchedSlotScalar_ = slotNum;
     return;
   }
-  assert(crntSchedCycle_[SolverID] == SCHD_UNSCHDULD);
-  crntSchedCycle_[SolverID] = cycleNum;
-  crntSchedSlot_[SolverID] = slotNum;
+  assert(DynamicFields_[SolverID]->getCrntSchedCycle() == SCHD_UNSCHDULD);
+  DynamicFields_[SolverID]->setCrntSchedCycle(cycleNum);
+  DynamicFields_[SolverID]->setCrntSchedSlot(slotNum);
 }
 
-bool SchedInstruction::IsInReadyList(int SolverID) const { return ready_[SolverID]; }
+bool SchedInstruction::IsInReadyList(int SolverID) const { return DynamicFields_[SolverID]->getReady(); }
 
-void SchedInstruction::PutInReadyList(int SolverID) { ready_[SolverID] = true; }
+void SchedInstruction::PutInReadyList(int SolverID) { DynamicFields_[SolverID]->setReady(true); }
 
-void SchedInstruction::RemoveFromReadyList(int SolverID) { ready_[SolverID] = false; }
+void SchedInstruction::RemoveFromReadyList(int SolverID) { DynamicFields_[SolverID]->setReady(false); }
 
 
 // TODO: SHOULD BE THREAD INDEPENDENT FOR 2ND PASS (many functions below)
@@ -840,9 +922,9 @@ void SchedInstruction::UnSchedule(int SolverID) {
     return;
   }
 
-  assert(crntSchedCycle_[SolverID] != SCHD_UNSCHDULD);
-  crntSchedCycle_[SolverID] = SCHD_UNSCHDULD;
-  crntSchedSlot_[SolverID] = SCHD_UNSCHDULD;
+  assert(DynamicFields_[SolverID]->getCrntSchedCycle() != SCHD_UNSCHDULD);
+  DynamicFields_[SolverID]->setCrntSchedCycle(SCHD_UNSCHDULD);
+  DynamicFields_[SolverID]->setCrntSchedSlot(SCHD_UNSCHDULD);
 
 }
 
@@ -946,7 +1028,7 @@ void SchedInstruction::SetPrdcsrNums_() {
 }
 
 int16_t SchedInstruction::CmputLastUseCnt(int SolverID) {
-  lastUseCnt_[SolverID] = 0;
+  DynamicFields_[SolverID]->setLastUseCnt(0);
 
   for (int i = 0; i < useCnt_; i++) {
     Register *reg = uses_[i];
@@ -955,10 +1037,10 @@ int16_t SchedInstruction::CmputLastUseCnt(int SolverID) {
     
     
     if (reg->GetCrntUseCnt(SolverID) + 1 == reg->GetUseCnt())
-      lastUseCnt_[SolverID]++;
+      DynamicFields_[SolverID]->setLastUseCnt(DynamicFields_[SolverID]->getLastUseCnt()+1);
   }
 
-  return lastUseCnt_[SolverID];
+  return DynamicFields_[SolverID]->getLastUseCnt();
 }
 
 /******************************************************************************

@@ -1611,6 +1611,11 @@ void Enumerator::RestoreCrntState_(SchedInstruction *inst,
 /*****************************************************************************/
 
 void Enumerator::StepFrwrd_(EnumTreeNode *&newNode) {
+  if (OOMFlag == false) {
+    Logger::Info("FIRST CALL SF");
+    OOMFlag = true;
+  }
+
   ++bbt_->StepFrwrds;
   SchedInstruction *instToSchdul = newNode->GetInst();
   InstCount instNumToSchdul;
@@ -2635,7 +2640,8 @@ bool LengthEnumerator::WasObjctvMet_() {
 
 HistEnumTreeNode *LengthEnumerator::AllocHistNode_(EnumTreeNode *node, bool setCost) {
   HistEnumTreeNode *histNode = histNodeAlctr_->GetObject();
-  histNode->Construct(node, false, isGenerateState_);
+  if (histNode != nullptr)
+    histNode->Construct(node, false, isGenerateState_);
   return histNode;
 }
 /*****************************************************************************/
