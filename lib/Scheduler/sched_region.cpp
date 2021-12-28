@@ -585,7 +585,7 @@ FUNC_RESULT SchedRegion::FindOptimalSchedule(
     enumTime = Utilities::GetProcessorTime() - enumStart;
     stats::enumerationTime.Record(enumTime);
 
-    bestSched_->Print(std::cout, "Best Schedule after Enum");
+    //bestSched_->Print(std::cout, "Best Schedule after Enum");
   }
 
   // Step 5: Run ACO if schedule from enumerator is not optimal

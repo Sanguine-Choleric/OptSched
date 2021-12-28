@@ -124,6 +124,7 @@ private:
   int16_t lastUseCnt_;
   InstCount crntSchedCycle_;
   InstCount crntSchedSlot_;
+  InstCount padding[2];
 
 public:
   SISchedFields();

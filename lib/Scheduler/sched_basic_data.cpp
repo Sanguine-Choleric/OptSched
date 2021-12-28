@@ -87,6 +87,7 @@ SchedInstruction::SchedInstruction(InstCount num, const string &name,
     : GraphNode(num, maxInstCnt, NumSolvers) {
 
   NumSolvers_ = NumSolvers;
+  //Logger::Info("size of SiSchedFields is %zu", sizeof(SISchedFields));
   DynamicFields_ = new SISchedFields*[NumSolvers_];
   for (int SolverID = 0; SolverID < NumSolvers_; SolverID++) {
     DynamicFields_[SolverID] = new SISchedFields();
