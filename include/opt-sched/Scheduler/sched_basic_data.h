@@ -499,7 +499,7 @@ public:
   void ComputeAdjustedUseCnt(SchedInstruction *inst);
 
   int16_t CmputLastUseCnt(int SolverID);
-  int16_t GetLastUseCnt(int SolverID) { return DynamicFields_[SolverID]->getLastUseCnt(); }
+  int16_t GetLastUseCnt(int SolverID) { return DynamicFields_[SolverID].getLastUseCnt(); }
 
   InstType GetCrtclPathFrmRoot() { return crtclPathFrmRoot_; }
 
@@ -567,7 +567,7 @@ protected:
   /***************************************************************************
    * Used during scheduling                                                  *
    ***************************************************************************/
-  SISchedFields **DynamicFields_;
+  SISchedFields *DynamicFields_;
   // Whether the instruction is currently in the Ready List.
   //bool *ready_;
   // Each entry in this array holds the cycle in which this instruction will

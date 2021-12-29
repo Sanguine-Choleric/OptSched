@@ -10,15 +10,15 @@ using namespace llvm::opt_sched;
 
 // we wont have multiple list_sched in parallel
 // does this impact availability of 0th index for enumeration?
-#define SOLVERID 0
+const int SolverID = 0;
 
 ListScheduler::ListScheduler(DataDepGraph *dataDepGraph, MachineModel *machMdl,
                              InstCount schedUprBound, SchedPriorities prirts)
-    : ConstrainedScheduler(dataDepGraph, machMdl, schedUprBound, SOLVERID) {
+    : ConstrainedScheduler(dataDepGraph, machMdl, schedUprBound, SolverID) {
   crntSched_ = NULL;
 
   prirts_ = prirts;
-  rdyLst_ = new ReadyList(dataDepGraph_, prirts, SOLVERID);
+  rdyLst_ = new ReadyList(dataDepGraph_, prirts, SolverID);
 }
 
 ListScheduler::~ListScheduler() { delete rdyLst_; }
@@ -62,7 +62,7 @@ FUNC_RESULT ListScheduler::FindSchedule(InstSchedule *sched, SchedRegion *rgn) {
       isEmptyCycle = false;
       instNum = inst->GetNum();
       SchdulInst_(inst, crntCycleNum_);
-      inst->Schedule(crntCycleNum_, crntSlotNum_, SOLVERID);
+      inst->Schedule(crntCycleNum_, crntSlotNum_, SolverID);
       rgn->SchdulInst(inst, crntCycleNum_, crntSlotNum_, false);
       DoRsrvSlots_(inst);
       rdyLst_->RemoveNextPriorityInst();
