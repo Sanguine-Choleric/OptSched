@@ -19,6 +19,10 @@ SISchedFields::SISchedFields() {
   crntSchedCycle_ = SCHD_UNSCHDULD;
 }
 
+SISchedFields::~SISchedFields() {
+  deallocMem();
+}
+
 
 void SISchedFields::init(InstCount prdCnt, InstCount sucCnt) {
   ready_ = false;
@@ -67,11 +71,15 @@ void SISchedFields::allocMem(int prdCnt, int sucCnt) {
 }
 
 void SISchedFields::deallocMem() {
-  if (rdyCyclePerPrdcsr_ != NULL)
+  if (rdyCyclePerPrdcsr_ != NULL) {
     delete[] rdyCyclePerPrdcsr_;
+    rdyCyclePerPrdcsr_ = NULL;
+  }
 
-  if (prevMinRdyCyclePerPrdcsr_ != NULL)
+  if (prevMinRdyCyclePerPrdcsr_ != NULL) {
     delete[] prevMinRdyCyclePerPrdcsr_;
+    prevMinRdyCyclePerPrdcsr_ = NULL;
+  }
 }
 
 
@@ -140,6 +148,8 @@ SchedInstruction::SchedInstruction(InstCount num, const string &name,
 }
 
 SchedInstruction::~SchedInstruction() {
+
+  delete[] DynamicFields_;
   
   if (memAllocd_)
     DeAllocMem_();

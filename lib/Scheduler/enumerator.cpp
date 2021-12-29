@@ -736,8 +736,9 @@ void Enumerator::ResetAllocators_() {
 
 void Enumerator::FreeAllocators_(){
   if (!alctrsFreed_) {
-    if (nodeAlctr_ != NULL)
+    if (nodeAlctr_ != NULL) {
       delete nodeAlctr_;
+    }
     nodeAlctr_ = NULL;
     if (rlxdSchdulr_ != NULL)
       delete rlxdSchdulr_;
@@ -764,6 +765,13 @@ void Enumerator::FreeAllocators_(){
 
     alctrsFreed_ = true;
   }
+}
+
+void Enumerator::freeNodeAllocator() {
+  if (nodeAlctr_ != NULL) {
+    delete nodeAlctr_;
+  }
+  nodeAlctr_ = NULL;
 }
 
 /****************************************************************************/

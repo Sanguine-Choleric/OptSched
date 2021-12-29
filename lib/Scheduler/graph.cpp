@@ -22,6 +22,9 @@ GraphNode::GraphNode(UDT_GNODES num, UDT_GNODES maxNodeCnt, const int NumSolvers
   scsrLstIt_ = (LinkedListIterator<GraphEdge> *) malloc(sizeof(LinkedListIterator<GraphEdge>) * NumSolvers_);
   prdcsrLstIt_ = (LinkedListIterator<GraphEdge> *) malloc(sizeof(LinkedListIterator<GraphEdge>) * NumSolvers_);
 
+  //TODO each iterator is size 16 -- package them all into one struct
+
+
   for (int i = 0; i < NumSolvers_; i++) {
     scsrLstIt_[i] = scsrLst_->begin();
     prdcsrLstIt_[i] = prdcsrLst_->begin();

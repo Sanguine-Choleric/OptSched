@@ -801,6 +801,7 @@ public:
   inline void setSchedPriorities(SchedPriorities prirts) {prirts_ = prirts;}
 
   virtual void FreeAllocators_();//bool isMaster);
+  void freeNodeAllocator();
 
 };
 /*****************************************************************************/

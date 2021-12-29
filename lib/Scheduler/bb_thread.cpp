@@ -1730,8 +1730,9 @@ FUNC_RESULT BBWorker::generateAndEnumerate(std::shared_ptr<HalfNode> GlobalPoolN
     Logger::Info("SolverID %d not given a GP Node", SolverID_);
   }
   ++GlobalPoolNodes;
-  return enumerate_(StartTime, RgnTimeout, LngthTimeout, false, fsbl);
-
+  auto res = enumerate_(StartTime, RgnTimeout, LngthTimeout, false, fsbl);
+  Enumrtr_->freeNodeAllocator();
+  return res;
 }
 
 FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime, 
@@ -2793,13 +2794,15 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
 
   Enumrtr_->Reset();
 
-  for (int j = 0; j < NumThreadsToLaunch_; j++) {
+  
+  for (int j = 0; j < NumThreads_; j++) {
     ThreadManager[j] = std::thread([=]{Workers[j]->freeAlctrs();});
   }
 
-  for (int j = 0; j < NumThreadsToLaunch_; j++) {
+  for (int j = 0; j < NumThreads_; j++) {
     ThreadManager[j].join();
   }
+  
 
 
   bool timeoutFlag = false;
