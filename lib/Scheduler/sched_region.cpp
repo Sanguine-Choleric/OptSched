@@ -656,7 +656,7 @@ FUNC_RESULT SchedRegion::FindOptimalSchedule(
   if (NULL != AcoSchedule && bestSched != AcoSchedule) {
     delete AcoSchedule;
   }
-  if (enumBestSched_ != NULL && bestSched != enumBestSched_)
+  if (enumBestSched_ != NULL && (bestSched != enumBestSched_ || enumBestSched_ == lstSched))
     delete enumBestSched_;
   if (enumCrntSched_ != NULL)
     delete enumCrntSched_;
@@ -794,8 +794,12 @@ FUNC_RESULT SchedRegion::Optimize_(Milliseconds startTime,
   }
 
   else {
+    Logger::Info("Pruned the whole tree!");
+    delete enumCrntSched_;
+    enumCrntSched_ = NULL;
+    delete enumBestSched_;
+    enumBestSched_ = NULL;
     rslt = RES_SUCCESS;     // we cost pruned the whole enum tree
-    enumBestSched_ = bestSched_;    // enum gets schedule from list/aco
     Logger::Event("NodeExamineCount", "num_nodes", 1);
     stats::nodeCount.Record(1);
     *OptimalSolverID = 0;

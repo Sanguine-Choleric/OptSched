@@ -1731,7 +1731,8 @@ FUNC_RESULT BBWorker::generateAndEnumerate(std::shared_ptr<HalfNode> GlobalPoolN
   }
   ++GlobalPoolNodes;
   auto res = enumerate_(StartTime, RgnTimeout, LngthTimeout, false, fsbl);
-  Enumrtr_->freeNodeAllocator();
+  //Enumrtr_->freeNodeAllocator();
+  //freeAlctrs();
   return res;
 }
 
@@ -2228,7 +2229,13 @@ Enumerator *BBMaster::allocEnumHierarchy_(Milliseconds timeout, bool *fsbl) {
       GetEnumPriorities(), GetPruningStrategy(), SchedForRPOnly_, enblStallEnum,
       timeout, GetSpillCostFunc(), isSecondPass_, NumThreads_, timeoutToMemblock_, nullptr, 1, 0, NULL);
 
-    Enumrtr_->setLCEElements(this, costLwrBound_);
+  Enumrtr_->setLCEElements(this, costLwrBound_);
+  InitForSchdulng();
+  // Master Enumerator has solverID of 1
+  Enumrtr_->Initialize_(enumCrntSched_, schedLwrBound_, 1);
+
+  Enumrtr_->checkTreeFsblty(*fsbl);
+  if (!*fsbl) return nullptr;
 
 
   // Be sure to not be off by one - BBMaster is solver 0
@@ -2288,9 +2295,6 @@ bool BBMaster::initGlobalPool() {
   bool fsbl;
   std::shared_ptr<HalfNode> exploreNode(nullptr);
 
-  Enumrtr_->checkTreeFsblty(fsbl);
-
-  if (!fsbl) return fsbl;
 
   SpillCostFunc_ = GlobalPoolSCF_;
 
@@ -2555,15 +2559,13 @@ bool BBMaster::initGlobalPool() {
 /*****************************************************************************/
 
 bool BBMaster::init() {
-  InitForSchdulng();
+
   for (int i = 0; i < NumThreads_; i++) {
     Workers[i]->setLowerBounds_(StaticSlilLowerBound_);
     Workers[i]->setupForSchdulng();
     Workers[i]->initForSchdulng();
   }
 
-  // Master Enumerator has solverID of 1
-  Enumrtr_->Initialize_(enumCrntSched_, schedLwrBound_, 1);
 
   for (int i = 0; i < NumThreads_; i++) {
     Workers[i]->initEnumrtr_();
@@ -2793,15 +2795,16 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
 
 
   Enumrtr_->Reset();
-
   
+  vector<std::thread> ThreadManager2(NumThreads_);
   for (int j = 0; j < NumThreads_; j++) {
-    ThreadManager[j] = std::thread([=]{Workers[j]->freeAlctrs();});
+    ThreadManager2[j] = std::thread([=]{Workers[j]->freeAlctrs();});
   }
 
   for (int j = 0; j < NumThreads_; j++) {
-    ThreadManager[j].join();
+    ThreadManager2[j].join();
   }
+  
   
 
 
