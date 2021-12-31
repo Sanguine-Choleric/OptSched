@@ -211,6 +211,7 @@ public:
 private:
   const LinkedList<T> *list_;
   Entry<T> *current_;
+  int padding[12]; //TODO(Jeff) instead of padding, create array of structs
 };
 
 // A generic doubly-linked list container class. If created with a constant
