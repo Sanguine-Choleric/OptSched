@@ -464,8 +464,7 @@ void ScheduleDAGOptSched::schedule() {
   }
 
   // create region
-  if (!ParallelBB || SecondPass || preFiltered)
-  {
+  if (!ParallelBB || SecondPass || preFiltered) {
     auto region = llvm::make_unique<BBWithSpill>(
         OST.get(), dataDepGraph_, 0, HistTableHashBits,
         LowerBoundAlgorithm, HeuristicPriorities, EnumPriorities, VerifySchedule,
@@ -473,10 +472,8 @@ void ScheduleDAGOptSched::schedule() {
         TwoPassEnabled, IsTimeoutPerInst);
 
       // Used for two-pass-optsched to alter upper bound value.
-    if (SecondPass)
-    {
+    if (SecondPass) 
       region->InitSecondPass();
-    }
 
     // Setup time before scheduling
     Utilities::startTime = std::chrono::high_resolution_clock::now();

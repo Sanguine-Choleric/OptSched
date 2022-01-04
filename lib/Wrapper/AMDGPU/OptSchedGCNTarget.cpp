@@ -10,6 +10,7 @@
 #include "opt-sched/Scheduler/data_dep.h"
 #include "opt-sched/Scheduler/defines.h"
 #include "opt-sched/Scheduler/machine_model.h"
+#include "opt-sched/Scheduler/logger.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/CodeGen/ScheduleDAGInstrs.h"
 #include <algorithm>
@@ -174,6 +175,7 @@ bool OptSchedGCNTarget::shouldLimitWaves() const {
 }
 
 unsigned OptSchedGCNTarget::getOccupancyWithCost(const InstCount Cost) const {
+  Logger::Info("getting occ for schedule with spill %d", cost);
   return TargetOccupancy - Cost;
 }
 

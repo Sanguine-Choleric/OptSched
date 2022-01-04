@@ -540,7 +540,7 @@ Enumerator::Enumerator(DataDepGraph *dataDepGraph, MachineModel *machMdl,
                        InstCount schedUprBound, int16_t sigHashSize,
                        SchedPriorities prirts, Pruning PruningStrategy,
                        bool SchedForRPOnly, bool enblStallEnum,
-                       Milliseconds timeout, int SolverID, int NumSolvers, std::mutex *AllocatorLock,
+                       Milliseconds timeout, int SolverID, int NumSolvers,
                        int timeoutToMemblock,
                        bool isSecondPass, InstCount preFxdInstCnt, SchedInstruction *preFxdInsts[])
     : ConstrainedScheduler(dataDepGraph, machMdl, schedUprBound, SolverID) {
@@ -625,7 +625,6 @@ Enumerator::Enumerator(DataDepGraph *dataDepGraph, MachineModel *machMdl,
   imprvmntCnt_ = 0;
   prevTrgtLngth_ = INVALID_VALUE;
   bbt_ = NULL;
-  AllocatorLock_ = AllocatorLock;
 
   int16_t sigSize = 8 * sizeof(InstSignature) - 1;
 
@@ -1619,11 +1618,6 @@ void Enumerator::RestoreCrntState_(SchedInstruction *inst,
 /*****************************************************************************/
 
 void Enumerator::StepFrwrd_(EnumTreeNode *&newNode) {
-  if (OOMFlag == false) {
-    Logger::Info("FIRST CALL SF");
-    OOMFlag = true;
-  }
-
   ++bbt_->StepFrwrds;
   SchedInstruction *instToSchdul = newNode->GetInst();
   InstCount instNumToSchdul;
@@ -2580,7 +2574,7 @@ LengthEnumerator::LengthEnumerator(
     bool SchedForRPOnly, bool enblStallEnum, Milliseconds timeout, bool IsSecondPass,
     InstCount preFxdInstCnt, SchedInstruction *preFxdInsts[])
     : Enumerator(dataDepGraph, machMdl, schedUprBound, sigHashSize, prirts,
-                 PruningStrategy, SchedForRPOnly, enblStallEnum, timeout, 0, 1, nullptr, 1, IsSecondPass,
+                 PruningStrategy, SchedForRPOnly, enblStallEnum, timeout, 0, 1, 1, IsSecondPass,
                  preFxdInstCnt, preFxdInsts) {
   SetupAllocators_();
   tmpHstryNode_ = new HistEnumTreeNode;
@@ -2671,11 +2665,11 @@ LengthCostEnumerator::LengthCostEnumerator(BBThread *bbt,
     DataDepGraph *dataDepGraph, MachineModel *machMdl, InstCount schedUprBound,
     int16_t sigHashSize, SchedPriorities prirts, Pruning PruningStrategy,
     bool SchedForRPOnly, bool enblStallEnum, Milliseconds timeout,
-    SPILL_COST_FUNCTION spillCostFunc, bool IsSecondPass, int NumSolvers,  int timeoutToMemblock, std::mutex *AllocatorLock,
+    SPILL_COST_FUNCTION spillCostFunc, bool IsSecondPass, int NumSolvers,  int timeoutToMemblock,
     int SolverID, InstCount preFxdInstCnt, SchedInstruction *preFxdInsts[])
     : Enumerator(dataDepGraph, machMdl, schedUprBound, sigHashSize, prirts,
                  PruningStrategy, SchedForRPOnly, enblStallEnum, timeout,
-                 SolverID, NumSolvers, AllocatorLock, timeoutToMemblock, IsSecondPass, preFxdInstCnt, preFxdInsts) {
+                 SolverID, NumSolvers, timeoutToMemblock, IsSecondPass, preFxdInstCnt, preFxdInsts) {
   bbt_ = bbt;
   SolverID_ = SolverID;
   SetupAllocators_();

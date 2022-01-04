@@ -239,37 +239,41 @@ public:
   inline InstCount getCrntPeakSpillCost() {return PeakSpillCost_;}
   // Whether or not we are using two pass version of the algorithm
   inline bool getIsTwoPass() {return TwoPassEnabled_;}
-
-  // virtuals
+  // VIRTUAL FUNCTIONS
+  // Are we currently scheduling for ILP
+  virtual bool isSecondPass() = 0;   // TODO(jeff) make this a non-virtual function
+  // The cost of heuristic schedule -- needed by ACO
+  virtual InstCount getHeuristicCost() = 0; 
+  // Returns the best cost found from scheduling
   virtual InstCount getBestCost() = 0;
-
+  // Updates the current schedule with an improved cost schedule
   virtual InstCount UpdtOptmlSched(InstSchedule *crntSched,
                            LengthCostEnumerator *enumrtr) = 0;
-
-  virtual bool isSecondPass() = 0;
-
-  virtual bool isWorker() = 0;
-
-  virtual void histTableLock(UDT_HASHVAL key) = 0;
-  virtual void histTableUnlock(UDT_HASHVAL key) = 0;
-
-  virtual void allocatorLock() = 0;
-  virtual void allocatorUnlock() = 0;
-
-  virtual std::mutex *getAllocatorLock() = 0;
-
+  // Synchronized increment the schedule improvmeent count
   virtual void incrementImprvmntCnt() = 0;
-  
+  // Is the current instance a worker in master-worker parallel architecture
+  virtual bool isWorker() = 0;
+    // What method are we using to sort the global pool
+  virtual int getGlobalPoolSortMethod() {return -1;}; // TODO(jeff) (use enum for return vals)
+  // Mutex lock the hist table
+  virtual void histTableLock(UDT_HASHVAL key) = 0;
+  // Mutex unlock the hist table
+  virtual void histTableUnlock(UDT_HASHVAL key) = 0;
+  // Mutex lock the local pool
+  virtual void localPoolLock(int SolverID) = 0;
+  // Mutex unlock the local pool
+  virtual void localPoolUnlock(int SolverID) = 0;
+  // Whether or not we are allowing work stealing feature 
   virtual bool isWorkSteal() = 0;
+  // Whether or not a thread has run out of work and turned work stealing on
   virtual bool isWorkStealOn() = 0;
+  // Used to toggle work steal on/off
   virtual void setWorkStealOn(bool) = 0;
-
+  // Return the node that the current instance stole from another worker
   virtual EnumTreeNode *getStolenNode() = 0;
   
 
-  virtual void localPoolLock(int SolverID) = 0;
-  virtual void localPoolUnlock(int SolverID) = 0;
-
+  // Interface / modifiers for the local pool
   virtual void localPoolPushFront(int SolverID, EnumTreeNode *ele) = 0;
   virtual EnumTreeNode *localPoolPopFront(int SolverID) = 0;
 
@@ -285,10 +289,6 @@ public:
                                               EnumTreeNode *parent, EnumTreeNode *&removed) = 0;
 
 
-  virtual int getGlobalPoolSortMethod() {return -1;};
-  // Needed by aco
-  virtual InstCount getHeuristicCost() = 0; 
-
 protected:
   LengthCostEnumerator *Enumrtr_;
   InstCount CrntSpillCost_;
@@ -297,12 +297,13 @@ protected:
   DataDepGraph *DataDepGraph_;
   MachineModel  *MachMdl_; 
 
+  // The SolverID_ for the current solver
+  // Workers range from 2 : nThread + 2 (0 and 1 are taken by list and master respectively)
   int SolverID_;
 
+  bool TwoPassEnabled_;
   bool SchedForRPOnly_;
-
   bool EnblStallEnum_;
-  
   bool VrfySched_;
 
   int SCW_;
@@ -320,8 +321,10 @@ protected:
   InstCount DynamicSlilLowerBound_ = 0;
   InstCount StaticLowerBound_ = 0;
   
+  // SubspaceLwrBound tracks the current cost of a thread as a measure to determine
+  // how promising a search space is (for victimizing threads in work stealing)
   int64_t SubspaceLwrBound_ = INVALID_VALUE;
-  bool TwoPassEnabled_;
+
   
 
   // Needed to override SchedRegion virtuals
@@ -365,25 +368,16 @@ protected:
 
     void SetupForSchdulng_() override {return setupForSchdulng();}
 
-    bool ChkInstLglty(SchedInstruction *inst) override
-    {
+    bool ChkInstLglty(SchedInstruction *inst) override {
       return chkInstLgltyBBThread(inst);
     }
 
-    bool ChkSchedule_(InstSchedule *bestSched, InstSchedule *lstSched) override
-    {
+    bool ChkSchedule_(InstSchedule *bestSched, InstSchedule *lstSched) override {
       return ChkScheduleBBThread_(bestSched, lstSched);
     }
 
-    bool EnableEnum_() override
-    {
-      return EnableEnumBBThread_();
-    }
-
-    void FinishOptml_() override
-    {
-      return FinishOptmlBBThread_();
-    }
+    bool EnableEnum_() override {return EnableEnumBBThread_();}
+    void FinishOptml_() override {return FinishOptmlBBThread_();}
 
   // override BBThread virtual
   InstCount getBestCost() override {return *BestCost_;}
@@ -433,11 +427,6 @@ public:
     void histTableUnlock(UDT_HASHVAL key) override {/*nothing*/; }
 
     void incrementImprvmntCnt() override {/*nothing*/;}
-
-    void allocatorLock() override {/*nothing*/;}
-    void allocatorUnlock() override {/*nothing*/;}
-
-    std::mutex *getAllocatorLock() override;
 
     void localPoolLock(int SolverID) override {/*nothing*/;}
     void localPoolUnlock(int SolverID) override {/*nothing*/;}
@@ -560,7 +549,6 @@ private:
     std::mutex *NodeCountLock_;
     std::mutex *ImprvmntCntLock_;
     std::mutex *RegionSchedLock_;
-    std::mutex *AllocatorLock_;
     std::mutex *InactiveThreadLock_;
 
     int *IdleTime_;
@@ -583,6 +571,7 @@ private:
       BestCost_ = BestCost;
       }
 
+
     InstCount UpdtOptmlSched(InstSchedule *crntSched, LengthCostEnumerator *enumrtr);
 
     void writeBestSchedToMaster(InstSchedule *BestSchedule, InstCount BestCost, InstCount BestSpill);
@@ -604,7 +593,7 @@ public:
               InstPool4 *GlobalPool, 
               uint64_t *NodeCount, int SolverID, std::mutex **HistTableLock, 
               std::mutex *GlobalPoolLock, std::mutex *BestSchedLock, std::mutex *NodeCountLock,
-              std::mutex *ImprCountLock, std::mutex *RegionSchedLock, std::mutex *AllocatorLock,
+              std::mutex *ImprCountLock, std::mutex *RegionSchedLock,
               vector<FUNC_RESULT> *resAddr, int *idleTimes, int NumSolvers, std::vector<InstPool3 *> localPools, 
               std::mutex **localPoolLocks, int *inactiveThreads, std::mutex *inactiveThreadLock, 
               int LocalPoolSize, bool WorkSteal, bool *WorkStealOn, bool IsTimeoutPerInst, uint64_t *nodeCounts,
@@ -620,7 +609,7 @@ public:
 
     void setHeurInfo(InstCount SchedUprBound, InstCount HeuristicCost, InstCount SchedLwrBound);
 
-    void allocEnumrtr_(Milliseconds timeout, std::mutex *AllocatorLock);
+    void allocEnumrtr_(Milliseconds timeout);
     void initEnumrtr_(bool scheduleRoot = true);
     void setLCEElements_(InstCount costLwrBound);
     void setLowerBounds_(InstCount costLwrBound);
@@ -698,11 +687,6 @@ public:
     inline void setWorkStealOn(bool value) override {*WorkStealOn_ = value;}
     
 
-    void allocatorLock() override;
-    void allocatorUnlock() override;
-
-    std::mutex *getAllocatorLock() override;
-
     void incrementImprvmntCnt() override;
 
     void localPoolLock(int SolverID) override;
@@ -752,7 +736,6 @@ private:
     std::mutex NodeCountLock;
     std::mutex ImprvCountLock;
     std::mutex RegionSchedLock;
-    std::mutex AllocatorLock;
     std::mutex InactiveThreadLock;
 
     int64_t HistTableSize_;
@@ -784,7 +767,7 @@ private:
              InstCount *BestLength, InstPool4 *GlobalPool, 
              uint64_t *NodeCount,  std::mutex **HistTableLock, std::mutex *GlobalPoolLock, std::mutex *BestSchedLock, 
              std::mutex *NodeCountLock, std::mutex *ImprvCountLock, std::mutex *RegionSchedLock, 
-             std::mutex *AllocatorLock, vector<FUNC_RESULT> *results, int *idleTimes,
+             vector<FUNC_RESULT> *results, int *idleTimes,
              int NumSolvers, std::vector<InstPool3 *> localPools, std::mutex **localPoolLocks,
              int *InactiveThreads_, std::mutex *InactiveThreadLock, int LocalPoolSize, bool WorkSteal, 
              bool *WorkStealOn, bool IsTimeoutPerInst, uint64_t *nodeCounts, int timeoutToMemblock, int64_t **subspaceLwrBounds);
