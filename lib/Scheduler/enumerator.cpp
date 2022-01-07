@@ -1964,6 +1964,7 @@ bool Enumerator::BackTrack_(bool trueState) {
 }
   rdyLst_->RemoveLatestSubList();
 
+  // TODO(Jeff) move into if else, optimize
   if (bbt_->isWorker() && IsFirstPass_) {
     // if a thread stole from this node, then there is a race condition on updating whether
     // or not the current node has been fullyExplored
@@ -1973,7 +1974,7 @@ bool Enumerator::BackTrack_(bool trueState) {
     if (IsHistDom()) {
       HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
       UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
-      bbt_->histTableLock(key);
+      bbt_->histTableLock(key); //TODO(Jeff) only use lock if work steal on
 
       // It is posible we are falling to this backtrack directly from another backtrack
       // in which case, the exploredChild != numChildren but it should be labeled as fully explored
@@ -1993,11 +1994,24 @@ bool Enumerator::BackTrack_(bool trueState) {
 #ifdef INSERT_ON_BACKTRACK
   if (IsHistDom() && trueState) {
     assert(!crntNode_->IsArchived());
-      UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
+    HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
+    UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
 
     if (bbt_->isWorker() && IsFirstPass_) {
+      // These may need to be protected by lock
+      assert(!crntNode_->GetHistory()->getFullyExplored() || crntNode_->wasChildStolen());
+      assert(crntNode_->getExploredChildren() <= crntNode_->getNumChildrn());
       bbt_->histTableLock(key);
-        HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
+        // It is posible we are falling to this backtrack directly from another backtrack
+        // in which case, the exploredChild != numChildren but it should be labeled as fully explored
+        if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn() || (crntNode_->getIsInfsblFromBacktrack_() && !crntNode_->wasChildStolen())) {
+          if (!crntNode_->getIncrementedParent()) {
+            trgtNode->incrementExploredChildren();
+            crntNode_->setIncrementedParent(true);
+          }
+          fullyExplored = true;
+          if (crntNode_->wasChildStolen()) Logger::Info("$$GOODHIT -- fullyexplored with stolen child");
+        }
         // set fully explored to fullyExplored when work stealing
         crntHstry->setFullyExplored(fullyExplored);
         SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
@@ -2056,17 +2070,33 @@ bool Enumerator::BackTrack_(bool trueState) {
       assert(crntNode_->IsArchived() == false);
     }
   }
+
+
+ 
   else {
     if (IsHistDom() && trueState) {
       UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
       HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
       if (bbt_->isWorker()) {
+          // These may need to be protected by lock
+          assert(!crntHstry->getFullyExplored() || crntNode_->wasChildStolen());
+          assert(crntNode_->getExploredChildren() <= crntNode_->getNumChildrn());
           bbt_->histTableLock(key);
+
+          // It is posible we are falling to this backtrack directly from another backtrack
+          // in which case, the exploredChild != numChildren but it should be labeled as fully explored
+          if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn() || (crntNode_->getIsInfsblFromBacktrack_() && !crntNode_->wasChildStolen())) {
+            if (!crntNode_->getIncrementedParent()) {
+            trgtNode->incrementExploredChildren();
+            crntNode_->setIncrementedParent(true);
+            }
+          fullyExplored = true;
+          if (crntNode_->wasChildStolen()) Logger::Info("$$GOODHIT -- fullyexplored with stolen child");
+          }
           // set fully explored to fullyExplored when work stealing
           // there is a race condition to setFullyExplored when a child has stole
           // from the subspace, thus the fullyExplored assert is only true
           // if the subspace has not been stolen from
-          assert(!crntHstry->getFullyExplored() || crntNode_->wasChildStolen());
           crntHstry->setFullyExplored(fullyExplored);
           SetTotalCostsAndSuffixes(crntNode_, trgtNode, trgtSchedLngth_,
                             prune_.useSuffixConcatenation, fullyExplored);
@@ -2157,7 +2187,7 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
 
   // lock table for syncrhonized iterator
   
-  bbt_->histTableLock(key);
+  
   HashTblEntry<HistEnumTreeNode> *srchPtr = nullptr;
   exNode = exmndSubProbs_->GetLastMatch(srchPtr,newNode->GetSig());
 
@@ -2210,14 +2240,16 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
   }
 
   if (!wasDmntSubProbExmnd && lastMatch != nullptr && IsTwoPass_ && !isSecondPass()) {
+    bbt_->histTableLock(key);
     lastMatch->ResetHistFields(newNode);
     lastMatch->setRecycled(true);
     newNode->SetHistory(lastMatch);
     newNode->setRecyclesHistNode(true);
     newNode->setArchived(true);
+    bbt_->histTableUnlock(key);
   }
 
-  bbt_->histTableUnlock(key);  
+  
 
   stats::traversedHistoryListSize.Record(trvrsdListSize);
   return wasDmntSubProbExmnd;

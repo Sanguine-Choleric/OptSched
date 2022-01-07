@@ -1,3 +1,23 @@
+/*******************************************************************************
+Description:  This interface allows the enumerator class to generate schedules
+              based on spill clost by offering access to not only the register file
+              but also schedule costs found in SchedRegion (e.g. from list or ACO).
+              
+              This interface is also the point of parallelization for the branch
+              and bound scheduling algorithm. The bb_thread class is a pure virtual
+              class containing the common subset of methods and members. Deriving
+              from this are: BBInterfacer, and BBWorker. The BBInterfacer
+              class interfaces with SchedRegion in order to obtain
+              things like the best schedule and cost found so far, BBWithSpill and
+              BBMaster derive from BBInterfacer. The BBWithSpill class implements
+              the single-threaded (sequential) algorithm, whereas the BBMaster class
+              spawns a number of BBWorker to explore the solution space in parallel.
+Author:       Jeffrey Byrnes (JrByrnes1989@gmail.com)
+Created:      Jan. 2021
+Last Update:  Jan. 2022
+*******************************************************************************/
+
+
 #ifndef BB_THREAD_H
 #define BB_THREAD_H
 

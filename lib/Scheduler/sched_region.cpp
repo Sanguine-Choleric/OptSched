@@ -520,7 +520,11 @@ FUNC_RESULT SchedRegion::FindOptimalSchedule(
     Milliseconds enumStart = Utilities::GetProcessorTime();
     if (!isLstOptml) {
       dataDepGraph_->SetHard(true);
-      rslt = Optimize_(enumStart, rgnTimeout, lngthTimeout, OptimalSolverID_);
+      if (isSecondPass_ && dataDepGraph_->GetMaxLtncy() <= 1)
+        Logger::Info("Problem size not increased after introducing latencies, "
+                     "skipping second pass enumeration");
+      else
+        rslt = Optimize_(enumStart, rgnTimeout, lngthTimeout, OptimalSolverID_);
       Milliseconds enumTime = Utilities::GetProcessorTime() - enumStart;
 
       // TODO: Implement this stat for ACO also.
