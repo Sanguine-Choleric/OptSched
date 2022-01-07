@@ -3085,11 +3085,13 @@ void Enumerator::BackTrackRoot_(EnumTreeNode *tmpCrntNode) {
   bool fullyExplored = false;
   
 
+#ifdef INSERT_ON_BACKTRACK
   if (IsHistDom()) {
-    HistEnumTreeNode *crntHstry = tmpCrntNode->GetHistory();
+    if (!tmpCrntNode->getRecyclesHistNode()) assert(!tmpCrntNode->IsArchived());
     UDT_HASHVAL key = exmndSubProbs_->HashKey(tmpCrntNode->GetSig());
-    bbt_->histTableLock(key);
+    HistEnumTreeNode *crntHstry = tmpCrntNode->GetHistory();
 
+    bbt_->histTableLock(key);
     if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn()) {
       if (trgtNode && !crntNode_->getIncrementedParent()) {
         trgtNode->incrementExploredChildren();
@@ -3097,18 +3099,6 @@ void Enumerator::BackTrackRoot_(EnumTreeNode *tmpCrntNode) {
       }
       fullyExplored = true;
     }
-
-    bbt_->histTableUnlock(key);
-  }
-
-
-#ifdef INSERT_ON_BACKTRACK
-  if (IsHistDom()) {
-    if (!tmpCrntNode->getRecyclesHistNode()) assert(!tmpCrntNode->IsArchived());
-    UDT_HASHVAL key = exmndSubProbs_->HashKey(tmpCrntNode->GetSig());
-
-    bbt_->histTableLock(key);
-    HistEnumTreeNode *crntHstry = tmpCrntNode->GetHistory();
     // set fully explored to fullyExplored when work stealing
     crntHstry->setFullyExplored(fullyExplored);
     SetTotalCostsAndSuffixes(tmpCrntNode, trgtNode, trgtSchedLngth_,
@@ -3131,7 +3121,16 @@ void Enumerator::BackTrackRoot_(EnumTreeNode *tmpCrntNode) {
     UDT_HASHVAL key = exmndSubProbs_->HashKey(tmpCrntNode->GetSig());
     HistEnumTreeNode *crntHstry = tmpCrntNode->GetHistory();
     bbt_->histTableLock(key);
+    if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn()) {
+      if (trgtNode && !crntNode_->getIncrementedParent()) {
+        trgtNode->incrementExploredChildren();
+        crntNode_->setIncrementedParent(true);
+      }
+      fullyExplored = true;
+    }
     // set fully explored to fullyExplored when work stealing
+    // TODO(jeff): it is possible that the crntHstry has been recycled and now belongs
+    // to a different subspace
     crntHstry->setFullyExplored(fullyExplored);
     SetTotalCostsAndSuffixes(tmpCrntNode, trgtNode, trgtSchedLngth_,
                           prune_.useSuffixConcatenation, fullyExplored);
