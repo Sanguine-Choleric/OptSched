@@ -1698,18 +1698,20 @@ if (bbt_->isWorkStealOn()) {
         UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
 
       if (bbt_->isWorker() && IsFirstPass_) {
+        HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
+        crntHstry->setFullyExplored(false);
+        crntHstry->setCostIsUseable(false);
         bbt_->histTableLock(key);
-          HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
-          crntHstry->setFullyExplored(false);
-          crntHstry->setCostIsUseable(false);
           assert(!crntHstry->isInserted());
           exmndSubProbs_->InsertElement(crntNode_->GetSig(), crntHstry,
                                     hashTblEntryAlctr_, bbt_);
           crntHstry->setInserted(true);
+#ifdef DEBUG_TOTAL_COST
           assert(!crntHstry->getFullyExplored());
           assert(!crntHstry->getCostIsUseable());
           CostHistEnumTreeNode *temp = static_cast<CostHistEnumTreeNode *>(crntHstry);
           assert(temp->getPartialCost() == temp->getTotalCost());
+#endif
         bbt_->histTableUnlock(key);
       }
       
@@ -1964,32 +1966,6 @@ bool Enumerator::BackTrack_(bool trueState) {
 }
   rdyLst_->RemoveLatestSubList();
 
-  // TODO(Jeff) move into if else, optimize
-  if (bbt_->isWorker() && IsFirstPass_) {
-    // if a thread stole from this node, then there is a race condition on updating whether
-    // or not the current node has been fullyExplored
-    assert(!crntNode_->GetHistory()->getFullyExplored() || crntNode_->wasChildStolen());
-    assert(crntNode_->getExploredChildren() <= crntNode_->getNumChildrn());
-
-    if (IsHistDom()) {
-      HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
-      UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
-      bbt_->histTableLock(key); //TODO(Jeff) only use lock if work steal on
-
-      // It is posible we are falling to this backtrack directly from another backtrack
-      // in which case, the exploredChild != numChildren but it should be labeled as fully explored
-      if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn() || (crntNode_->getIsInfsblFromBacktrack_() && !crntNode_->wasChildStolen())) {
-        if (!crntNode_->getIncrementedParent()) {
-          trgtNode->incrementExploredChildren();
-          crntNode_->setIncrementedParent(true);
-        }
-        fullyExplored = true;
-        if (crntNode_->wasChildStolen()) Logger::Info("$$GOODHIT -- fullyexplored with stolen child");
-      }
-      bbt_->histTableUnlock(key);
-    }
-  }
-
 // TODO cleanup the insert_on_backtrack vs stepfrwrd code
 #ifdef INSERT_ON_BACKTRACK
   if (IsHistDom() && trueState) {
@@ -2079,8 +2055,10 @@ bool Enumerator::BackTrack_(bool trueState) {
       HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
       if (bbt_->isWorker()) {
           // These may need to be protected by lock
+#ifdef DEBUG_TOTAL_COST
           assert(!crntHstry->getFullyExplored() || crntNode_->wasChildStolen());
           assert(crntNode_->getExploredChildren() <= crntNode_->getNumChildrn());
+#endif
           bbt_->histTableLock(key);
 
           // It is posible we are falling to this backtrack directly from another backtrack
@@ -2091,7 +2069,9 @@ bool Enumerator::BackTrack_(bool trueState) {
             crntNode_->setIncrementedParent(true);
             }
           fullyExplored = true;
+#ifdef DEBUG_TOTAL_COST
           if (crntNode_->wasChildStolen()) Logger::Info("$$GOODHIT -- fullyexplored with stolen child");
+#endif
           }
           // set fully explored to fullyExplored when work stealing
           // there is a race condition to setFullyExplored when a child has stole
@@ -3123,8 +3103,8 @@ void Enumerator::BackTrackRoot_(EnumTreeNode *tmpCrntNode) {
     bbt_->histTableLock(key);
     if (crntNode_->getExploredChildren() == crntNode_->getNumChildrn()) {
       if (trgtNode && !crntNode_->getIncrementedParent()) {
-        trgtNode->incrementExploredChildren();
         crntNode_->setIncrementedParent(true);
+        trgtNode->incrementExploredChildren();
       }
       fullyExplored = true;
     }
@@ -3499,8 +3479,8 @@ EnumTreeNode *LengthCostEnumerator::scheduleInst_(SchedInstruction *inst, bool i
         UDT_HASHVAL key = exmndSubProbs_->HashKey(crntNode_->GetSig());
 
       if (bbt_->isWorker() && IsFirstPass_) {
+        HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
         bbt_->histTableLock(key);
-          HistEnumTreeNode *crntHstry = crntNode_->GetHistory();
           crntHstry->setFullyExplored(false);
           crntHstry->setCostIsUseable(false);
           if (!crntNode_->getRecyclesHistNode()) {

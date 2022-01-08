@@ -553,15 +553,19 @@ static bool doesHistorySLILCostDominate(InstCount OtherPrefixCost,
                                         LengthCostEnumerator *LCE,
                                         EnumTreeNode *OtherNode,
                                         bool archived) {
+#ifdef DEBUG_TOTAL_COST
   if (OtherNode->getIsFirstPass()) {
     assert(HistTotalCost > HistPrefixCost);
     assert(archived);
   }
+#endif
 
   auto RequiredImprovement = std::max(HistTotalCost - LCE->GetBestCost(), 0);
   auto ImprovementOnHistory = HistPrefixCost - OtherPrefixCost;
 
+#ifdef DEBUG_TOTAL_COST
   assert(RequiredImprovement >= 0 && ImprovementOnHistory > 0);
+#endif
 
   
   if (ImprovementOnHistory <= RequiredImprovement) {
@@ -597,9 +601,10 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
                                                    Enumerator *E) {
   if (time_ > Node->GetTime())
     return false;
-
+#ifdef DEBUG_TOTAL_COST
   if (E->IsTwoPass_ && !E->isSecondPass()) assert(time_ == Node->GetTime());
   assert(costInfoSet_ && partialCost_ != INVALID_VALUE);
+#endif
 
     // If the other node's prefix cost is higher than or equal to the history
   // prefix cost the other node is pruned.
@@ -629,10 +634,12 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
         }
 
     else if (SpillCostFunc == SCF_SLIL){
+#ifdef DEBUG_TOTAL_COST
       if (Node->getIsFirstPass()) {
         assert(fullyExplored_ || partialCost_ == totalCost_ || totalCostIsActualCost_);
       }
       if (Node->getIsFirstPass() && totalCostIsUseable_) assert(fullyExplored_);
+#endif
       ShouldPrune = (partialCost_ == totalCost_ || !fullyExplored_ || !totalCostIsUseable_) ? 
                       false : doesHistorySLILCostDominate(Node->GetCostLwrBound(),
                                                           partialCost_, totalCost_, LCE, Node, archived_);
@@ -652,8 +659,9 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
 }
 
 void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enumrtr) {
+#ifdef DEBUG_TOTAL_COST
   assert(fullyExplored_);
-  LengthCostEnumerator *LCE = static_cast<LengthCostEnumerator *>(enumrtr);
+#endif
 
   cost_ = node->GetCost();
   peakSpillCost_ = node->GetPeakSpillCost();
@@ -665,11 +673,11 @@ void CostHistEnumTreeNode::SetCostInfo(EnumTreeNode *node, bool, Enumerator *enu
   totalCostIsActualCost_ = node->GetTotalCostIsActualCost();
   totalCost_ = node->GetTotalCost();
 
-
+#ifdef DEBUG_TOTAL_COST
     if (node->getIsFirstPass()) {
       assert(fullyExplored_ && (totalCostIsActualCost_ || totalCost_ == partialCost_));
     }
-
+#endif
   // the global best cost used to prune the subspace can be updated by another thread during exploration
   // If this occurs, the total cost associated with a subspace is no longer the minimum in the  
   // subspace as we are only updating it if the cost found is less than the global best
