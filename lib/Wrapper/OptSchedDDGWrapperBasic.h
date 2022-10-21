@@ -7,10 +7,11 @@
 #ifndef LLVM_OPT_SCHED_DDG_WRAPPER_BASIC_H
 #define LLVM_OPT_SCHED_DDG_WRAPPER_BASIC_H
 
-#include "OptSchedMachineWrapper.h"
-#include "OptimizingScheduler.h"
 #include "opt-sched/Scheduler/data_dep.h"
 #include "opt-sched/Scheduler/graph_trans.h"
+#include "OptSchedMachineWrapper.h"
+#include "OptimizingScheduler.h"
+#include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineInstr.h"
 #include "llvm/CodeGen/MachineScheduler.h"
 #include "llvm/CodeGen/TargetRegisterInfo.h"

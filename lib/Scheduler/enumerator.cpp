@@ -2790,6 +2790,7 @@ FUNC_RESULT LengthCostEnumerator::FindFeasibleSchedule(InstSchedule *sched,
   bbt_ = bbt;
   IsTwoPass_ = bbt_->getIsTwoPass();
   IsFirstPass_ = IsTwoPass_ && !IsSecondPass_;
+  BypassLatencyChecking_ = rgn_->IsSecondPass() ? false : true;
 
   FUNC_RESULT rslt = FindFeasibleSchedule_(sched, trgtLngth, deadline);
 
@@ -4013,6 +4014,17 @@ HistEnumTreeNode *LengthCostEnumerator::AllocTempHistNode_(EnumTreeNode *node) {
 void LengthCostEnumerator::FreeHistNode_(HistEnumTreeNode *histNode) {
   histNode->Clean();
   histNodeAlctr_->FreeObject((CostHistEnumTreeNode *)histNode);
+}
+
+/*****************************************************************************/
+void Enumerator::printRdyLst() {
+  rdyLst_->ResetIterator();
+  int sizeOfList = rdyLst_->GetInstCnt();
+  Logger::Info("ReadyList Contains: ");
+  for (int i = 0; i < sizeOfList; i++) {
+    Logger::Info("%d", rdyLst_->GetNextPriorityInst()->GetNum());
+  }
+  rdyLst_->ResetIterator();
 }
 
 /*****************************************************************************/

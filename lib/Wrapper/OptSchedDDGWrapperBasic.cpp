@@ -20,6 +20,7 @@
 #include "llvm/CodeGen/TargetPassConfig.h"
 #include "llvm/IR/Function.h"
 #include "llvm/Support/ErrorHandling.h"
+#include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetMachine.h"
 #include <cstdio>
 #include <map>
@@ -35,7 +36,7 @@ using namespace llvm;
 using namespace llvm::opt_sched;
 
 #ifndef NDEBUG
-static Printable printOptSchedReg(const Register *Reg,
+static Printable printOptSchedReg(const llvm::opt_sched::Register *Reg,
                                   const std::string &RegTypeName,
                                   int16_t RegTypeNum);
 #endif
@@ -205,7 +206,7 @@ void OptSchedDDGWrapperBasic::addDefsAndUses() {
   // Optionally, add these registers as uses in the artificial leaf node.
   for (int16_t i = 0; i < MM->GetRegTypeCnt(); i++)
     for (int j = 0; j < RegFiles[i].GetRegCnt(); j++) {
-      Register *Reg = RegFiles[i].GetReg(j);
+      llvm::opt_sched::Register *Reg = RegFiles[i].GetReg(j);
       if (Reg->GetUseCnt() == 0)
         addDefAndNotUsed(Reg);
     }
@@ -222,16 +223,16 @@ void OptSchedDDGWrapperBasic::addUse(unsigned RegUnit, InstCount Index) {
     LLVM_DEBUG(TargetRegisterInfo::dumpReg(RegUnit, 0, DAG->TRI));
   }
 
-  for (Register *Reg : LastDef[RegUnit]) {
+  for (llvm::opt_sched::Register *Reg : LastDef[RegUnit]) {
     insts_[Index]->AddUse(Reg);
     Reg->AddUse(insts_[Index]);
   }
 }
 
 void OptSchedDDGWrapperBasic::addDef(unsigned RegUnit, InstCount Index) {
-  std::vector<Register *> Regs;
+  std::vector<llvm::opt_sched::Register *> Regs;
   for (int Type : getRegisterType(RegUnit)) {
-    Register *Reg = RegFiles[Type].GetReg(RegIndices[Type]++);
+    llvm::opt_sched::Register *Reg = RegFiles[Type].GetReg(RegIndices[Type]++);
     insts_[Index]->AddDef(Reg);
     Reg->SetWght(getRegisterWeight(RegUnit));
     Reg->AddDef(insts_[Index]);
@@ -241,9 +242,9 @@ void OptSchedDDGWrapperBasic::addDef(unsigned RegUnit, InstCount Index) {
 }
 
 void OptSchedDDGWrapperBasic::addLiveInReg(unsigned RegUnit) {
-  std::vector<Register *> Regs;
+  std::vector<llvm::opt_sched::Register *> Regs;
   for (int Type : getRegisterType(RegUnit)) {
-    Register *Reg = RegFiles[Type].GetReg(RegIndices[Type]++);
+    llvm::opt_sched::Register *Reg = RegFiles[Type].GetReg(RegIndices[Type]++);
     GetRootInst()->AddDef(Reg);
     Reg->SetWght(getRegisterWeight(RegUnit));
     Reg->AddDef(GetRootInst());
@@ -263,15 +264,15 @@ void OptSchedDDGWrapperBasic::addLiveOutReg(unsigned RegUnit) {
   }
 
   auto LeafInstr = insts_[DAG->SUnits.size() + 1];
-  std::vector<Register *> Regs = LastDef[RegUnit];
-  for (Register *Reg : Regs) {
+  std::vector<llvm::opt_sched::Register *> Regs = LastDef[RegUnit];
+  for (llvm::opt_sched::Register *Reg : Regs) {
     LeafInstr->AddUse(Reg);
     Reg->AddUse(LeafInstr);
     Reg->SetIsLiveOut(true);
   }
 }
 
-void OptSchedDDGWrapperBasic::addDefAndNotUsed(Register *Reg) {
+void OptSchedDDGWrapperBasic::addDefAndNotUsed(llvm::opt_sched::Register *Reg) {
   int LeafIndex = DAG->SUnits.size() + 1;
   auto LeafInstr = insts_[LeafIndex];
   if (!LeafInstr->FindUse(Reg)) {
@@ -329,7 +330,7 @@ OptSchedDDGWrapperBasic::getRegisterType(unsigned RegUnit) const {
 }
 
 #if !defined(NDEBUG) || defined(LLVM_ENABLE_DUMP)
-static Printable printOptSchedReg(const Register *Reg,
+static Printable printOptSchedReg(const llvm::opt_sched::Register *Reg,
                                   const std::string &RegTypeName,
                                   int16_t RegTypeNum) {
   return Printable([Reg, &RegTypeName, RegTypeNum](raw_ostream &OS) {
@@ -387,7 +388,8 @@ inline void OptSchedDDGWrapperBasic::setupRoot() {
                       RootNum, // fileSchedCycle
                       0,       // fileInstLwrBound
                       0,       // fileInstUprBound
-                      0);      // blkNum
+                      0,       // blkNum
+                      nullptr);
 
   // Add edges between root nodes in graph and optsched artificial root.
   for (size_t i = 0; i < DAG->SUnits.size(); i++)
@@ -405,7 +407,8 @@ inline void OptSchedDDGWrapperBasic::setupLeaf() {
               LeafNum, // fileSchedCycle
               0,       // fileInstLwrBound
               0,       // fileInstUprBound
-              0);      // blkNum
+              0,       // blkNum
+              nullptr);
 
   // Add edges between leaf nodes in graph and optsched artificial leaf.
   for (size_t i = 0; i < DAG->SUnits.size(); i++)
@@ -424,35 +427,62 @@ void OptSchedDDGWrapperBasic::convertEdges(const SUnit &SU,
                                            bool IgnoreArtificialEdges) {
   const MachineInstr *instr = SU.getInstr();
   SUnit::const_succ_iterator I, E;
+  #ifdef PRINT_EDGE
+  if (!IgnoreRealEdges) {
+    Logger::Info("\n\n");
+    Logger::Info("Scanning dependencies for inst (%d total, inst has %d preds)",
+                 SU.Succs.size(), SU.Preds.size());
+    SU.getInstr()->print(errs());
+  }
+#endif
   for (I = SU.Succs.begin(), E = SU.Succs.end(); I != E; ++I) {
     if (I->getSUnit()->isBoundaryNode())
       continue;
 
     bool IsArtificial = I->isArtificial() || I->isCluster();
-    if (IgnoreArtificialEdges && IsArtificial)
+    if (IgnoreArtificialEdges && IsArtificial) {
       continue;
-    else if (IgnoreRealEdges && !IsArtificial)
+    } else if (IgnoreRealEdges && !IsArtificial) {
       continue;
+    }
 
     DependenceType DepType;
+    #ifdef PRINT_EDGE
+    Logger::Info("Found dependency between");
+    SU.getInstr()->print(errs());
+    Logger::Info("And");
+    I->getSUnit()->getInstr()->print(errs());
+#endif
     switch (I->getKind()) {
     case SDep::Data:
       DepType = DEP_DATA;
+      #ifdef PRINT_EDGE
+      Logger::Info("Data dep on %u", I->getReg());
+#endif
       break;
     case SDep::Anti:
       DepType = DEP_ANTI;
+      #ifdef PRINT_EDGE
+      Logger::Info("Anti dep on %u", I->getReg());
+#endif
       break;
     case SDep::Output:
       DepType = DEP_OUTPUT;
+      #ifdef PRINT_EDGE
+      Logger::Info("Output dep on %u", I->getReg());
+#endif
       break;
     case SDep::Order:
       DepType = TreatOrderDepsAsDataDeps ? DEP_DATA : DEP_OTHER;
+      #ifdef PRINT_EDGE
+      Logger::Info("Order dep");
+#endif
       break;
     }
 
     int16_t Latency;
     if (ltncyPrcsn_ == LTP_PRECISE) { // get latency from the machine model
-      const auto &InstName = DAG->TII->getName(instr->getOpcode());
+      const auto &InstName = DAG->TII->getName(instr->getOpcode()).data();
       const auto &InstType = MM->GetInstTypeByName(InstName);
       Latency = MM->GetLatency(InstType, DepType);
     } else if (ltncyPrcsn_ == LTP_ROUGH) // rough latency = llvm latency
@@ -460,6 +490,9 @@ void OptSchedDDGWrapperBasic::convertEdges(const SUnit &SU,
     else
       Latency = 1; // unit latency = ignore ilp
 
+    #ifdef PRINT_EDGE
+    Logger::Info("Has latency %d", Latency);
+#endif
     CreateEdge_(SU.NodeNum, I->getSUnit()->NodeNum, Latency, DepType,
                 IsArtificial);
   }
@@ -472,7 +505,7 @@ void OptSchedDDGWrapperBasic::convertSUnit(const SUnit &SU) {
     return;
 
   const MachineInstr *MI = SU.getInstr();
-  InstName = DAG->TII->getName(MI->getOpcode());
+  InstName = DAG->TII->getName(MI->getOpcode()).data();
 
   // Search in the machine model for an instType with this OpCode name
   InstType = MM->GetInstTypeByName(InstName.c_str());
@@ -493,7 +526,8 @@ void OptSchedDDGWrapperBasic::convertSUnit(const SUnit &SU) {
               SU.NodeNum, // fileSchedCycle
               0,          // fileInstLwrBound
               0,          // fileInstUprBound
-              0);         // blkNum
+              0,          // blkNum
+              &SU);
 }
 
 void OptSchedDDGWrapperBasic::discoverBoundaryLiveness(const MachineInstr *MI) {

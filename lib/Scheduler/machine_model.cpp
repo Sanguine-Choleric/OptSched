@@ -73,9 +73,10 @@ MachineModel::MachineModel(const string &modelFile) {
     IssueType issuType = GetIssueTypeByName(buffer);
 
     if (issuType == INVALID_ISSUE_TYPE) {
-      llvm::report_fatal_error(std::string("Invalid issue type ") + buffer +
-                                   " for inst. type " + it->name,
-                               false);
+      llvm::report_fatal_error(
+          llvm::StringRef(std::string("Invalid issue type ") + buffer +
+                          " for inst. type " + it->name),
+          false);
     }
 
     it->issuType = issuType;

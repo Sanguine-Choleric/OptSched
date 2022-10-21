@@ -501,16 +501,15 @@ void BBThread::updateSpillInfoForSchdul(SchedInstruction *inst,
 #endif
 
   // Update Live regs after uses
-  for (Register *use : inst->GetUses()) {
+  for (llvm::opt_sched::Register *use : inst->GetUses()) {
     regType = use->GetType();
     regNum = use->GetNum();
     physRegNum = use->GetPhysicalNumber();
 
     if (use->IsLive(SolverID_) == false)
-      llvm::report_fatal_error("Reg " + std::to_string(regNum) + " of type " +
-                                   std::to_string(regType) +
-                                   " is used without being defined",
-                               false);
+      llvm::report_fatal_error(
+          llvm::StringRef("Reg " + std::to_string(regNum) + " of type " +
+                          std::to_string(regType) + " is used without being defined"), false);
 
 #ifdef IS_DEBUG_REG_PRESSURE
     Logger::Info("Inst %d uses reg %d of type %d and %d uses", inst->GetNum(),
@@ -543,7 +542,7 @@ void BBThread::updateSpillInfoForSchdul(SchedInstruction *inst,
   }
 
   // Update Live regs after defs
-  for (Register *def : inst->GetDefs()) {
+  for (llvm::opt_sched::Register *def : inst->GetDefs()) {
     regType = def->GetType();
     regNum = def->GetNum();
     physRegNum = def->GetPhysicalNumber();
@@ -599,7 +598,7 @@ void BBThread::updateSpillInfoForSchdul(SchedInstruction *inst,
       SumOfLiveIntervalLengths_[i] += LiveRegs_[i].GetOneCnt();
       for (int j = 0; j < LiveRegs_[i].GetSize(); ++j) {
         if (LiveRegs_[i].GetBit(j)) {
-          const Register *reg = RegFiles_[i].GetReg(j);
+          const llvm::opt_sched::Register *reg = RegFiles_[i].GetReg(j);
           if (!reg->IsInInterval(inst) && !reg->IsInPossibleInterval(inst)) {
             ++DynamicSlilLowerBound_;
           }
@@ -696,7 +695,7 @@ void BBThread::updateSpillInfoForUnSchdul(SchedInstruction *inst) {
     for (int i = 0; i < RegTypeCnt_; ++i) {
       for (int j = 0; j < LiveRegs_[i].GetSize(); ++j) {
         if (LiveRegs_[i].GetBit(j)) {
-          const Register *reg = RegFiles_[i].GetReg(j);
+          const llvm::opt_sched::Register *reg = RegFiles_[i].GetReg(j);
           SumOfLiveIntervalLengths_[i]--;
           if (!reg->IsInInterval(inst) && !reg->IsInPossibleInterval(inst)) {
             --DynamicSlilLowerBound_;
@@ -709,7 +708,7 @@ void BBThread::updateSpillInfoForUnSchdul(SchedInstruction *inst) {
   }
 
   // Update Live regs
-  for (Register *def : inst->GetDefs()) {
+  for (llvm::opt_sched::Register *def : inst->GetDefs()) {
     regType = def->GetType();
     regNum = def->GetNum();
     physRegNum = def->GetPhysicalNumber();
@@ -736,7 +735,7 @@ void BBThread::updateSpillInfoForUnSchdul(SchedInstruction *inst) {
     //}
   }
 
-  for (Register *use : inst->GetUses()) {
+  for (llvm::opt_sched::Register *use : inst->GetUses()) {
     regType = use->GetType();
     regNum = use->GetNum();
     physRegNum = use->GetPhysicalNumber();
@@ -898,6 +897,8 @@ bool BBThread::chkCostFsblty(InstCount trgtLngth, EnumTreeNode *&node, bool isGl
   if (!fsbl) {
     node->SetLocalBestCost(dynmcCostLwrBound);
   }
+  
+  stats::costInfeasibilityHits++;
   return fsbl;
 }
 /*****************************************************************************/
@@ -1156,7 +1157,7 @@ InstCount BBInterfacer::ComputeSLILStaticLowerBound(int64_t regTypeCnt_,
     // between the recursive successor list of this instruction and the
     // recursive predecessors of the dependent instruction.
     auto recSuccBV = inst->GetRcrsvNghbrBitVector(DIR_FRWRD);
-    for (Register *def : inst->GetDefs()) {
+    for (llvm::opt_sched::Register *def : inst->GetDefs()) {
       for (const auto &dependentInst : def->GetUseList()) {
         auto recPredBV = const_cast<SchedInstruction *>(dependentInst)
                              ->GetRcrsvNghbrBitVector(DIR_BKWRD);
@@ -1182,14 +1183,14 @@ InstCount BBInterfacer::ComputeSLILStaticLowerBound(int64_t regTypeCnt_,
   // based on the instructions that use more than one register (defined by
   // different instructions).
   int commonUseLowerBound = closureLowerBound;
-  std::vector<std::pair<const SchedInstruction *, Register *>> usedInsts;
+  std::vector<std::pair<const SchedInstruction *, llvm::opt_sched::Register *>> usedInsts;
   for (int i = 0; i < dataDepGraph_->GetInstCnt(); ++i) {
     const auto &inst = dataDepGraph_->GetInstByIndx(i);
 
     // Get a list of instructions that define the registers, in array form.
     usedInsts.clear();
     llvm::transform(inst->GetUses(), std::back_inserter(usedInsts),
-                    [&](Register *reg) {
+                    [&](llvm::opt_sched::Register *reg) {
                       assert(reg->GetDefList().size() == 1 &&
                              "Number of defs for register is not 1!");
                       return std::make_pair(*(reg->GetDefList().begin()), reg);

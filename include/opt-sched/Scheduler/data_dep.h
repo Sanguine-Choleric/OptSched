@@ -14,6 +14,8 @@ Last Update:  Mar. 2011
 #include "opt-sched/Scheduler/defines.h"
 #include "opt-sched/Scheduler/sched_basic_data.h"
 #include "llvm/ADT/SmallVector.h"
+#include "llvm/CodeGen/MachineFunction.h"
+#include "llvm/Support/raw_ostream.h"
 #include <memory>
 
 namespace llvm {
@@ -301,6 +303,8 @@ public:
   }
 
   RegisterFile *getRegFiles() { return RegFiles.get(); }
+  void setMF_(MachineFunction *MF) { MF_ = MF; }
+  void printMF() { MF_->print(errs()); }
 
 protected:
   // TODO(max): Get rid of this.
@@ -346,6 +350,7 @@ protected:
   SmallVector<std::unique_ptr<GraphTrans>, 0> graphTrans_;
 
   MachineModel *machMdl_;
+  MachineFunction *MF_ = nullptr;
 
   bool backTrackEnbl_;
 
@@ -401,7 +406,7 @@ protected:
                                 InstType instType, const char *const opCode,
                                 int nodeID, InstCount fileSchedOrder,
                                 InstCount fileSchedCycle, InstCount fileLB,
-                                InstCount fileUB, int blkNum);
+                                InstCount fileUB, int blkNum, const SUnit *SU);
   FUNC_RESULT FinishNode_(InstCount nodeNum, InstCount edgeCnt = -1);
   void CreateEdge_(InstCount frmInstNum, InstCount toInstNum, int ltncy,
                    DependenceType depType, bool IsArtificial = false);

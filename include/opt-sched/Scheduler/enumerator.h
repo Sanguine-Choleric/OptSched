@@ -607,6 +607,8 @@ protected:
   // Should we ignore ilp and only schedule for register pressure.
   bool SchedForRPOnly_;
 
+  bool BypassLatencyChecking_;
+
   // (Chris): Store the most recent matching hist node when checking for
   // history domination
   HistEnumTreeNode *mostRecentMatchingHistNode_ = nullptr;
@@ -772,6 +774,8 @@ public:
   FUNC_RESULT FindSchedule(InstSchedule *sched, SchedRegion *rgn) {
     return RES_ERROR;
   }
+
+  inline bool bypassLatencyChecking() { return BypassLatencyChecking_; }
   
   inline bool isSecondPass() {return IsSecondPass_;}
 

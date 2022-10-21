@@ -3,11 +3,12 @@
 // Implements a generic target stub.
 //
 //===----------------------------------------------------------------------===//
-#include "OptSchedDDGWrapperBasic.h"
-#include "OptSchedMachineWrapper.h"
 #include "opt-sched/Scheduler/OptSchedTarget.h"
+#include "opt-sched/Scheduler/config.h"
 #include "opt-sched/Scheduler/defines.h"
 #include "opt-sched/Scheduler/machine_model.h"
+#include "OptSchedDDGWrapperBasic.h"
+#include "OptSchedMachineWrapper.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/CodeGen/ScheduleDAGInstrs.h"
 #include <memory>

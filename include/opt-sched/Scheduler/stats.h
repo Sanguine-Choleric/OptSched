@@ -96,7 +96,7 @@ public:
 
 protected:
   // The value tracked by this record.
-
+  T value_;
 
 };
 
