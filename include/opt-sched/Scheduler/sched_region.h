@@ -18,7 +18,7 @@ Last Update:  Jan. 2020
 // For Enumerator, LengthCostEnumerator, EnumTreeNode and Pruning.
 #include "opt-sched/Scheduler/enumerator.h"
 #include "opt-sched/Scheduler/gen_sched.h"
-#include "llvm/CodeGen/MachineFunction.h
+#include "llvm/CodeGen/MachineFunction.h"
 
 
 namespace llvm {

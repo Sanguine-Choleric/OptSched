@@ -126,10 +126,11 @@ collectVirtualRegUses(const MachineInstr &MI, const LiveIntervals &LIS,
 
 SmallVector<RegisterMaskPair, 8>
 collectVirtualRegDefs(const MachineInstr &MI, const LiveIntervals &LIS,
-                      const MachineRegisterInfo &MRI) {
+                      const MachineRegisterInfo &MRI,
+                      const ScheduleDAGOptSched *DAG) {
   SmallVector<RegisterMaskPair, 8> Res;
   for (const auto &MO : MI.defs()) {
-    if (!MO.isReg() || !TargetRegisterInfo::isVirtualRegister(MO.getReg()) ||
+    if (!MO.isReg() || !MO.getReg().isVirtual() ||
         MO.isDead())
       continue;
 

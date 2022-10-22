@@ -17,6 +17,7 @@ Last Update:  Mar. 2011
 // For class vector.
 #include "opt-sched/Scheduler/defines.h"
 #include <vector>
+#include "llvm/ADT/StringRef.h"
 
 namespace llvm {
 namespace opt_sched {
@@ -119,7 +120,7 @@ public:
   // as the name of the previous instruction (used for context-dependent
   // instructions).
   InstType GetInstTypeByName(llvm::StringRef typeName,
-                             const string &prevName = "") const;
+                             const std::string &prevName = "") const;
   // Return the default instruction type
   InstType getDefaultInstType() const;
   // Return the default issue type

@@ -240,7 +240,7 @@ int OptSchedGCNTarget::getOccupancyLimit(Config &OccFile) const {
 }
 
 unsigned OptSchedGCNTarget::getOccupancyWithCost(const InstCount Cost) const {
-  Logger::Info("getting occ for schedule with spill %d", cost);
+  Logger::Info("getting occ for schedule with spill %d", Cost);
   return TargetOccupancy - Cost;
 }
 

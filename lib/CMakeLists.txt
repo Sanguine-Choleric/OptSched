@@ -46,11 +46,11 @@ add_llvm_target(OptSched
 
 add_dependencies(LLVMOptSched ${OPTSCHED_TARGET_DEPS})
 
-add_dependencies(OptSched ${OPTSCHED_TARGET_DEPS})
-
 set(OPTSCHED_EXTRA_DEFINITIONS "-DINSERT_ON_STEPFRWRD")
 
 add_definitions(${OPTSCHED_EXTRA_DEFINITIONS})
+
+target_compile_options(LLVMOptSched PRIVATE -Wno-suggest-override -Wno-inconsistent-missing-override)
 
 #add_compile_options(-g)
 

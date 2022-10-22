@@ -45,7 +45,7 @@ class HalfNode {
     HalfNode(std::queue<int> prefix, unsigned long *heuristic, InstCount cost);
     ~HalfNode();
     inline void setPrefix(std::queue<int> &prefix) {prefix_ = prefix;}
-    inline void setHeuristic(unsigned long *heuristic) {heuristic = heuristic;}
+    inline void setHeuristic(unsigned long *heuristic) {heuristic_ = heuristic;}
     inline void setCost(InstCount cost) {cost_ = cost;}
     inline void setDiversityNum(InstCount divNum) {divNum_ = divNum;}
     inline std::queue<int> &getPrefix() {return prefix_;}

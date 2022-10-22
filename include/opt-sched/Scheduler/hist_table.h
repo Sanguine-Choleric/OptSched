@@ -58,8 +58,6 @@ public:
 
   inline SchedInstruction *GetInst() {return inst_;}
 
-  inline int getInstNum() { return inst_->GetNum(); }
-
   inline void setFullyExplored(bool isFullyExplored) {
     fullyExplored_ = isFullyExplored;
   }
