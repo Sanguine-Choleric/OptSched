@@ -99,7 +99,7 @@ class ExaminedInst {
 
     inline SchedInstruction *GetInst();
     inline bool wasRlxInfsbl() { return wasRlxInfsbl_; }
-    inline bool IsRsrcDmntd(SchedInstruction *cnddtInst);
+//    inline bool IsRsrcDmntd(SchedInstruction *cnddtInst);
 };
 
 class EnumTreeNode {
@@ -252,7 +252,7 @@ public:
   // it is assumed that the enumerator will skip this inst
   bool WasSprirNodeExmnd(SchedInstruction *cnddtInst);
 
-  bool WasRsrcDmnntNodeExmnd(SchedInstruction *cnddtInst);
+//  bool WasRsrcDmnntNodeExmnd(SchedInstruction *cnddtInst);
 
   inline void SetSlotAvlblty(InstCount avlblSlots[],
                              int16_t avlblSlotsInCrntCycle[]);

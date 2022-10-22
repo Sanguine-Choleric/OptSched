@@ -50,7 +50,5 @@ set(OPTSCHED_EXTRA_DEFINITIONS "-DINSERT_ON_STEPFRWRD")
 
 add_definitions(${OPTSCHED_EXTRA_DEFINITIONS})
 
-target_compile_options(LLVMOptSched PRIVATE -Wno-suggest-override -Wno-inconsistent-missing-override)
-
 #add_compile_options(-g)
 
