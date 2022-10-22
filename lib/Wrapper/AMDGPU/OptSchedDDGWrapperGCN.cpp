@@ -124,19 +124,48 @@ collectVirtualRegUses(const MachineInstr &MI, const LiveIntervals &LIS,
 }
 
 
+
 SmallVector<RegisterMaskPair, 8>
 collectVirtualRegDefs(const MachineInstr &MI, const LiveIntervals &LIS,
                       const MachineRegisterInfo &MRI,
                       const ScheduleDAGOptSched *DAG) {
   SmallVector<RegisterMaskPair, 8> Res;
-  for (const auto &MO : MI.defs()) {
-    if (!MO.isReg() || !MO.getReg().isVirtual() ||
-        MO.isDead())
+
+  for (ConstMIBundleOperands MIO(MI); MIO.isValid(); ++MIO) {
+    const MachineOperand MO = *MIO;
+#ifdef DEBUG_REG
+    Logger::Info("Processing Op");
+    MO.print(errs());
+    errs() << "\n";
+
+    if (!MO.isReg()) {
+      Logger::Info("Is Not Reg");
       continue;
+    }
+    if (!MO.getReg().isVirtual())
+      Logger::Info("Is Not VirtReg");
+    if (!MO.isDef())
+      Logger::Info("Is Not Def");
+    if (MO.isDead())
+      Logger::Info("Is Dead");
+#endif
+
+    if (!MO.isReg() || !MO.getReg().isVirtual() || MO.isDead() || !MO.isDef()) {
+      continue;
+    }
 
     const auto DefMask = getDefRegMask(MO, MRI);
 
     auto Reg = MO.getReg();
+
+#ifdef DEBUG_REG
+    Logger::Info("found def");
+    Logger::Info("has Reg %u", Reg.id());
+    auto maskPrint = PrintLaneMask(DefMask);
+    errs() << maskPrint;
+    errs() << "\n";
+#endif
+
     auto I =
         std::find_if(Res.begin(), Res.end(), [Reg](const RegisterMaskPair &RM) {
           return RM.RegUnit == Reg;
@@ -228,16 +257,29 @@ void OptSchedDDGWrapperGCN::convertRegFiles() {
 void OptSchedDDGWrapperGCN::addSubRegDefs(SchedInstruction *Instr, unsigned Reg,
                                           const LaneBitmask &LiveMask,
                                           bool LiveIn) {
-  if (RegionRegs[Reg] == nullptr)
+  if (RegionRegs[Reg] == nullptr) {
     RegionRegs[Reg] = createSubRegSet(Reg, MRI, getRegKind(Reg));
+  }
 
   SubRegSet &SubRegs = *RegionRegs[Reg].get();
   RegisterFile &RF = RegFiles[SubRegs.Type];
   unsigned Lane = 0;
+#ifdef DEBUG_REG
+  Logger::Info("Processing LLVM Reg %u", Reg);
+  auto Temp = Reg;
+#endif
   for (auto &ResNo : SubRegs) {
-    if ((LiveMask.getLane(Lane) & LiveMask).any()) {
+    if ((LiveMask.getLane(Lane) & LiveMask).any() ||
+        (LiveMask.getLane(Lane + 1) & LiveMask).any()) {
+
       Register *Reg = RF.getNext();
       ResNo = Reg->GetNum();
+#ifdef DEBUG_REG
+      Logger::Info("maps to OptSched Reg %d", Reg->GetNum());
+      Logger::Info(
+          "Adding def for subreg of reg %u (optsched vreg %d, type = %d)", Temp,
+          ResNo, Reg->GetType());
+#endif
       Instr->AddDef(Reg);
       // Weight should always be one since we are only tracking VGPR32 and
       // SGPR32
@@ -245,10 +287,13 @@ void OptSchedDDGWrapperGCN::addSubRegDefs(SchedInstruction *Instr, unsigned Reg,
       Reg->AddDef(Instr);
       Reg->SetIsLiveIn(LiveIn);
     }
-    Lane++;
+    if ((LiveMask.getLane(Lane) & LiveMask).any() !=
+        (LiveMask.getLane(Lane + 1) & LiveMask).any()) {
+      Logger::Info("found lane mismatch");
+    }
+    Lane += 2;
   }
 }
-
 
 void OptSchedDDGWrapperGCN::addSubRegUses(SchedInstruction *Instr, unsigned Reg,
                                           const LaneBitmask &LiveMask,
