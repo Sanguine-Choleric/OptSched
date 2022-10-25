@@ -494,7 +494,8 @@ public:
 
     Enumerator *AllocEnumrtr_(Milliseconds timeout);
 
-    uint64_t getExaminedNodeCount() override {return Enumrtr_->GetNodeCnt(); }
+    uint64_t getExaminedNodeCount() override {errs() << "Calling Enumrtr->GetNodeCnt()\n";
+                                              return Enumrtr_->GetNodeCnt(); }
 
     inline bool isWorkSteal() override {return false;}
     inline bool isWorkStealOn() override {

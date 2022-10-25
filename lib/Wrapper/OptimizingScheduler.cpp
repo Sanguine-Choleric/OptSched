@@ -560,8 +560,13 @@ void ScheduleDAGOptSched::schedule() {
     }
 
     OST->finalizeRegion(Sched);
-    if (!OST->shouldKeepSchedule()) 
+    if (!OST->shouldKeepSchedule()) {
+      for (size_t i = 0; i < SUnits.size(); i++) {
+        SUnit SU = SUnits[i];
+        ResetFlags(SU);
+      }
       return;
+    }
 
       
     // Count simulated spills.
