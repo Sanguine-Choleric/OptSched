@@ -2815,6 +2815,7 @@ bool LengthCostEnumerator::WasObjctvMet_() {
     return false;
   }
 
+  // crntCost is normalizeed (lower bound subtracted)
   InstCount crntCost = GetBestCost_();
   if (HasLegalSchedule) {
     InstCount newCost = bbt_->UpdtOptmlSched(crntSched_, this);
@@ -2829,10 +2830,11 @@ bool LengthCostEnumerator::WasObjctvMet_() {
     crntCost = newCost;
   }
 
+  // crntCost is normalized, thus it is the true cost - cost lwr bound.
+  // This condition is true iff true cost == cost lwr bound
+  if (crntCost == 0) Logger::Info("objctv met");
 
-  if (crntCost == costLwrBound_) Logger::Info("objctv met");
-  if (crntCost == 0 && crntCost != costLwrBound_) errs() << "Non optimal cost of 0\n";
-  return crntCost == costLwrBound_;
+  return crntCost == 0;
 }
 /*****************************************************************************/
 

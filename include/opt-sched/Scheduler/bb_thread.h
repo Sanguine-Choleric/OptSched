@@ -266,6 +266,8 @@ public:
   virtual InstCount getHeuristicCost() = 0; 
   // Returns the best cost found from scheduling
   virtual InstCount getBestCost() = 0;
+  // Returns the current sched cost
+  virtual InstCount getCrntScheduleCost() = 0;
   // Updates the current schedule with an improved cost schedule
   virtual InstCount UpdtOptmlSched(InstSchedule *crntSched,
                            LengthCostEnumerator *enumrtr) = 0;
@@ -401,6 +403,7 @@ protected:
 
   // override BBThread virtual
   InstCount getBestCost() override {return *BestCost_;}
+  InstCount getCrntScheduleCost() override {return enumBestSched_->GetCost();}
  
   void setBestCost(InstCount BestCost) override { *BestCost_ = BestCost; }
 
@@ -590,6 +593,8 @@ private:
     inline void setBestCost(InstCount BestCost) {
       BestCost_ = BestCost;
       }
+
+    inline InstCount getCrntScheduleCost() {return MasterSched_->GetCost();}
 
 
     InstCount UpdtOptmlSched(InstSchedule *crntSched, LengthCostEnumerator *enumrtr);

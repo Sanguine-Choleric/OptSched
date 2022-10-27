@@ -50,5 +50,5 @@ set(OPTSCHED_EXTRA_DEFINITIONS "-DINSERT_ON_STEPFRWRD")
 
 add_definitions(${OPTSCHED_EXTRA_DEFINITIONS})
 
-#add_compile_options(-g)
+add_compile_options(-Wno-inconsistent-missing-override)
 
