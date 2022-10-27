@@ -2809,23 +2809,30 @@ FUNC_RESULT LengthCostEnumerator::FindFeasibleSchedule(InstSchedule *sched,
 bool LengthCostEnumerator::WasObjctvMet_() {
   assert(GetBestCost_() >= 0);
 
-  if (WasSolnFound_() == false) {
+  bool HasLegalSchedule = WasSolnFound_();
+
+  if (!HasLegalSchedule && !bbt_->isWorker()) {
     return false;
   }
 
   InstCount crntCost = GetBestCost_();
-  InstCount newCost = bbt_->UpdtOptmlSched(crntSched_, this);
-  if (!bbt_->isWorker() || !IsFirstPass_) assert(newCost <= GetBestCost_());
+  if (HasLegalSchedule) {
+    InstCount newCost = bbt_->UpdtOptmlSched(crntSched_, this);
+    if (!bbt_->isWorker() || !IsFirstPass_) assert(newCost <= GetBestCost_());
 
-  if (newCost < crntCost) {
-    imprvmntCnt_++;
-    if (bbt_->isWorker() && IsFirstPass_) 
-      bbt_->incrementImprvmntCnt();
+    if (newCost < crntCost) {
+      imprvmntCnt_++;
+      if (bbt_->isWorker() && IsFirstPass_) 
+        bbt_->incrementImprvmntCnt();
+    }
+
+    crntCost = newCost;
   }
 
 
-  if (newCost == costLwrBound_) Logger::Info("objctv met");
-  return newCost == costLwrBound_;
+  if (crntCost == costLwrBound_) Logger::Info("objctv met");
+  if (crntCost == 0 && crntCost != costLwrBound_) errs() << "Non optimal cost of 0\n";
+  return crntCost == costLwrBound_;
 }
 /*****************************************************************************/
 

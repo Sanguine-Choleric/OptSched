@@ -1329,9 +1329,10 @@ FUNC_RESULT BBWithSpill::Enumerate_(Milliseconds StartTime,
       Logger::Info("breaking out of loop");
       break;
     }
-
-    Enumrtr_->Reset();
-    enumCrntSched_->Reset();
+    if (isSecondPass()) {
+      Enumrtr_->Reset();
+      enumCrntSched_->Reset();
+    }
 
     if (!isSecondPass())
       CmputSchedUprBound_();
