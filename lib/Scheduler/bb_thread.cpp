@@ -1794,7 +1794,7 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
             RegionSchedLock_->unlock();
         }
 
-        if (RegionSched_->GetCost() == 0 || rslt == RES_ERROR ||
+        if (RegionSched_->GetSpillCost() == 0 || MasterSched_->GetSpillCost() == 0 || rslt == RES_ERROR ||
           (rslt == RES_TIMEOUT)) {
    
             //TODO -- notify all other threads to stop
@@ -1810,7 +1810,7 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
         }
     }
   
-  assert(getLocalPoolSize(SolverID_ - 2) == 0 || RegionSched_->GetCost() == 0 || rslt == RES_TIMEOUT || rslt == RES_ERROR || rslt == RES_EXIT);
+  assert(getLocalPoolSize(SolverID_ - 2) == 0 || MasterSched_->GetSpillCost() == 0 || RegionSched_->GetSpillCost() == 0 || rslt == RES_TIMEOUT || rslt == RES_ERROR || rslt == RES_EXIT);
 
 
   if (true) {
@@ -1826,7 +1826,7 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
 
   //TODO -- this may be buggy
   if (!GlobalPool_->empty()) {
-    if (RegionSched_->GetCost() == 0) return RES_SUCCESS;
+    if (RegionSched_->GetSpillCost() == 0 || MasterSched_->GetSpillCost() == 0) return RES_SUCCESS;
 
     std::shared_ptr<HalfNode> temp;
     while (true) {
@@ -1849,7 +1849,7 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
 #endif
       assert(temp != NULL);
       rslt = generateAndEnumerate(temp, StartTime, RgnTimeout, LngthTimeout);
-      if (RegionSched_->GetCost() == 0 || rslt == RES_ERROR || (rslt == RES_TIMEOUT) || rslt == RES_EXIT) {
+      if (RegionSched_->GetSpillCost() == 0 || MasterSched_->GetSpillCost() == 0 || rslt == RES_ERROR || (rslt == RES_TIMEOUT) || rslt == RES_EXIT) {
         return rslt;
       }
       break;
@@ -1877,7 +1877,7 @@ if (isWorkSteal()) {
   bool stoleWork = false;
   bool workStolenFsbl = false;
   bool isTimedOut = false;
-  while (!workStolenFsbl && !(RegionSched_->GetCost() == 0) && !isTimedOut && (*InactiveThreads_) < NumSolvers_) {
+  while (!workStolenFsbl && !(RegionSched_->GetSpillCost() == 0 || MasterSched_->GetSpillCost() == 0) && !isTimedOut && (*InactiveThreads_) < NumSolvers_) {
     if (true) {
       reset_();
       DataDepGraph_->resetThreadWriteFields(SolverID_, false);
@@ -1956,8 +1956,8 @@ if (isWorkSteal()) {
 
   if (stoleWork && workStolenFsbl && !isTimedOut) {
     rslt = enumerate_(StartTime, RgnTimeout, LngthTimeout, true, true);
-    assert(getLocalPoolSize(SolverID_ - 2) == 0 || RegionSched_->GetCost() == 0 || rslt == RES_TIMEOUT || rslt == RES_ERROR || rslt == RES_EXIT);
-    if (RegionSched_->GetCost() == 0 || rslt == RES_ERROR || (rslt == RES_TIMEOUT) || rslt == RES_EXIT) {
+    assert(getLocalPoolSize(SolverID_ - 2) == 0 || RegionSched_->GetSpillCost() == 0 || MasterSched_->GetSpillCost() == 0 || rslt == RES_TIMEOUT || rslt == RES_ERROR || rslt == RES_EXIT);
+    if (RegionSched_->GetSpillCost() == 0 || MasterSched_->GetSpillCost() == 0 || rslt == RES_ERROR || (rslt == RES_TIMEOUT) || rslt == RES_EXIT) {
       return rslt;
     }
   }
