@@ -52,7 +52,7 @@ void LocalRegAlloc::AllocRegs() {
     // Find registers for this instruction's VReg uses.
     for (Register *use : inst->GetUses()) {
       int16_t regType = use->GetType();
-      int virtRegNum = use->GetNum();
+      int virtRegNum = use->GetNum(0);
 #ifdef RA_BUG
       Logger::Info("found use %d", virtRegNum);
 #endif
@@ -75,7 +75,7 @@ void LocalRegAlloc::AllocRegs() {
     // Kill registers if this is the last use for them.
     for (Register *use : inst->GetUses()) {
       int16_t regType = use->GetType();
-      int virtRegNum = use->GetNum();
+      int virtRegNum = use->GetNum(0);
       RegMap &map = regMaps_[regType][virtRegNum];
       std::vector<int> &physRegs = physRegs_[regType];
 
@@ -99,7 +99,7 @@ void LocalRegAlloc::AllocRegs() {
     // Process definitions.
     for (Register *def : inst->GetDefs()) {
       int16_t regType = def->GetType();
-      int virtRegNum = def->GetNum();
+      int virtRegNum = def->GetNum(0);
 #ifdef RA_BUG
       Logger::Info("found def %d", virtRegNum);
 #endif
@@ -254,7 +254,7 @@ void LocalRegAlloc::ScanUses_() {
 #endif
 
     for (Register *use : inst->GetUses()) {
-      int virtRegNum = use->GetNum();
+      int virtRegNum = use->GetNum(0);
       int16_t regType = use->GetType();
       if (regMaps_[regType].find(virtRegNum) == regMaps_[regType].end()) {
         RegMap m;
@@ -286,7 +286,7 @@ void LocalRegAlloc::AddLiveIn_(SchedInstruction *artificialEntry) {
 #endif
   for (Register *def : artificialEntry->GetDefs()) {
     int16_t regType = def->GetType();
-    int virtRegNum = def->GetNum();
+    int virtRegNum = def->GetNum(0);
 #ifdef RA_BUG
     Logger::Info("Found live in def vreg %d", virtRegNum);
 #endif

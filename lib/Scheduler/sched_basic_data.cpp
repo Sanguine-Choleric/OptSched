@@ -64,6 +64,10 @@ void SISchedFields::allocMem(int prdCnt, int sucCnt) {
 
   lastUseCnt_ = 0;
 
+  for (int i = 0; i < 2; i++) {
+    padding[i] = i;
+  }
+
   for (int i = 0; i < prdCnt; i++)  {
       rdyCyclePerPrdcsr_[i] = INVALID_VALUE;
       prevMinRdyCyclePerPrdcsr_[i] = INVALID_VALUE;
@@ -80,6 +84,7 @@ void SISchedFields::deallocMem() {
     delete[] prevMinRdyCyclePerPrdcsr_;
     prevMinRdyCyclePerPrdcsr_ = NULL;
   }
+
 }
 
 
@@ -453,7 +458,8 @@ void SchedInstruction::DeAllocMem_() {
   assert(memAllocd_);
 
   for (int SolverID = 0; SolverID < NumSolvers_; SolverID++) {
-    DynamicFields_[SolverID].deallocMem();
+    if (DynamicFields_ != NULL)
+      DynamicFields_[SolverID].deallocMem();
     if (sortedPrdcsrLst_ != NULL)
       if (sortedPrdcsrLst_[SolverID] != NULL)
         delete sortedPrdcsrLst_[SolverID];
@@ -870,6 +876,7 @@ InstCount SchedInstruction::GetSchedSlot(int SolverID) const {
   return DynamicFields_[SolverID].getCrntSchedSlot(); 
 }
 
+// First pass doesnt use deadline, just return 
 InstCount SchedInstruction::GetCrntDeadline(int SolverID) const {
   if (SolverID == -1) {
     return IsSchduldSecondPass() ? crntSchedCycleScalar_ : crntRange_->GetDeadline();
