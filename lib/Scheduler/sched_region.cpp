@@ -518,7 +518,6 @@ FUNC_RESULT SchedRegion::FindOptimalSchedule(
   InitialSchedule = bestSched_;
   InitialScheduleCost = bestCost_;
   InitialScheduleLength = bestSchedLngth_;
-
   // Step #4: Find the optimal schedule if the heuristic and ACO was not
   // optimal.
   if (BbSchedulerEnabled) {
@@ -796,6 +795,7 @@ FUNC_RESULT SchedRegion::Optimize_(Milliseconds startTime,
     //#ifndef IS_TRACK_INFSBLTY_HITS
     //  #define IS_TRACK_INFSBLTY_HITS
     //#endif
+    enumBestSched_->Copy(bestSched_);
     rslt = Enumerate_(startTime, rgnTimeout, lngthTimeout, OptimalSolverID);
     Logger::Event("NodeExamineCount", "num_nodes", getExaminedNodeCount());
     stats::nodeCount.Record(getExaminedNodeCount());
