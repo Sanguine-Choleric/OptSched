@@ -1317,7 +1317,7 @@ inline void Enumerator::UpdtRdyLst_(InstCount cycleNum, int slotNum) {
   LinkedList<SchedInstruction> *lst2 = frstRdyLstPerCycle_[cycleNum];
 
   if (prirts_.isDynmc)
-    rdyLst_->UpdatePriorities();
+    rdyLst_->UpdatePriorities(bbt_);
 
   if (slotNum == 0 && prevCycleNum >= 0) {
     // If at the begining of a new cycle other than the very first cycle, then
@@ -1328,7 +1328,7 @@ inline void Enumerator::UpdtRdyLst_(InstCount cycleNum, int slotNum) {
   }
 
   
-  rdyLst_->AddLatestSubLists(lst1, lst2);
+  rdyLst_->AddLatestSubLists(lst1, lst2, bbt_);
 }
 /*****************************************************************************/
 

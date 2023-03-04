@@ -342,6 +342,15 @@ BBThread::BBThread(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
 
   RegTypeCnt_ = OST->MM->GetRegTypeCnt();
   RegFiles_ = dataDepGraph->getRegFiles();
+  for (int i = 0; i < RegTypeCnt_; i++) {
+    auto RegFile = RegFiles_[i];
+    for (auto Ptr : RegFile.getRegs()) {
+      Register *Reg = Ptr.get();
+      RegFields temp = {0, Reg->GetNum(), Reg->GetType()};
+      RegToFields[Reg] = temp;
+    }
+  }
+
   LiveRegs_ = new WeightedBitVector[RegTypeCnt_];
   LivePhysRegs_ = new WeightedBitVector[RegTypeCnt_];
   SpillCosts_ = new InstCount[dataDepGraph->GetInstCnt()];
@@ -367,6 +376,15 @@ BBThread::~BBThread() {
   delete[] SpillCosts_;
   delete[] PeakRegPressures_;
 }
+
+
+void BBThread::resetRegFields() {
+  for (auto &RF : RegToFields) {
+    RF.second.CrntUseCnt = 0;
+  }
+}
+
+
 /*****************************************************************************/
 
 void BBThread::setupPhysRegs_() {
@@ -400,8 +418,12 @@ void BBThread::initForCostCmputtn_() {
   TotSpillCost_ = 0;
 
   for (i = 0; i < RegTypeCnt_; i++) {
-    RegFiles_[i].ResetCrntUseCnts(SolverID_);
+    //RegFiles_[i].ResetCrntUseCnts(SolverID_);
     RegFiles_[i].ResetCrntLngths();
+  }
+
+  for (auto &RegFieldPair : RegToFields) {
+    RegFieldPair.second.CrntUseCnt = 0;
   }
 
   for (i = 0; i < RegTypeCnt_; i++) {
@@ -501,11 +523,12 @@ void BBThread::updateSpillInfoForSchdul(SchedInstruction *inst,
 
   // Update Live regs after uses
   for (llvm::opt_sched::Register *use : inst->GetUses()) {
-    regType = use->GetType();
-    regNum = use->GetNum(SolverID_);
+    auto &Fields = RegToFields[use];
+    regType = Fields.Type;//def->GetType();
+    regNum = Fields.Num;//def->GetNum(SolverID_);
     physRegNum = use->GetPhysicalNumber();
 
-    if (use->IsLive(SolverID_) == false)
+    if (!(Fields.CrntUseCnt < use->GetUseCnt()))
       llvm::report_fatal_error(
           llvm::StringRef("Reg " + std::to_string(regNum) + " of type " +
                           std::to_string(regType) + " is used without being defined"), false);
@@ -515,9 +538,10 @@ void BBThread::updateSpillInfoForSchdul(SchedInstruction *inst,
                  regNum, regType, use->GetUseCnt());
 #endif
 
-    use->AddCrntUse(SolverID_);
+    //use->AddCrntUse(SolverID_);
+    Fields.CrntUseCnt++;
 
-    if (use->IsLive(SolverID_) == false) {
+    if (!(Fields.CrntUseCnt < use->GetUseCnt())) {
       // (Chris): The SLIL calculation below the def and use for-loops doesn't
       // consider the last use of a register. Thus, an additional increment must
       // happen here.
@@ -542,8 +566,9 @@ void BBThread::updateSpillInfoForSchdul(SchedInstruction *inst,
 
   // Update Live regs after defs
   for (llvm::opt_sched::Register *def : inst->GetDefs()) {
-    regType = def->GetType();
-    regNum = def->GetNum(SolverID_);
+    auto &Fields = RegToFields[def];
+    regType = Fields.Type;//def->GetType();
+    regNum = Fields.Num;//def->GetNum(SolverID_);
     physRegNum = def->GetPhysicalNumber();
 
 #ifdef IS_DEBUG_REG_PRESSURE
@@ -566,7 +591,8 @@ void BBThread::updateSpillInfoForSchdul(SchedInstruction *inst,
 
     if (RegFiles_[regType].GetPhysRegCnt() > 0 && physRegNum >= 0)
       LivePhysRegs_[regType].SetBit(physRegNum, true, def->GetWght());
-    def->ResetCrntUseCnt(SolverID_);
+    Fields.CrntUseCnt = 0;
+    //def->ResetCrntUseCnt(SolverID_);
     //}
   }
 
@@ -708,8 +734,9 @@ void BBThread::updateSpillInfoForUnSchdul(SchedInstruction *inst) {
 
   // Update Live regs
   for (llvm::opt_sched::Register *def : inst->GetDefs()) {
-    regType = def->GetType();
-    regNum = def->GetNum(SolverID_);
+    auto &Fields = RegToFields[def];
+    regType = Fields.Type;//def->GetType();
+    regNum = Fields.Num;//def->GetNum(SolverID_);
     physRegNum = def->GetPhysicalNumber();
 
 #ifdef IS_DEBUG_REG_PRESSURE
@@ -730,13 +757,16 @@ void BBThread::updateSpillInfoForUnSchdul(SchedInstruction *inst) {
 
     if (RegFiles_[regType].GetPhysRegCnt() > 0 && physRegNum >= 0)
       LivePhysRegs_[regType].SetBit(physRegNum, false, def->GetWght());
-    def->ResetCrntUseCnt(SolverID_);
+    
+    //def->ResetCrntUseCnt(SolverID_);
+    Fields.CrntUseCnt = 0;
     //}
   }
 
   for (llvm::opt_sched::Register *use : inst->GetUses()) {
-    regType = use->GetType();
-    regNum = use->GetNum(SolverID_);
+    auto &Fields = RegToFields[use];
+    regType = Fields.Type;//def->GetType();
+    regNum = Fields.Num;//def->GetNum(SolverID_);
     physRegNum = use->GetPhysicalNumber();
 
 #ifdef IS_DEBUG_REG_PRESSURE
@@ -744,10 +774,11 @@ void BBThread::updateSpillInfoForUnSchdul(SchedInstruction *inst) {
                  regNum, regType, use->GetUseCnt());
 #endif
 
-    isLive = use->IsLive(SolverID_);
-    use->DelCrntUse(SolverID_);
+    isLive = Fields.CrntUseCnt < use->GetUseCnt();//use->IsLive(SolverID_);
+    //use->DelCrntUse(SolverID_);
+    Fields.CrntUseCnt--;
 
-    assert(use->IsLive(SolverID_));
+    assert(Fields.CrntUseCnt < use->GetUseCnt());
 
     if (isLive == false) {
       // (Chris): Since this was the last use, the above SLIL calculation didn't
@@ -897,7 +928,7 @@ bool BBThread::chkCostFsblty(InstCount trgtLngth, EnumTreeNode *&node, bool isGl
     node->SetLocalBestCost(dynmcCostLwrBound);
   }
   
-  stats::costInfeasibilityHits++;
+  //stats::costInfeasibilityHits++;
   return fsbl;
 }
 /*****************************************************************************/
@@ -1343,9 +1374,9 @@ FUNC_RESULT BBWithSpill::Enumerate_(Milliseconds StartTime,
       lngthDeadline = rgnDeadline;
   }
 
-  stats::positiveDominationHits.Print(cout);
-  stats::nodeSuperiorityInfeasibilityHits.Print(cout);
-  stats::costInfeasibilityHits.Print(cout);
+  //stats::positiveDominationHits.Print(cout);
+  //stats::nodeSuperiorityInfeasibilityHits.Print(cout);
+  //stats::costInfeasibilityHits.Print(cout);
 
 #ifdef IS_DEBUG_ITERS
   stats::iterations.Record(iterCnt);
@@ -1815,6 +1846,7 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
 
   if (true) {
       DataDepGraph_->resetThreadWriteFields(SolverID_, false);
+      resetRegFields();
       Enumrtr_->Reset();
       if (Enumrtr_->IsHistDom())
         Enumrtr_->resetEnumHistoryState();
@@ -1882,6 +1914,7 @@ if (isWorkSteal()) {
     if (true) {
       reset_();
       DataDepGraph_->resetThreadWriteFields(SolverID_, false);
+      resetRegFields();
       Enumrtr_->Reset();
       EnumCrntSched_->Reset();
       initForSchdulng();

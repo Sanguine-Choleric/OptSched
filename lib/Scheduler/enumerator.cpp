@@ -644,7 +644,7 @@ Enumerator::Enumerator(DataDepGraph *dataDepGraph, MachineModel *machMdl,
   }
 
   histTableInitTime = Utilities::GetProcessorTime() - histTableInitTime;
-  stats::historyTableInitializationTime.Record(histTableInitTime);
+  //stats::historyTableInitializationTime.Record(histTableInitTime);
 
   tightndLst_ = NULL;
   bkwrdTightndLst_ = NULL;
@@ -1412,7 +1412,7 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
 #ifdef IS_DEBUG_INFSBLTY_TESTS
       stats::forwardLBInfeasibilityHits++;
 #endif
-      stats::forwardLBInfeasibilityHits++;
+      //stats::forwardLBInfeasibilityHits++;
 #ifdef IS_DEBUG_SEARCH_ORDER
       Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: LB fail");
 #endif
@@ -1422,7 +1422,7 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
 #ifdef IS_DEBUG_INFSBLTY_TESTS
       stats::backwardLBInfeasibilityHits++;
 #endif
-      stats::backwardLBInfeasibilityHits++;
+      //stats::backwardLBInfeasibilityHits++;
 
 #ifdef IS_DEBUG_SEARCH_ORDER
       Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: deadline fail");
@@ -1444,7 +1444,7 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
   if (prune_.nodeSup) {
     if (inst != NULL) {
       if (crntNode_->WasSprirNodeExmnd(inst)) {
-        stats::nodeSuperiorityInfeasibilityHits++;
+        //stats::nodeSuperiorityInfeasibilityHits++;
       nodeSupInfsbl++;
         isNodeDmntd = true;
 #ifdef IS_DEBUG_SEARCH_ORDER
@@ -1472,7 +1472,7 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
     stats::slotCountInfeasibilityHits++;
 #endif
   if (!bbt_->isSecondPass()) Logger::Info("actually pruning due to slot count");
-  stats::slotCountInfeasibilityHits++;
+  //stats::slotCountInfeasibilityHits++;
 #ifdef IS_DEBUG_SEARCH_ORDER
     Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: issue slot fail");
 #endif
@@ -1489,7 +1489,7 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
     stats::rangeTighteningInfeasibilityHits++;
 #endif
   if (!bbt_->isSecondPass()) Logger::Info("actually pruning due to rng tightn");
-  stats::rangeTighteningInfeasibilityHits++;
+  //stats::rangeTighteningInfeasibilityHits++;
 
 #ifdef IS_DEBUG_SEARCH_ORDER
     Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: tightn LB fail");
@@ -1515,7 +1515,7 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
 #ifdef IS_DEBUG_INFSBLTY_TESTS
         stats::historyDominationInfeasibilityHits++;
 #endif
-  stats::historyDominationInfeasibilityHits++;
+  //stats::historyDominationInfeasibilityHits++;
 #ifdef IS_DEBUG_SEARCH_ORDER
         Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: histDom fail");
 #endif
@@ -1536,7 +1536,7 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
       stats::relaxedSchedulingInfeasibilityHits++;
 #endif
     if (!bbt_->isSecondPass()) Logger::Info("actually pruning due to rlx schd");
-  stats::relaxedSchedulingInfeasibilityHits++;
+  //stats::relaxedSchedulingInfeasibilityHits++;
 
       isRlxInfsbl = true;
 #ifdef IS_DEBUG_SEARCH_ORDER
@@ -2166,7 +2166,7 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
   int listSize = exmndSubProbs_->GetListSize(newNode->GetSig());
 
   UDT_HASHVAL key = exmndSubProbs_->HashKey(newNode->GetSig());
-  stats::historyListSize.Record(listSize);
+  //stats::historyListSize.Record(listSize);
   if (listSize == 0) return false;
   mostRecentMatchingHistNode_ = nullptr;
   bool mostRecentMatchWasSet = false;
@@ -2203,7 +2203,7 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
         exNode->PrntPartialSched(Logger::GetLogStream());
 #endif
 
-        stats::positiveDominationHits++;
+        //stats::positiveDominationHits++;
 #ifdef IS_DEBUG_SPD
         stats::positiveDominationHits++;
         stats::traversedHistoryListSize.Record(trvrsdListSize);
@@ -2239,7 +2239,7 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
 
   
 
-  stats::traversedHistoryListSize.Record(trvrsdListSize);
+  //stats::traversedHistoryListSize.Record(trvrsdListSize);
   return wasDmntSubProbExmnd;
 }
 /****************************************************************************/
@@ -2567,7 +2567,7 @@ void Enumerator::PrintLog_() {
   Logger::Info("Total nodes examined: %lld\n", GetNodeCnt());
   Logger::Info("History table includes %d entries.\n",
                exmndSubProbs_->GetEntryCnt());
-  Logger::GetLogStream() << stats::historyEntriesPerIteration;
+  //Logger::GetLogStream() << stats::historyEntriesPerIteration;
   Logger::Info("--------------------------------------------------\n");
 }
 /*****************************************************************************/
@@ -2895,7 +2895,7 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
 #ifdef IS_DEBUG_INFSBLTY_TESTS
       stats::historyDominationInfeasibilityHits++;
 #endif
-  stats::historyDominationInfeasibilityHits;
+  //stats::historyDominationInfeasibilityHits;
       bbt_->unschdulInst(inst, crntCycleNum_, crntSlotNum_, parent);
 #ifdef IS_DEBUG_SEARCH_ORDER
       Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: LCE history fail");
@@ -2926,7 +2926,7 @@ bool LengthCostEnumerator::ChkCostFsblty_(SchedInstruction *inst,
     isFsbl = bbt_->chkCostFsblty(trgtSchedLngth_, newNode, !trueState);
 
     if (!isFsbl && trueState) {
-      stats::costInfeasibilityHits++;
+      //stats::costInfeasibilityHits++;
 #ifdef IS_DEBUG_FLOW
       Logger::Info("Detected cost infeasibility of inst %d in cycle %d",
                    inst == NULL ? -2 : inst->GetNum(), crntCycleNum_);
@@ -3617,7 +3617,7 @@ void LengthCostEnumerator::unschedulePrefixInst_(SchedInstruction *instToUnschdu
   costStack.pop();
   bbt_->unschdulInstAndRevert(instToUnschdul, crntCycleNum_, crntSlotNum_, tempCost);
   rdyLst_->RemoveLatestSubList();
-  rdyLst_->AddInst(instToUnschdul);
+  rdyLst_->AddInst(instToUnschdul, bbt_);
   MovToPrevSlot_(crntSlotNum_);
   ConstrainedScheduler::UnSchdulInst_(instToUnschdul);
   instToUnschdul->UnSchedule(SolverID_);
@@ -3764,7 +3764,7 @@ void LengthCostEnumerator::getRdyListAsNodes(std::pair<EnumTreeNode *, unsigned 
 
 
     pool->push(std::make_pair(allocAndInitNextNode(nxtInst, node, pushNode, node->GetRdyLst(), subPrefix), heur));
-    rdyLst_->AddInst(nxtInst.first);
+    rdyLst_->AddInst(nxtInst.first, bbt_);
   }
 
   delete[] ExploreNode->second;
@@ -3986,7 +3986,7 @@ EnumTreeNode *LengthCostEnumerator::allocAndInitNextNode(std::pair<SchedInstruct
 /*****************************************************************************/
 void LengthCostEnumerator::appendToRdyLst(LinkedList<SchedInstruction> *lst)
 {
-  rdyLst_->AddList(lst);
+  rdyLst_->AddList(lst, bbt_);
 }
 /*****************************************************************************/
 

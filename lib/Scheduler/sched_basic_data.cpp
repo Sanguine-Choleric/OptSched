@@ -1,3 +1,4 @@
+#include "opt-sched/Scheduler/bb_thread.h"
 #include "opt-sched/Scheduler/sched_basic_data.h"
 #include "opt-sched/Scheduler/register.h"
 #include "opt-sched/Scheduler/stats.h"
@@ -1048,16 +1049,23 @@ void SchedInstruction::SetPrdcsrNums_() {
   assert(prdcsrNum == GetPrdcsrCnt());
 }
 
-int16_t SchedInstruction::CmputLastUseCnt(int SolverID) {
+int16_t SchedInstruction::CmputLastUseCnt(int SolverID, BBThread *Rgn) {
   DynamicFields_[SolverID].setLastUseCnt(0);
 
   for (int i = 0; i < useCnt_; i++) {
     Register *reg = uses_[i];
-    if (reg) 
-     assert(reg->GetCrntUseCnt(SolverID) < reg->GetUseCnt());
+    auto Fields = Rgn->getRegFields(reg);
+    int RegCrntUseCnt = Fields.CrntUseCnt;
+    if (reg)  {
+    if (RegCrntUseCnt >= reg->GetUseCnt()) {
+      errs() << "Bad condition on Reg " << reg->GetNum() << "\n";
+      errs() << "CrntUseCnt: " << RegCrntUseCnt << ", useCnt: " << reg->GetUseCnt() << "\n";
+      assert(false);
+    }
+    }
     
     
-    if (reg->GetCrntUseCnt(SolverID) + 1 == reg->GetUseCnt())
+    if (RegCrntUseCnt + 1 == reg->GetUseCnt())
       DynamicFields_[SolverID].setLastUseCnt(DynamicFields_[SolverID].getLastUseCnt()+1);
   }
 

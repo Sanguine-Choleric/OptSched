@@ -142,7 +142,7 @@ void ReadyList::CopyList(ReadyList *otherList) {
 }
 
 unsigned long ReadyList::CmputKey_(SchedInstruction *inst, bool isUpdate,
-                                   bool &changed) {
+                                   bool &changed, BBThread *rgn) {
   unsigned long key = 0;
   int16_t keySize = 0;
   int i;
@@ -161,7 +161,7 @@ unsigned long ReadyList::CmputKey_(SchedInstruction *inst, bool isUpdate,
 
     case LSH_LUC:
       oldLastUseCnt = inst->GetLastUseCnt(SolverID_);
-      newLastUseCnt = inst->CmputLastUseCnt(SolverID_);
+      newLastUseCnt = inst->CmputLastUseCnt(SolverID_, rgn);
       if (newLastUseCnt != oldLastUseCnt)
         changed = true;
 
@@ -199,12 +199,13 @@ unsigned long ReadyList::CmputKey_(SchedInstruction *inst, bool isUpdate,
 }
 
 void ReadyList::AddLatestSubLists(LinkedList<SchedInstruction> *lst1,
-                                  LinkedList<SchedInstruction> *lst2) {
+                                  LinkedList<SchedInstruction> *lst2,
+                                  BBThread *rgn) {
   //assert(latestSubLst_.GetElmntCnt() == 0);
   if (lst1 != NULL)
-    AddLatestSubList_(lst1);
+    AddLatestSubList_(lst1, rgn);
   if (lst2 != NULL)
-    AddLatestSubList_(lst2);
+    AddLatestSubList_(lst2, rgn);
   prirtyLst_.ResetIterator();
 }
 
@@ -219,7 +220,7 @@ void ReadyList::Print(std::ostream &out) {
   prirtyLst_.ResetIterator();
 }
 
-void ReadyList::AddLatestSubList_(LinkedList<SchedInstruction> *lst) {
+void ReadyList::AddLatestSubList_(LinkedList<SchedInstruction> *lst, BBThread *rgn) {
   assert(lst != NULL);
 
 #ifdef IS_DEBUG_READY_LIST2
@@ -236,7 +237,7 @@ void ReadyList::AddLatestSubList_(LinkedList<SchedInstruction> *lst) {
     if (crntInst->IsInReadyList(SolverID_))
       break;
 
-    AddInst(crntInst);
+    AddInst(crntInst, rgn);
 #ifdef IS_DEBUG_READY_LIST2
     Logger::GetLogStream() << crntInst->GetNum() << ", ";
 #endif
@@ -270,9 +271,9 @@ void ReadyList::RemoveLatestSubList() {
 
 void ReadyList::ResetIterator() { prirtyLst_.ResetIterator(); }
 
-void ReadyList::AddInst(SchedInstruction *inst) {
+void ReadyList::AddInst(SchedInstruction *inst, BBThread *rgn) {
   bool changed;
-  unsigned long key = CmputKey_(inst, false, changed);
+  unsigned long key = CmputKey_(inst, false, changed, rgn);
   assert(changed == true);
   KeyedEntry<SchedInstruction, unsigned long> *entry =
       prirtyLst_.InsrtElmnt(inst, key, true);
@@ -281,13 +282,13 @@ void ReadyList::AddInst(SchedInstruction *inst) {
     keyedEntries_[instNum] = entry;
 }
 
-void ReadyList::AddList(LinkedList<SchedInstruction> *lst) {
+void ReadyList::AddList(LinkedList<SchedInstruction> *lst, BBThread *rgn) {
   SchedInstruction *crntInst;
 
   if (lst != NULL)
     for (crntInst = lst->GetFrstElmnt(); crntInst != NULL;
          crntInst = lst->GetNxtElmnt()) {
-      AddInst(crntInst);
+      AddInst(crntInst, rgn);
     }
 
   prirtyLst_.ResetIterator();
@@ -308,14 +309,14 @@ SchedInstruction *ReadyList::GetNextPriorityInst(unsigned long &key) {
   return prirtyLst_.GetNxtPriorityElmnt(key);
 }
 
-void ReadyList::UpdatePriorities() {
+void ReadyList::UpdatePriorities(BBThread *rgn) {
   assert(prirts_.isDynmc);
 
   SchedInstruction *inst;
   bool instChanged = false;
   for (inst = prirtyLst_.GetFrstElmnt(); inst != NULL;
        inst = prirtyLst_.GetNxtElmnt()) {
-    unsigned long key = CmputKey_(inst, true, instChanged);
+    unsigned long key = CmputKey_(inst, true, instChanged, rgn);
     if (instChanged) {
       prirtyLst_.BoostEntry(keyedEntries_[inst->GetNum()], key);
     }

@@ -97,3 +97,6 @@ if(OPTSCHED_INCLUDE_TESTS)
       -O3
   )
 endif()
+
+add_compile_options(-Wno-suggest-override)
+add_compile_options(-Wno-inconsistent-missing-override)

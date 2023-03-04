@@ -501,7 +501,7 @@ public:
   // Computer the adjusted use count. Update "adjustedUseCnt_".
   void ComputeAdjustedUseCnt(SchedInstruction *inst);
 
-  int16_t CmputLastUseCnt(int SolverID);
+  int16_t CmputLastUseCnt(int SolverID, BBThread *rgn);
   int16_t GetLastUseCnt(int SolverID) { return DynamicFields_[SolverID].getLastUseCnt(); }
 
   InstType GetCrtclPathFrmRoot() { return crtclPathFrmRoot_; }
