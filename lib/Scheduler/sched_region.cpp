@@ -84,6 +84,9 @@ SchedRegion::SchedRegion(MachineModel *machMdl, DataDepGraph *dataDepGraph,
                          SchedPriorities hurstcPrirts,
                          SchedPriorities enumPrirts, bool vrfySched,
                          Pruning PruningStrategy, SchedulerType HeurSchedType,
+                         SmallVector<MemAlloc<EnumTreeNode> *, 16> &EnumNodeAllocs,
+                         SmallVector<MemAlloc<CostHistEnumTreeNode> *, 16> &HistNodeAllocs, 
+                         SmallVector<MemAlloc<BinHashTblEntry<HistEnumTreeNode>> *, 16> &HashTablAllocs,
                          SPILL_COST_FUNCTION spillCostFunc) {
   machMdl_ = machMdl;
   dataDepGraph_ = dataDepGraph;
@@ -109,6 +112,10 @@ SchedRegion::SchedRegion(MachineModel *machMdl, DataDepGraph *dataDepGraph,
   spillCostFunc_ = spillCostFunc;
 
   OptimalSolverID_ = new int;  
+
+  EnumNodeAllocs_ = EnumNodeAllocs;
+  HistNodeAllocs_ = HistNodeAllocs;
+  HashTablAllocs_ = HashTablAllocs;
   
   DumpDDGs_ = GetDumpDDGs();
   DDGDumpPath_ = GetDDGDumpPath();
@@ -793,7 +800,7 @@ FUNC_RESULT SchedRegion::Optimize_(Milliseconds startTime,
   InstCount initCost = bestCost_;
   
   Milliseconds timeout = IsTimeoutPerInst_ ? lngthTimeout : rgnTimeout;
-  enumrtr = AllocEnumrtr_(timeout);
+  enumrtr = AllocEnumrtr_(timeout, EnumNodeAllocs_, HistNodeAllocs_, HashTablAllocs_);
   
   if (enumrtr) {
     //#ifndef IS_TRACK_INFSBLTY_HITS

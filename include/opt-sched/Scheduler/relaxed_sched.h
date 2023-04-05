@@ -127,7 +127,7 @@ public:
   inline void Initialize(bool setPrirtyLst);
 
   // Find a feasible relaxed schedule of all instructions and return its length
-  InstCount FindSchedule();
+  InstCount FindSchedule() override;
 
   // Try to schedule all unscheduled instructions between the current cycle and
   // the given last cycle. Return true if this is feasible and false if not
@@ -161,7 +161,7 @@ private:
   // in the specified direction.
   InstCount SchdulSubGraph_(SchedInstruction *inst, DIRECTION dir);
 
-  InstCount CmputReleaseTime_(SchedInstruction *inst);
+  InstCount CmputReleaseTime_(SchedInstruction *inst) override;
 
 public:
   LC_RelaxedScheduler(DataDepStruct *dataDepGraph, MachineModel *machMdl,
@@ -169,7 +169,7 @@ public:
   ~LC_RelaxedScheduler();
 
   // Find a relaxed schedule of all instructions and return its length
-  InstCount FindSchedule();
+  InstCount FindSchedule() override;
 };
 /*****************************************************************************/
 
@@ -203,9 +203,9 @@ private:
   void InitCycleProbe_(SchedInstruction *newInst);
   bool CheckSlots_(InstCount firstCycle, InstCount lastCycle);
 
-  InstCount CmputReleaseTime_(SchedInstruction *inst);
+  InstCount CmputReleaseTime_(SchedInstruction *inst) override;
 
-  InstCount GetCrntLwrBound_(SchedInstruction *inst, DIRECTION dir);
+  InstCount GetCrntLwrBound_(SchedInstruction *inst, DIRECTION dir) override;
 
   void SetCrntLwrBound_(SchedInstruction *inst, DIRECTION dir,
                         InstCount newBound);
@@ -226,7 +226,7 @@ public:
 
   // Find a minimum-length relaxed schedule of all instructions and return its
   // length
-  InstCount FindSchedule();
+  InstCount FindSchedule() override;
 
   // Find a relaxed schedule of the given length
   // The Boolean determines whether the opposite direction has been probed and

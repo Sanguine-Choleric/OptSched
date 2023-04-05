@@ -10,7 +10,9 @@
 #include "opt-sched/Scheduler/bb_thread.h"
 #include "opt-sched/Scheduler/config.h"
 #include "opt-sched/Scheduler/data_dep.h"
+#include "opt-sched/Scheduler/enumerator.h"
 #include "opt-sched/Scheduler/graph_trans.h"
+#include "opt-sched/Scheduler/hist_table.h"
 #include "opt-sched/Scheduler/random.h"
 #include "opt-sched/Scheduler/register.h"
 #include "opt-sched/Scheduler/sched_region.h"
@@ -227,6 +229,15 @@ ScheduleDAGOptSched::ScheduleDAGOptSched(
   // Load config files for the OptScheduler
   loadOptSchedConfig();
 
+  int i = ParallelBB ? NumThreads : 1;
+  while (i > 0) {
+      EnumNodeAllocs.push_back(new MemAlloc<EnumTreeNode>(1000, -1));
+      HistNodeAllocs.push_back(new MemAlloc<CostHistEnumTreeNode>(10000, -1));
+      HashTablAllocs.push_back(new MemAlloc<BinHashTblEntry<HistEnumTreeNode>>(10000, -1));
+
+      --i;
+  }
+
   StringRef ArchName = TM.getTargetTriple().getArchName();
   Logger::Info("arch");
   Logger::Info(ArchName.data());
@@ -249,6 +260,17 @@ ScheduleDAGOptSched::ScheduleDAGOptSched(
   MM = OST->createMachineModel(PathCfgMM.c_str());
   MM->convertMachineModel(static_cast<ScheduleDAGInstrs &>(*this),
                           RegClassInfo);
+}
+
+ScheduleDAGOptSched::~ScheduleDAGOptSched() {
+  int i = ParallelBB ? NumThreads : 1;
+  --i;
+  while (i >= 0) {
+      delete EnumNodeAllocs[i];
+      delete HistNodeAllocs[i];
+      delete HashTablAllocs[i];
+      --i;
+  }
 }
 
 void ScheduleDAGOptSched::SetupLLVMDag() {
@@ -436,6 +458,7 @@ void ScheduleDAGOptSched::schedule() {
 
   int size = DDG.get()->getSize();
   DataDepGraph *dataDepGraph_ = static_cast<DataDepGraph *>(DDG.get());
+  dataDepGraph_->setMF_(&MF);
   int preFiltered = false;
 
   Logger::Info("fin create ddg");
@@ -488,7 +511,7 @@ void ScheduleDAGOptSched::schedule() {
         OST.get(), dataDepGraph_, 0, HistTableHashBits,
         LowerBoundAlgorithm, HeuristicPriorities, EnumPriorities, VerifySchedule,
         PruningStrategy, SchedForRPOnly, EnumStalls, SCW, SCF, HeurSchedType, TimeoutToMemblock,
-        TwoPassEnabled, IsTimeoutPerInst);
+        TwoPassEnabled, IsTimeoutPerInst, EnumNodeAllocs, HistNodeAllocs, HashTablAllocs);
 
       // Used for two-pass-optsched to alter upper bound value.
     if (SecondPass) 
@@ -535,7 +558,7 @@ void ScheduleDAGOptSched::schedule() {
         LowerBoundAlgorithm, HeuristicPriorities, EnumPriorities, VerifySchedule,
         PruningStrategy, SchedForRPOnly, EnumStalls, SCW, SCF, HeurSchedType, 
         NumThreads, MinNodesAsMultiple, MinSplittingDepth, MaxSplittingDepth, NumSolvers, LocalPoolSize, ExploitationPercent, GlobalPoolSCF,
-        GlobalPoolSort, WorkSteal, IsTimeoutPerInst, TimeoutToMemblock, TwoPassEnabled);
+        GlobalPoolSort, WorkSteal, IsTimeoutPerInst, TimeoutToMemblock, TwoPassEnabled, EnumNodeAllocs, HistNodeAllocs, HashTablAllocs);
 
       // Used for two-pass-optsched to alter upper bound value.
     if (SecondPass)

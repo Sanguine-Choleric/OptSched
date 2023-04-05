@@ -174,7 +174,7 @@ protected:
   bool ChkCostDmntnForBBSpill_(EnumTreeNode *node, Enumerator *enumrtr);
   bool ChkCostDmntn_(EnumTreeNode *node, Enumerator *enumrtr,
                      InstCount &maxShft);
-  virtual void Init_();
+  virtual void Init_() override;
 };
 
 } // namespace opt_sched

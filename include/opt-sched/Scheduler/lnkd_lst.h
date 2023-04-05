@@ -61,8 +61,8 @@ template <class T, class K = unsigned long> struct KeyedEntry : Entry<T> {
     Entry<T>::next = entry->GetNext();
     Entry<T>::prev = entry->GetPrev();
   }
-  virtual KeyedEntry *GetNext() const { return (KeyedEntry *)Entry<T>::next; }
-  virtual KeyedEntry *GetPrev() const { return (KeyedEntry *)Entry<T>::prev; }
+  virtual KeyedEntry *GetNext() const override { return (KeyedEntry *)Entry<T>::next; }
+  virtual KeyedEntry *GetPrev() const override { return (KeyedEntry *)Entry<T>::prev; }
 };
 
 /**
@@ -228,6 +228,9 @@ public:
 
   // A virtual destructor, to support inheritance.
   virtual ~LinkedList();
+
+  // Resets the list to its initial state.
+  virtual void Init_();
   // Deletes all existing entries and resets the list to its initial state.
   virtual void Reset();
 
@@ -305,8 +308,6 @@ protected:
   // Removes a given entry from the list. If free = true, deletes it via
   // FreeEntry_().
   virtual void RmvEntry_(Entry<T> *entry, bool free = true);
-  // Resets all state to default values. Warning: does not free memory!
-  virtual void Init_();
   // Deletes an entry object in dynamically-sized lists.
   void FreeEntry_(Entry<T> *entry);
 
@@ -363,7 +364,7 @@ public:
   // element with the same key exists.
   KeyedEntry<T, K> *InsrtElmnt(T *elmnt, K key, bool allowDplct);
   // Disable the version from LinkedList.
-  void InsrtElmnt(T *) { llvm::report_fatal_error("Unimplemented.", false); }
+  void InsrtElmnt(T *) override { llvm::report_fatal_error("Unimplemented.", false); }
 
   T *ViewNxtPriorityElmnt();
 

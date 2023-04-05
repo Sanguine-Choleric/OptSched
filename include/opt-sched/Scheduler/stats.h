@@ -90,7 +90,7 @@ public:
   T value_;
 
   // Prints the stat to a stream.
-  void Print(std::ostream &out) const {
+  void Print(std::ostream &out) const override{
     out << name_ << ": " << value_ << "\n";
   }
 
@@ -121,7 +121,7 @@ protected:
   // The maximum  of the recorded values.
   T max_;
   // Prints the stat to a stream.
-  void Print(std::ostream &out) const;
+  void Print(std::ostream &out) const override;
 };
 
 typedef DistributionStat<int64_t> IntDistributionStat;
@@ -139,7 +139,7 @@ protected:
   // The string tracked by this record.
   string value_;
   // Prints the stat to a stream.
-  void Print(std::ostream &out) const {
+  void Print(std::ostream &out) const override {
     out << name_ << ": " << value_ << "\n";
   }
 };
@@ -158,7 +158,7 @@ protected:
   // The values tracked by this record.
   std::set<T> values_;
   // Prints the stat to a stream.
-  void Print(std::ostream &out) const;
+  void Print(std::ostream &out) const override;
 };
 typedef SetStat<int64_t> IntSetStat;
 typedef SetStat<float> FloatSetStat;
@@ -181,7 +181,7 @@ protected:
   // The sets tracked by this record.
   std::map<string, std::set<T>> values_;
   // Prints the stat to a stream.
-  void Print(std::ostream &out) const;
+  void Print(std::ostream &out) const override;
 };
 
 typedef IndexedSetStat<int64_t> IndexedIntSetStat;
@@ -216,7 +216,7 @@ public:
 protected:
   std::list<Entry> entries_;
   // Prints the stat to a stream.
-  void Print(std::ostream &out) const;
+  void Print(std::ostream &out) const override;
 };
 
 // A record to keep track of a group of numerical values, indexed by strings.
@@ -251,7 +251,7 @@ protected:
   // The values tracked by this record.
   std::map<string, T> values_;
   // Prints the stat to a stream.
-  void Print(std::ostream &out) const;
+  void Print(std::ostream &out) const override;
 };
 
 typedef IndexedNumericStat<int64_t> IndexedIntStat;

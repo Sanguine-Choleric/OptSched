@@ -53,13 +53,21 @@ void InstPool3::removeSpecificElement(SchedInstruction *inst, EnumTreeNode *pare
   bool removeElement = false;
 
   EnumTreeNode *temp = it.GetEntry()->element;
+  auto Solver = temp->getEnumerator()->bbt_;
+
 #ifdef IS_CORRECT_LOCALPOOL
-  Logger::Info("localPool time %d, targetNode time %d", temp->GetTime(), parent->GetTime());
-  if (temp->GetParent() != parent) Logger::Info("localPool nodes parent is not the target");
+  Solver->GlobalPoolLock_->lock();
+  Logger::Info("SolverID %d, localPool time %d, targetNode time %d\n", SolverID_, temp->GetTime(), parent->GetTime());
+  if (temp->GetParent() != parent) Logger::Info("localPool nodes parent is not the target\n");
+  Solver->GlobalPoolLock_->unlock();
+
 #endif
   while (temp->GetParent() == parent && temp->GetInstNum() != inst->GetNum()) {
 #ifdef IS_CORRECT_LOCALPOOL
-    Logger::Info("iterating through localPool");
+    Solver->GlobalPoolLock_->lock();
+    Logger::Info("SolverID_ %d, iterating through localPool", SolverID_);
+    Solver->GlobalPoolLock_->unlock();
+
 #endif
     ++it;
     temp = it.GetEntry()->element;
@@ -68,7 +76,10 @@ void InstPool3::removeSpecificElement(SchedInstruction *inst, EnumTreeNode *pare
   if (temp->GetParent() == parent && temp->GetInstNum() == inst->GetNum()) {
     removeElement = true;
 #ifdef IS_CORRECT_LOCALPOOL
-    Logger::Info("element hit in remove specific from local pool");
+    Solver->GlobalPoolLock_->lock();
+    Logger::Info("SolverID_ %d, element hit in remove specific from local pool", SolverID);
+    Solver->GlobalPoolLock_->unlock();
+
 #endif
     assert(temp);
 
@@ -1086,10 +1097,12 @@ BBInterfacer::BBInterfacer(const OptSchedTarget *OST_, DataDepGraph *dataDepGrap
               SchedPriorities hurstcPrirts, SchedPriorities enumPrirts,
               bool vrfySched, Pruning PruningStrategy, bool SchedForRPOnly,
               bool enblStallEnum, int SCW, SPILL_COST_FUNCTION spillCostFunc,
-              SchedulerType HeurSchedType)
+              SchedulerType HeurSchedType,  SmallVector<MemAlloc<EnumTreeNode> *, 16> &EnumNodeAllocs,
+             SmallVector<MemAlloc<CostHistEnumTreeNode> *, 16> &HistNodeAllocs, 
+             SmallVector<MemAlloc<BinHashTblEntry<HistEnumTreeNode>> *, 16> &HashTablAllocs)
               : SchedRegion(OST_->MM, dataDepGraph, rgnNum, sigHashSize, lbAlg,
                   hurstcPrirts, enumPrirts, vrfySched, PruningStrategy,
-                  HeurSchedType, spillCostFunc) ,
+                  HeurSchedType, EnumNodeAllocs, HistNodeAllocs, HashTablAllocs, spillCostFunc) ,
                 BBThread(OST_, dataDepGraph, rgnNum, sigHashSize, lbAlg, hurstcPrirts,
                          enumPrirts, vrfySched, PruningStrategy, SchedForRPOnly,
                          enblStallEnum, SCW, spillCostFunc, HeurSchedType)
@@ -1409,10 +1422,12 @@ BBWithSpill::BBWithSpill(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
               bool vrfySched, Pruning PruningStrategy, bool SchedForRPOnly,
               bool enblStallEnum, int SCW, SPILL_COST_FUNCTION spillCostFunc,
               SchedulerType HeurSchedType, int timeoutToMemblock, bool twoPassEnabled,
-              bool IsTimeoutPerInst)
+              bool IsTimeoutPerInst, SmallVector<MemAlloc<EnumTreeNode> *, 16> &EnumNodeAllocs,
+             SmallVector<MemAlloc<CostHistEnumTreeNode> *, 16> &HistNodeAllocs, 
+             SmallVector<MemAlloc<BinHashTblEntry<HistEnumTreeNode>> *, 16> &HashTablAllocs)
               : BBInterfacer(OST_, dataDepGraph, rgnNum, sigHashSize, lbAlg, hurstcPrirts,
                              enumPrirts, vrfySched, PruningStrategy, SchedForRPOnly, 
-                             enblStallEnum, SCW, spillCostFunc, HeurSchedType) {
+                             enblStallEnum, SCW, spillCostFunc, HeurSchedType, EnumNodeAllocs, HistNodeAllocs, HashTablAllocs) {
     SolverID_ = 0;
     NumSolvers_ = 1;
     TwoPassEnabled_ = twoPassEnabled;
@@ -1422,13 +1437,16 @@ BBWithSpill::BBWithSpill(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
     Logger::Event("FinishedConstBBInterfacer");
 }
 
-Enumerator *BBWithSpill::AllocEnumrtr_(Milliseconds timeout) {
+Enumerator *BBWithSpill::AllocEnumrtr_(Milliseconds timeout, SmallVector<MemAlloc<EnumTreeNode> *, 16> &EnumNodeAllocs,
+             SmallVector<MemAlloc<CostHistEnumTreeNode> *, 16> &HistNodeAllocs, 
+             SmallVector<MemAlloc<BinHashTblEntry<HistEnumTreeNode>> *, 16> &HashTablAllocs) {
   bool enblStallEnum = EnblStallEnum_;
 
   Enumrtr_ = new LengthCostEnumerator(this,
       dataDepGraph_, machMdl_, schedUprBound_, GetSigHashSize(),
       GetEnumPriorities(), GetPruningStrategy(), SchedForRPOnly_, enblStallEnum,
-      timeout, GetSpillCostFunc(), isSecondPass_, 1, timeoutToMemblock_, 0, 0, NULL);
+      timeout, GetSpillCostFunc(), isSecondPass_, 1, timeoutToMemblock_, EnumNodeAllocs_[0], HistNodeAllocs_[0], HashTablAllocs_[0], 0, 0,
+      NULL);
 
   return Enumrtr_;
 }
@@ -1482,6 +1500,9 @@ BBWorker::BBWorker(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
 
   SolverID_ = SolverID;
 
+  std::string StreamName = std::string(dataDepGraph->MF_->getName().data()) + std::string("Solver") + std::to_string(SolverID_); 
+  //ThreadStream_.open(StreamName, std::ios_base::app);
+  //ThreadStream_ << "Opened\n";
   HistTableLock_ = HistTableLock;
   GlobalPoolLock_ = GlobalPoolLock;
   BestSchedLock_ = BestSchedLock;
@@ -1512,6 +1533,7 @@ BBWorker::BBWorker(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
 
 BBWorker::~BBWorker() {
   delete EnumCrntSched_;
+  //ThreadStream_.close();
 }
 
 void BBWorker::setHeurInfo(InstCount SchedUprBound, InstCount HeuristicCost, 
@@ -1523,12 +1545,13 @@ void BBWorker::setHeurInfo(InstCount SchedUprBound, InstCount HeuristicCost,
 }
 
 /*****************************************************************************/
-void BBWorker::allocEnumrtr_(Milliseconds Timeout) {
+void BBWorker::allocEnumrtr_(Milliseconds Timeout, MemAlloc<EnumTreeNode> *EnumNodeAlloc,
+    MemAlloc<CostHistEnumTreeNode> *HistNodeAlloc, MemAlloc<BinHashTblEntry<HistEnumTreeNode>> *HashTablAlloc) {
 
   Enumrtr_ = new LengthCostEnumerator(this,
       DataDepGraph_, MachMdl_, SchedUprBound_, SigHashSize_,
       EnumPrirts_, PruningStrategy_, SchedForRPOnly_, EnblStallEnum_,
-      Timeout, SpillCostFunc_, IsSecondPass_, timeoutToMemblock_, NumSolvers_, SolverID_, 0, NULL);
+      Timeout, SpillCostFunc_, IsSecondPass_, timeoutToMemblock_, NumSolvers_,EnumNodeAlloc, HistNodeAlloc, HashTablAlloc,  SolverID_, 0,  NULL);
 
 }
 /*****************************************************************************/
@@ -1745,7 +1768,6 @@ FUNC_RESULT BBWorker::generateAndEnumerate(std::shared_ptr<HalfNode> GlobalPoolN
                                  Milliseconds RgnTimeout,
                                  Milliseconds LngthTimeout) {
 
-
   bool fsbl = (GlobalPoolNode.get() != nullptr);
   if (fsbl) {
     Enumrtr_->setIsGenerateState(true);
@@ -1754,7 +1776,7 @@ FUNC_RESULT BBWorker::generateAndEnumerate(std::shared_ptr<HalfNode> GlobalPoolN
     //delete GlobalPoolNode;
   }
   else {
-    Logger::Info("SolverID %d not given a GP Node", SolverID_);
+//    Logger::Info("SolverID %d not given a GP Node", SolverID_);
   }
   ++GlobalPoolNodes;
   auto res = enumerate_(StartTime, RgnTimeout, LngthTimeout, false, fsbl);
@@ -1826,7 +1848,6 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
 
         if (RegionSched_->GetSpillCost() == 0 || MasterSched_->GetSpillCost() == 0 || rslt == RES_ERROR ||
           (rslt == RES_TIMEOUT)) {
-   
             //TODO -- notify all other threads to stop
             if (rslt == RES_SUCCESS || rslt == RES_FAIL) {
                 rslt = RES_SUCCESS;
@@ -1892,7 +1913,6 @@ FUNC_RESULT BBWorker::enumerate_(Milliseconds StartTime,
 #ifdef DEBUG_GP_HISTORY
   Logger::Info("Solver %d bypassed global pool pulling (size = %d)", SolverID_, GlobalPool_->size());
 #endif
-
 if (isWorkSteal()) {
   GlobalPoolLock_->lock();
   if (!isWorkStealOn()) {
@@ -1958,6 +1978,11 @@ if (isWorkSteal()) {
         stoleWork = true;
         localPoolUnlock(victimID);
         setStolenNode(workStealNode);
+#ifdef IS_CORRECT_LOCALPOOL
+        GlobalPoolLock_->lock();
+        Logger::Info("SolverID %d Stole node from SolverID %d, has time %d\n", SolverID_, victimID + 2, workStealNode->GetTime());
+        GlobalPoolLock_->unlock();
+#endif
       }
     }
       
@@ -2034,11 +2059,9 @@ void BBWorker::writeBestSchedToMaster(InstSchedule *BestSched, InstCount BestCos
       *MasterLength_ = BestSched->GetCrntLngth();     
     }
   BestSchedLock_->unlock();
-  
   Logger::Info(
       "SolverID_ %d Found a feasible sched. of length %d, spill cost %d and tot cost %d", SolverID_,
       *MasterLength_, *MasterSpill_, *MasterCost_);
-
 }
 
 void BBWorker::histTableLock(UDT_HASHVAL key) {
@@ -2110,10 +2133,12 @@ BBMaster::BBMaster(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
              int MinSplittingDepth, 
              int MaxSplittingDepth, int NumSolvers, int LocalPoolSize, float ExploitationPercent, 
              SPILL_COST_FUNCTION GlobalPoolSCF, int GlobalPoolSort, bool WorkSteal, bool IsTimeoutPerInst,
-             int timeoutToMemblock, bool twoPassEnabled)
+             int timeoutToMemblock, bool twoPassEnabled,  SmallVector<MemAlloc<EnumTreeNode> *, 16> &EnumNodeAllocs,
+             SmallVector<MemAlloc<CostHistEnumTreeNode> *, 16> &HistNodeAllocs, 
+             SmallVector<MemAlloc<BinHashTblEntry<HistEnumTreeNode>> *, 16> &HashTablAllocs)
              : BBInterfacer(OST_, dataDepGraph, rgnNum, sigHashSize, lbAlg, hurstcPrirts,
              enumPrirts, vrfySched, PruningStrategy, SchedForRPOnly, 
-             enblStallEnum, SCW, spillCostFunc, HeurSchedType) {
+             enblStallEnum, SCW, spillCostFunc, HeurSchedType, EnumNodeAllocs, HistNodeAllocs, HashTablAllocs) {
   SolverID_ = 0;
   NumThreads_ = NumThreads; //how many workers
   MinNodesAsMultiple_ = MinNodesAsMultiple;
@@ -2227,18 +2252,22 @@ void BBMaster::initWorkers(const OptSchedTarget *OST_, DataDepGraph *dataDepGrap
   }
 }
 /*****************************************************************************/
-Enumerator *BBMaster::AllocEnumrtr_(Milliseconds timeout) {
+Enumerator *BBMaster::AllocEnumrtr_(Milliseconds timeout, SmallVector<MemAlloc<EnumTreeNode> *, 16> &EnumNodeAllocs,
+             SmallVector<MemAlloc<CostHistEnumTreeNode> *, 16> &HistNodeAllocs, 
+             SmallVector<MemAlloc<BinHashTblEntry<HistEnumTreeNode>> *, 16> &HashTablAllocs) {
   setWorkerHeurInfo();
   bool fsbl;
   Enumerator *enumrtr = NULL; 
-  enumrtr = allocEnumHierarchy_(timeout, &fsbl);
+  enumrtr = allocEnumHierarchy_(timeout, &fsbl, EnumNodeAllocs, HistNodeAllocs, HashTablAllocs);
 
   // TODO -- hacker hour, fix this
   return fsbl == false ? NULL : enumrtr;
 }
 
 /*****************************************************************************/
-Enumerator *BBMaster::allocEnumHierarchy_(Milliseconds timeout, bool *fsbl) {
+Enumerator *BBMaster::allocEnumHierarchy_(Milliseconds timeout, bool *fsbl, SmallVector<MemAlloc<EnumTreeNode> *, 16> &EnumNodeAllocs,
+             SmallVector<MemAlloc<CostHistEnumTreeNode> *, 16> &HistNodeAllocs, 
+             SmallVector<MemAlloc<BinHashTblEntry<HistEnumTreeNode>> *, 16> &HashTablAllocs) {
   bool enblStallEnum = EnblStallEnum_;
 
 
@@ -2246,7 +2275,7 @@ Enumerator *BBMaster::allocEnumHierarchy_(Milliseconds timeout, bool *fsbl) {
   Enumrtr_ = new LengthCostEnumerator(this,
       dataDepGraph_, machMdl_, schedUprBound_, GetSigHashSize(),
       GetEnumPriorities(), GetPruningStrategy(), SchedForRPOnly_, enblStallEnum,
-      timeout, GetSpillCostFunc(), isSecondPass_, NumThreads_, timeoutToMemblock_, 1, 0, NULL);
+      timeout, GetSpillCostFunc(), isSecondPass_, NumThreads_, timeoutToMemblock_, EnumNodeAllocs[0], HistNodeAllocs[0], HashTablAllocs[0], 1, 0, NULL);
 
   Enumrtr_->setLCEElements(this, costLwrBound_);
   InitForSchdulng();
@@ -2260,7 +2289,7 @@ Enumerator *BBMaster::allocEnumHierarchy_(Milliseconds timeout, bool *fsbl) {
   // Be sure to not be off by one - BBMaster is solver 0
   for (int i = 0; i < NumThreads_; i++) {
     Workers[i]->allocSched_();
-    Workers[i]->allocEnumrtr_(timeout);
+    Workers[i]->allocEnumrtr_(timeout,  EnumNodeAllocs_[i], HistNodeAllocs_[i], HashTablAllocs_[i]);
     Workers[i]->setLCEElements_(costLwrBound_);
     if (Enumrtr_->IsHistDom())
       Workers[i]->setEnumHistTable(getEnumHistTable());
@@ -2311,7 +2340,7 @@ bool BBMaster::initGlobalPool() {
   
   
   std::shared_ptr<HalfNode> temp, temp2;
-  bool fsbl;
+  //bool fsbl;
   std::shared_ptr<HalfNode> exploreNode(nullptr);
 
 
@@ -2697,7 +2726,7 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
     CPU_ZERO(&cpuset);
     CPU_SET(j, &cpuset);
     CPU_SET(j+NumThreads_, &cpuset); //assume 2 threads per core
-    int rc = pthread_setaffinity_np(ThreadManager[j].native_handle(),
+    pthread_setaffinity_np(ThreadManager[j].native_handle(),
                                     sizeof(cpu_set_t), &cpuset);
   }
 
@@ -2708,7 +2737,7 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
     CPU_SET(j, &cpuset);
     CPU_SET(j+NumThreads_, &cpuset);
 
-    int rc = pthread_setaffinity_np(ThreadManager[j].native_handle(),
+    pthread_setaffinity_np(ThreadManager[j].native_handle(),
                                     sizeof(cpu_set_t), &cpuset);
   }
 
@@ -2815,7 +2844,8 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
 
 
   Enumrtr_->Reset();
-  
+  Logger::Info("after enumrtr_->Reset()");
+
   vector<std::thread> ThreadManager2(NumThreads_);
   for (int j = 0; j < NumThreads_; j++) {
     ThreadManager2[j] = std::thread([=]{Workers[j]->freeAlctrs();});
@@ -2824,7 +2854,7 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
   for (int j = 0; j < NumThreads_; j++) {
     ThreadManager2[j].join();
   }
-  
+
   
 
 

@@ -48,11 +48,11 @@ public:
   /// Dump Optsched register def/use information for the region.
   void dumpOptSchedRegisters() const;
 
-  void convertSUnits(bool IgnoreRealEdges, bool IgnoreArtificialEdges);
+  void convertSUnits(bool IgnoreRealEdges, bool IgnoreArtificialEdges) override;
   void addArtificialEdges();
-  void convertRegFiles();
+  void convertRegFiles() override;
 
-  int getSize();
+  int getSize() override;
 
 protected:
   // A convenience machMdl_ pointer casted to OptSchedMachineModel*.

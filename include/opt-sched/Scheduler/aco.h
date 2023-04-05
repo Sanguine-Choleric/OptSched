@@ -36,8 +36,8 @@ public:
                InstCount upperBound, SchedPriorities priorities, bool vrfySched,
                bool IsPostBB, int SolverID);
   virtual ~ACOScheduler();
-  FUNC_RESULT FindSchedule(InstSchedule *schedule, SchedRegion *region);
-  inline void UpdtRdyLst_(InstCount cycleNum, int slotNum);
+  FUNC_RESULT FindSchedule(InstSchedule *schedule, SchedRegion *region) override;
+  inline void UpdtRdyLst_(InstCount cycleNum, int slotNum) override;
   // Set the initial schedule for ACO
   // Default is NULL if none are set.
   void setInitialSched(InstSchedule *Sched);

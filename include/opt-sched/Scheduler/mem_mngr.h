@@ -9,6 +9,7 @@ Last Update:  Mar. 2011
 #ifndef OPTSCHED_GENERIC_MEM_MNGR_H
 #define OPTSCHED_GENERIC_MEM_MNGR_H
 
+
 #include "opt-sched/Scheduler/defines.h"
 #include "opt-sched/Scheduler/lnkd_lst.h"
 #include "opt-sched/Scheduler/logger.h"
@@ -97,23 +98,22 @@ inline MemAlloc<T>::MemAlloc(int blockSize, int maxSize)
 }
 
 template <class T> inline MemAlloc<T>::~MemAlloc() {
+  Logger::Info("deleting memalloc");
   int i = 0;
-  //Logger::Info("in memalloc destructor");
   for (T *blk = allocatedBlocks_.GetFrstElmnt(); blk != NULL;
        blk = allocatedBlocks_.GetNxtElmnt()) {
     ++i;
     delete[] blk;
   }
 
-  //Logger::Info("deleted %d blocks", i);
+  Logger::Info("deleted %d blocks", i);
 }
 
 template <class T> inline void MemAlloc<T>::Reset() {
-  //Logger::Info("resetting hist allocator");
   assert(allocatedBlocks_.GetElmntCnt() >= 1);
   currentBlock_ = allocatedBlocks_.GetFrstElmnt();
   currentIndex_ = 0;
-  availableObjects_.Reset();
+  availableObjects_.Init_();
   allocatedBlocksAvailable_ = true;
 }
 
@@ -158,10 +158,6 @@ template <class T> inline T *MemAlloc<T>::GetObjects_(int count) {
     obj = currentBlock_ + currentIndex_;
     currentIndex_ += count;
   }
-
-  /*else {
-    Logger::Info("found an object already available");
-  }*/
 
   assert(obj != NULL);
   return obj;

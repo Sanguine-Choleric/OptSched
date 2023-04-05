@@ -514,6 +514,10 @@ public:
 protected:
   MachineFunction *MF_;
   const SUnit *SU_;
+
+  bool isCP_FromScsr_ = false;
+  bool isCP_FromPrdcsr_ = false;
+
   // The "name" of this instruction. Usually a string indicating its type.
   string name_;
   // The mnemonic of this instruction, e.g. "add" or "jmp".

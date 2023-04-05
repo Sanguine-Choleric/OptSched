@@ -59,12 +59,8 @@ DataDepStruct::DataDepStruct(MachineModel *machMdl, const int NumSolvers) {
 
 DataDepStruct::~DataDepStruct() {
   delete[] instCntPerIssuType_;
-  if (frwrdLwrBounds_ != NULL) {
-    delete frwrdLwrBounds_;
-  }
-  if (bkwrdLwrBounds_ != NULL) {
-    delete bkwrdLwrBounds_;
-  }
+  delete[] frwrdLwrBounds_;
+  delete[] bkwrdLwrBounds_;
 }
 
 void DataDepStruct::GetInstCntPerIssuType(InstCount instCntPerIssuType[]) {
@@ -319,8 +315,8 @@ FUNC_RESULT DataDepGraph::UpdateSetupForSchdulng(bool cmputTrnstvClsr) {
   DepthFirstSearch();
 
 
-  delete frwrdLwrBounds_;
-  delete bkwrdLwrBounds_;
+  delete[] frwrdLwrBounds_;
+  delete[] bkwrdLwrBounds_;
 
   frwrdLwrBounds_ = new InstCount[instCnt_];
   bkwrdLwrBounds_ = new InstCount[instCnt_];

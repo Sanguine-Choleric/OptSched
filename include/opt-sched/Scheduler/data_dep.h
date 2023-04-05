@@ -187,6 +187,9 @@ public:
 
   virtual ~DataDepGraph();
 
+
+    MachineFunction *MF_ = nullptr;
+
   void resetThreadWriteFields(int SolverID = -1, bool full = true);
 
   // Reads the data dependence graph from a text file.
@@ -203,10 +206,10 @@ public:
   float GetWeight() const;
 
   // Given an instruction number, return a pointer to the instruction object.
-  SchedInstruction *GetInstByIndx(InstCount instIndx);
+  SchedInstruction *GetInstByIndx(InstCount instIndx) override;
 
-  SchedInstruction *GetInstByTplgclOrdr(InstCount ordr);
-  SchedInstruction *GetInstByRvrsTplgclOrdr(InstCount ordr);
+  SchedInstruction *GetInstByTplgclOrdr(InstCount ordr) override;
+  SchedInstruction *GetInstByRvrsTplgclOrdr(InstCount ordr) override;
 
   // Setup the Dep. Graph for scheduling by doing a topological sort
   // followed by critical path computation
@@ -224,8 +227,8 @@ public:
   void GetCrntLwrBounds(DIRECTION dir, InstCount crntlwrBounds[], int SolverID);
   void SetCrntLwrBounds(DIRECTION dir, InstCount crntlwrBounds[], int SolverID);
 
-  SchedInstruction *GetRootInst();
-  SchedInstruction *GetLeafInst();
+  SchedInstruction *GetRootInst() override;
+  SchedInstruction *GetLeafInst() override;
 
   UDT_GLABEL GetMaxLtncySum();
   UDT_GLABEL GetMaxLtncy();
@@ -267,16 +270,16 @@ public:
   void CountDeps(InstCount &totDepCnt, InstCount &crossDepCnt, int SolverID);
 
   int GetBscBlkCnt();
-  bool IsInGraph(SchedInstruction *inst);
-  InstCount GetInstIndx(SchedInstruction *inst);
+  bool IsInGraph(SchedInstruction *inst) override;
+  InstCount GetInstIndx(SchedInstruction *inst) override;
   InstCount GetRltvCrtclPath(SchedInstruction *ref, SchedInstruction *inst,
-                             DIRECTION dir);
+                             DIRECTION dir) override;
   void SetCrntFrwrdLwrBound(SchedInstruction *inst, int SolverID);
   void SetSttcLwrBounds();
   void SetDynmcLwrBounds();
   void CreateEdge(SchedInstruction *frmNode, SchedInstruction *toNode,
                   int ltncy, DependenceType depType);
-  InstCount GetDistFrmLeaf(SchedInstruction *inst, int SolverID = INVALID_VALUE);
+  InstCount GetDistFrmLeaf(SchedInstruction *inst, int SolverID = INVALID_VALUE) override;
 
   void SetPrblmtc();
   bool IsPrblmtc();
@@ -350,7 +353,6 @@ protected:
   SmallVector<std::unique_ptr<GraphTrans>, 0> graphTrans_;
 
   MachineModel *machMdl_;
-  MachineFunction *MF_ = nullptr;
 
   bool backTrackEnbl_;
 

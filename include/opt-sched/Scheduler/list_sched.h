@@ -24,13 +24,13 @@ public:
   virtual ~ListScheduler();
 
   // Calculates the schedule and returns it in the passed argument.
-  FUNC_RESULT FindSchedule(InstSchedule *sched, SchedRegion *rgn);
+  FUNC_RESULT FindSchedule(InstSchedule *sched, SchedRegion *rgn) override;
 
 protected:
   bool isDynmcPrirty_;
   // Adds the instructions that have just become ready at this cycle to the
   // ready list.
-  void UpdtRdyLst_(InstCount cycleNum, int slotNum);
+  void UpdtRdyLst_(InstCount cycleNum, int slotNum) override;
 
   // Check whether the next node ID instruction is ready -- used to collect
   // scheduling stats for LLVM generating schedules
