@@ -5,13 +5,13 @@ using namespace llvm::opt_sched;
 
 int16_t llvm::opt_sched::Register::GetType() const { return type_; }
 
-int llvm::opt_sched::Register::GetNum() const { return num_; }
+int llvm::opt_sched::Register::GetNum(int SolverID) const { return otherCachedVals[SolverID].num_; }
 
 int llvm::opt_sched::Register::GetWght() const { return wght_; }
 
 void llvm::opt_sched::Register::SetType(int16_t type) { type_ = type; }
 
-void llvm::opt_sched::Register::SetNum(int num) { num_ = num; }
+void llvm::opt_sched::Register::SetNum(int SolverID, int num) { otherCachedVals[SolverID].num_ = num; }
 
 void llvm::opt_sched::Register::setNumSolvers(int NumSolvers) {NumSolvers_ = NumSolvers; }
 
@@ -26,8 +26,8 @@ void llvm::opt_sched::Register::SetPhysicalNumber(int physicalNumber) {
 }
 
 bool llvm::opt_sched::Register::IsLive(int SolverID) const {
-  assert(crntUseCnt_[SolverID] <= useCnt_);
-  return crntUseCnt_[SolverID] < useCnt_;
+  assert(cachedVals[SolverID].crntUseCnt_ <= useCnt_);
+  return cachedVals[SolverID].crntUseCnt_ < useCnt_;
 }
 
 bool llvm::opt_sched::Register::IsLiveIn() const { return liveIn_; }
@@ -38,7 +38,7 @@ void llvm::opt_sched::Register::SetIsLiveIn(bool liveIn) { liveIn_ = liveIn; }
 
 void llvm::opt_sched::Register::SetIsLiveOut(bool liveOut) { liveOut_ = liveOut; }
 
-void llvm::opt_sched::Register::ResetCrntUseCnt(int SolverID) { crntUseCnt_[SolverID] = 0; }
+void llvm::opt_sched::Register::ResetCrntUseCnt(int SolverID) {cachedVals[SolverID].crntUseCnt_ = 0; }
 
 void llvm::opt_sched::Register::AddUse(const SchedInstruction *inst) {
   uses_.insert(inst);
@@ -62,11 +62,11 @@ const llvm::opt_sched::Register::InstSetType &llvm::opt_sched::Register::GetDefL
 
 size_t llvm::opt_sched::Register::GetSizeOfDefList() const { return defs_.size(); }
 
-int llvm::opt_sched::Register::GetCrntUseCnt(int SolverID) const { return crntUseCnt_[SolverID]; }
+int llvm::opt_sched::Register::GetCrntUseCnt(int SolverID) const { return cachedVals[SolverID].crntUseCnt_; }
 
-void llvm::opt_sched::Register::AddCrntUse(int SolverID) { crntUseCnt_[SolverID]++; }
+void llvm::opt_sched::Register::AddCrntUse(int SolverID) { cachedVals[SolverID].crntUseCnt_++; }
 
-void llvm::opt_sched::Register::DelCrntUse(int SolverID) { crntUseCnt_[SolverID]--; }
+void llvm::opt_sched::Register::DelCrntUse(int SolverID) { cachedVals[SolverID].crntUseCnt_--; }
 
 void llvm::opt_sched::Register::ResetCrntLngth() { crntLngth_ = 0; }
 
@@ -78,7 +78,8 @@ void llvm::opt_sched::Register::DcrmntCrntLngth() { crntLngth_--; }
 
 llvm::opt_sched::Register &llvm::opt_sched::Register::operator=(const llvm::opt_sched::Register &rhs) {
   if (this != &rhs) {
-    num_ = rhs.num_;
+    for (int i = 0; i < NumSolvers_; i++)
+      otherCachedVals[i].num_ = rhs.otherCachedVals[i].num_;
     type_ = rhs.type_;
   }
 
@@ -93,7 +94,7 @@ void llvm::opt_sched::Register::ResetConflicts() {
 }
 
 void llvm::opt_sched::Register::AddConflict(int regNum, bool isSpillCnddt) {
-  assert(regNum != num_);
+  //assert(regNum != otherCachedVals[0].num_);
   assert(regNum >= 0);
   conflicts_.SetBit(regNum, true);
   isSpillCnddt_ = isSpillCnddt_ || isSpillCnddt;
@@ -129,15 +130,21 @@ const llvm::opt_sched::Register::InstSetType &llvm::opt_sched::Register::GetPoss
 
 llvm::opt_sched::Register::Register(int NumSolvers, int16_t type, int num, int physicalNumber) {
   type_ = type;
-  num_ = num;
+  //num_ = num;
   wght_ = 1;
   defCnt_ = 0;
   useCnt_ = 0;
-  crntUseCnt_ = new int[NumSolvers];
+  cachedVals = new paddedVals[NumSolvers];
+  otherCachedVals = new paddedVals[NumSolvers];
   
-  for (int SolverID = 0; SolverID < NumSolvers; SolverID++)
-    crntUseCnt_[SolverID] = 0;
+  for (int SolverID = 0; SolverID < NumSolvers; SolverID++) {
+    cachedVals[SolverID].crntUseCnt_ = 0;
+  }
   
+  for (int SolverID = 0; SolverID < NumSolvers; SolverID++) {
+    otherCachedVals[SolverID].num_ = num;
+  }
+
   physicalNumber_ = physicalNumber;
   isSpillCnddt_ = false;
   liveIn_ = false;
@@ -146,7 +153,8 @@ llvm::opt_sched::Register::Register(int NumSolvers, int16_t type, int num, int p
 }
 
 llvm::opt_sched::Register::~Register() {
-  delete[] crntUseCnt_;
+  delete[] cachedVals;
+  delete[] otherCachedVals;
 }
 
 RegisterFile::RegisterFile() {
@@ -183,7 +191,8 @@ llvm::opt_sched::Register *RegisterFile::getNext() {
   auto Reg = std::unique_ptr<llvm::opt_sched::Register>(new llvm::opt_sched::Register(NumSolvers_));
   Reg->setNumSolvers(NumSolvers_);
   Reg->SetType(regType_);
-  Reg->SetNum(RegNum);
+  for (int i = 0; i < NumSolvers_; i++)
+    Reg->SetNum(i, RegNum);
   Regs.push_back(std::move(Reg));
   return Regs[RegNum].get();
 }
@@ -197,7 +206,8 @@ void RegisterFile::SetRegCnt(int regCnt) {
     //auto Reg = llvm::make_unique<Register>();
     auto Reg = std::unique_ptr<llvm::opt_sched::Register>(new llvm::opt_sched::Register(NumSolvers_));
     Reg->SetType(regType_);
-    Reg->SetNum(i);
+    for (int j = 0; j < NumSolvers_; j++)
+      Reg->SetNum(j, i);
     Regs[i] = std::move(Reg);
   }
 }

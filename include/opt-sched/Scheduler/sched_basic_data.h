@@ -575,7 +575,7 @@ protected:
   /***************************************************************************
    * Used during scheduling                                                  *
    ***************************************************************************/
-  SISchedFields *DynamicFields_;
+  SISchedFields *DynamicFields_ = NULL;
   // Whether the instruction is currently in the Ready List.
   //bool *ready_;
   // Each entry in this array holds the cycle in which this instruction will

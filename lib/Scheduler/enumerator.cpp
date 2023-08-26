@@ -13,6 +13,7 @@
 
 using namespace llvm::opt_sched;
 
+
 class InstPool4;
 
 int HalfNode::getAndRemoveNextPrefixInst() {
@@ -54,7 +55,7 @@ EnumTreeNode::~EnumTreeNode() {
   assert(isCnstrctd_ || rdyLst_ == NULL);
 
   if (isCnstrctd_) {
-      assert(frwrdLwrBounds_ != NULL);
+      //assert(frwrdLwrBounds_ != NULL);
       delete[] frwrdLwrBounds_;
 
       assert(exmndInsts_ != NULL);
@@ -304,7 +305,7 @@ void EnumTreeNode::NewBranchExmnd(SchedInstruction *inst, bool isLegal,
                                   bool isBrnchFsbl, DIRECTION dir,
                                   bool isLngthFsbl) {
   if (inst != NULL) {
-    InstCount deadline = inst->GetCrntDeadline(enumrtr_->getSolverID());
+    InstCount deadline = enumrtr_->bbt_->isSecondPass() ? inst->GetCrntDeadline(enumrtr_->getSolverID()) : -1;
     InstCount cycleNum = enumrtr_->GetCycleNumFrmTime_(time_ + 1);
     InstCount slotNum = enumrtr_->GetSlotNumFrmTime_(time_ + 1);
 
@@ -847,6 +848,7 @@ bool Enumerator::Initialize_(InstSchedule *sched, InstCount trgtLngth, int Solve
     return false;
   }
 
+  // TODO -- disable this stuff for first pass
   rlxdSchdulr_->Initialize(false);
 
   if (preFxdInstCnt_ > 0) {
@@ -897,6 +899,8 @@ bool Enumerator::Initialize_(InstSchedule *sched, InstCount trgtLngth, int Solve
 /*****************************************************************************/
 
 bool Enumerator::InitPreFxdInsts_() {
+  // TODO -- parameterize
+  if (true) return true;
   for (InstCount i = 0; i < preFxdInstCnt_; i++) {
     bool fsbl = preFxdInsts_[i]->ApplyPreFxng(tightndLst_, fxdLst_, SolverID_);
     if (!fsbl)
@@ -946,7 +950,8 @@ void Enumerator::CreateRootNode_() {
   
   CreateNewRdyLst_();
   rootNode_->SetRdyLst(rdyLst_);
-  rootNode_->SetLwrBounds(DIR_FRWRD);
+  if (bbt_->isSecondPass())
+    rootNode_->SetLwrBounds(DIR_FRWRD);
   assert(rsrvSlotCnt_ == 0);
   rootNode_->SetRsrvSlots(rsrvSlotCnt_, rsrvSlots_);
   bool setCost = true;
@@ -1392,7 +1397,7 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
 
   // If this instruction is prefixed, it cannot be scheduled earlier than its
   // prefixed cycle
-  if (inst != NULL)
+  if (inst != NULL && bbt_->isSecondPass())
     if (inst->GetPreFxdCycle() != INVALID_VALUE)
       if (inst->GetPreFxdCycle() != crntCycleNum_) {
 #ifdef IS_DEBUG_SEARCH_ORDER
@@ -1402,7 +1407,7 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
         return false;
       }
 
-  if (inst != NULL) {
+  if (inst != NULL && bbt_->isSecondPass()) {
     if (inst->GetCrntLwrBound(DIR_FRWRD) > crntCycleNum_) {
 #ifdef IS_DEBUG_INFSBLTY_TESTS
       stats::forwardLBInfeasibilityHits++;
@@ -1495,7 +1500,8 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
   state_.instFxd = true;
 
   newNode = nodeAlctr_->Alloc(crntNode_, inst, this);
-  newNode->SetLwrBounds(DIR_FRWRD);
+  if (bbt_->isSecondPass())
+    newNode->SetLwrBounds(DIR_FRWRD);
   newNode->SetRsrvSlots(rsrvSlotCnt_, rsrvSlots_);
 
   // If a node (sub-problem) that dominates the candidate node (sub-problem)
@@ -2124,7 +2130,8 @@ bool Enumerator::BackTrack_(bool trueState) {
   }
 
   crntSched_->RemoveLastInst();
-  RestoreCrntLwrBounds_(inst, trueState);
+  if (bbt_->isSecondPass())
+    RestoreCrntLwrBounds_(inst, trueState);
 
   if (inst != NULL) {
     // int hitCnt;
@@ -2334,6 +2341,7 @@ void Enumerator::CmtLwrBoundTightnng_() {
 /*****************************************************************************/
 
 bool Enumerator::FixInsts_(SchedInstruction *newInst) {
+  if (!bbt_->isSecondPass()) return true;
   bool fsbl = true;
 
   bool newInstFxd = false;
@@ -2382,6 +2390,7 @@ bool Enumerator::FixInsts_(SchedInstruction *newInst) {
 /*****************************************************************************/
 
 void Enumerator::UnFixInsts_(SchedInstruction *newInst) {
+  if (!bbt_->isSecondPass()) return;
   InstCount unfxdInstCnt = 0;
   SchedInstruction *inst;
 
@@ -3173,7 +3182,8 @@ void LengthCostEnumerator::CreateRootNode_() {
   rootNode_ = nodeAlctr_->Alloc(NULL, NULL, this);
   CreateNewRdyLst_();
   rootNode_->SetRdyLst(rdyLst_);
-  rootNode_->SetLwrBounds(DIR_FRWRD);
+  if (bbt_->isSecondPass())
+    rootNode_->SetLwrBounds(DIR_FRWRD);
 
   assert(rsrvSlotCnt_ == 0);
   rootNode_->SetRsrvSlots(rsrvSlotCnt_, rsrvSlots_);
@@ -3229,7 +3239,8 @@ void LengthCostEnumerator::scheduleInt(int instNum, EnumTreeNode *newNode, bool 
   }
 
   newNode = nodeAlctr_->Alloc(crntNode_, inst, this);
-  newNode->SetLwrBounds(DIR_FRWRD);
+  if (bbt_->isSecondPass())
+    newNode->SetLwrBounds(DIR_FRWRD);
   newNode->SetRsrvSlots(rsrvSlotCnt_, rsrvSlots_);
 
   assert(newNode);
@@ -3304,7 +3315,8 @@ void LengthCostEnumerator::scheduleNode(EnumTreeNode *node, bool isPseudoRoot, b
   }
 
   newNode = nodeAlctr_->Alloc(crntNode_, inst, this, false);
-  newNode->SetLwrBounds(DIR_FRWRD);
+  if (bbt_->isSecondPass())
+    newNode->SetLwrBounds(DIR_FRWRD);
   newNode->SetRsrvSlots(rsrvSlotCnt_, rsrvSlots_);
 
   assert(newNode);
@@ -3877,8 +3889,8 @@ EnumTreeNode *LengthCostEnumerator::allocAndInitNextNode(std::pair<SchedInstruct
 
   InitNode->setPrefix(subPrefix);
   InitNode->setPrevNode(parent);
-
-  InitNode->SetLwrBounds(DIR_FRWRD);
+  if (bbt_->isSecondPass())
+    InitNode->SetLwrBounds(DIR_FRWRD);
   InitNode->SetRsrvSlots(rsrvSlotCnt_, rsrvSlots_);
 
   assert(InitNode);
@@ -3949,7 +3961,8 @@ EnumTreeNode *LengthCostEnumerator::allocAndInitNextNode(std::pair<SchedInstruct
   }
 
   crntSched_->RemoveLastInst();
-  RestoreCrntLwrBounds_(inst);
+  if (bbt_->isSecondPass())
+    RestoreCrntLwrBounds_(inst);
 
   if (inst != NULL) {
     // int hitCnt;

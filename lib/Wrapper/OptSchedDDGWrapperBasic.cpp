@@ -334,7 +334,7 @@ static Printable printOptSchedReg(const llvm::opt_sched::Register *Reg,
                                   const std::string &RegTypeName,
                                   int16_t RegTypeNum) {
   return Printable([Reg, &RegTypeName, RegTypeNum](raw_ostream &OS) {
-    OS << "Register: " << '%' << Reg->GetNum() << " (" << RegTypeName << '/'
+    OS << "Register: " << '%' << Reg->GetNum(0) << " (" << RegTypeName << '/'
        << RegTypeNum << ")\n";
 
     typedef SmallPtrSet<const SchedInstruction *, 8>::const_iterator

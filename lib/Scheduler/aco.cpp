@@ -528,14 +528,14 @@ static void PrintInstruction(SchedInstruction *inst) {
   for (auto def : llvm::enumerate(inst->GetDefs())) {
     if (def.index() != 0)
       std::cerr << ", ";
-    std::cerr << def.value()->GetNum() << def.value()->GetType();
+    std::cerr << def.value()->GetNum(0) << def.value()->GetType();
   }
 
   std::cerr << " uses ";
   for (auto use : llvm::enumerate(inst->GetUses())) {
     if (use.index() != 0)
       std::cerr << ", ";
-    std::cerr << use.value()->GetNum() << use.value()->GetType();
+    std::cerr << use.value()->GetNum(0) << use.value()->GetType();
   }
   std::cerr << std::endl;
 }

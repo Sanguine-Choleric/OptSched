@@ -273,7 +273,7 @@ void OptSchedDDGWrapperGCN::addSubRegDefs(SchedInstruction *Instr, unsigned Reg,
         (LiveMask.getLane(Lane + 1) & LiveMask).any()) {
 
       Register *Reg = RF.getNext();
-      ResNo = Reg->GetNum();
+      ResNo = Reg->GetNum(0);
 #ifdef DEBUG_REG
       Logger::Info("maps to OptSched Reg %d", Reg->GetNum());
       Logger::Info(
