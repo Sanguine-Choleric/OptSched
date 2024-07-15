@@ -63,10 +63,10 @@ public:
   BinHashTblEntry();
   ~BinHashTblEntry() {}
   void Construct(UDT_HASHKEY key, T *_elmnt, UDT_HASHVAL hashVal);
-  void Clean() {}
+  void Clean() override {Logger::Info("in binhastblentry clean\n");}
 
   UDT_HASHKEY GetKey();
-  UDT_HASHVAL GetHashVal();
+  UDT_HASHVAL GetHashVal() override;
 
 private:
   UDT_HASHKEY key_; // A binary key value
@@ -153,7 +153,7 @@ public:
                UDT_HASHTBL_CPCTY maxEntryCnt = DFLT_HASHTBL_CPCTY);
   ~BinHashTable();
 
-  void Clear(bool del, MemAlloc<BinHashTblEntry<T>> *entryAlctr = NULL);
+  void Clear(bool del, MemAlloc<BinHashTblEntry<T>> *entryAlctr = NULL) override;
 
   HashTblEntry<T> *InsertElement(UDT_HASHKEY key, T *elmnt,
                                  MemAlloc<BinHashTblEntry<T>> *entryAlctr, BBThread *bbt);
@@ -418,8 +418,8 @@ template <class T> inline bool HashTable<T>::IsConstructed() {
 template <class T>
 void HashTable<T>::Clear(bool del, MemAlloc<BinHashTblEntry<T>> *entryAlctr) {
   UDT_HASHVAL i;
-  HashTblEntry<T> *crntEntry;
-  HashTblEntry<T> *nxtEntry;
+  //HashTblEntry<T> *crntEntry;
+  //HashTblEntry<T> *nxtEntry;
   assert(isCnstrctd_);
 
   if (entryCnt_ == 0) {
@@ -427,31 +427,33 @@ void HashTable<T>::Clear(bool del, MemAlloc<BinHashTblEntry<T>> *entryAlctr) {
   }
 
   for (i = 0; i <= maxHash_; i++) {
+    /*
     for (crntEntry = topEntry_[i]; crntEntry != NULL; crntEntry = nxtEntry) {
       nxtEntry = crntEntry->GetNxt();
 
       if (del) {
+        Logger::Info("del\n");
         delete crntEntry->GetElmnt();
       }
 
-      if (isExtrnlAlctr_) {
+      if (true || isExtrnlAlctr_) {
         assert(entryAlctr != NULL);
         crntEntry->Clean();
         // Under the assumption that the entire allocator will be freed right
         // after this, we do not need to free this object and put it in a
         // potentially huge linked list. Actually, that was found to cause a
         // serious memory over-allocation problem. [GOS 3.25.03]
-        // entryAlctr->FreeObject((BinHashTblEntry<T>*)crntEntry);
+  //      entryAlctr->FreeObject((BinHashTblEntry<T>*)crntEntry);
       } else {
         delete crntEntry;
       }
     }
-
+    */
     topEntry_[i] = NULL;
     lastEntry_[i] = NULL;
     entryCnts_[i] = 0;
   }
-
+  Logger::Info("after parsing lists in hist table\n");
   entryCnt_ = 0;
   ppultdBktCnt_ = 0;
   maxListSize_ = 0;

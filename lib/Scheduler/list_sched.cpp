@@ -176,7 +176,7 @@ void ListScheduler::UpdtRdyLst_(InstCount cycleNum, int slotNum) {
   LinkedList<SchedInstruction> *lst2 = frstRdyLstPerCycle_[cycleNum];
 
   if (prirts_.isDynmc)
-    rdyLst_->UpdatePriorities();
+    rdyLst_->UpdatePriorities(bbt_);
 
   if (slotNum == 0 && prevCycleNum >= 0) {
     // If at the begining of a new cycle other than the very first cycle,
@@ -186,14 +186,14 @@ void ListScheduler::UpdtRdyLst_(InstCount cycleNum, int slotNum) {
     lst1 = frstRdyLstPerCycle_[prevCycleNum];
 
     if (lst1 != NULL) {
-      rdyLst_->AddList(lst1);
+      rdyLst_->AddList(lst1, bbt_);
       lst1->Reset();
       CleanupCycle_(prevCycleNum);
     }
   }
 
   if (lst2 != NULL) {
-    rdyLst_->AddList(lst2);
+    rdyLst_->AddList(lst2, bbt_);
     lst2->Reset();
   }
 }

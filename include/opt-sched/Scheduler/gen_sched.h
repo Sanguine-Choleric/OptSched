@@ -121,6 +121,9 @@ public:
 
   // Calculates the schedule and returns it in the passed argument.
   virtual FUNC_RESULT FindSchedule(InstSchedule *sched, SchedRegion *rgn) = 0;
+  // A pointer to the branch and bound instance. Needed to reference variables that
+  // are static across multiple enumeration trees (e.g. best cost so far)
+  BBThread *bbt_;
 
 protected:
   // The data dependence graph to be scheduled.
@@ -161,10 +164,6 @@ protected:
   ReserveSlot *rsrvSlots_;
   // The number of elements in rsrvSlots_.
   int16_t rsrvSlotCnt_;
-
-  // A pointer to the branch and bound instance. Needed to reference variables that
-  // are static across multiple enumeration trees (e.g. best cost so far)
-  BBThread *bbt_;
 
   SchedPriorities prirts_;
 

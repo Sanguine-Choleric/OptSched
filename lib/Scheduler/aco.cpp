@@ -257,7 +257,7 @@ std::unique_ptr<InstSchedule> ACOScheduler::FindOneSchedule() {
         for (SchedInstruction *fIns = futureReady->GetFrstElmnt(); fIns;
              fIns = futureReady->GetNxtElmnt()) {
           bool changed;
-          unsigned long heuristic = rdyLst_->CmputKey_(fIns, false, changed);
+          unsigned long heuristic = rdyLst_->CmputKey_(fIns, false, changed, bbt_);
           Choice c;
           c.inst = fIns;
           c.heuristic = (double)heuristic / maxPriority + 1;
@@ -495,14 +495,14 @@ inline void ACOScheduler::UpdtRdyLst_(InstCount cycleNum, int slotNum) {
     lst1 = frstRdyLstPerCycle_[prevCycleNum];
 
     if (lst1 != NULL) {
-      rdyLst_->AddList(lst1);
+      rdyLst_->AddList(lst1, bbt_);
       lst1->Reset();
       CleanupCycle_(prevCycleNum);
     }
   }
 
   if (lst2 != NULL) {
-    rdyLst_->AddList(lst2);
+    rdyLst_->AddList(lst2, bbt_);
     lst2->Reset();
   }
 }

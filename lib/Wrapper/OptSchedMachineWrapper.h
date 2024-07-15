@@ -61,7 +61,7 @@ public:
   CortexA7MMGenerator(const llvm::ScheduleDAGInstrs *dag, MachineModel *mm);
   // Generate instruction scheduling type for all instructions in the current
   // DAG by using LLVM itineraries.
-  InstType generateInstrType(const llvm::MachineInstr *instr);
+  InstType generateInstrType(const llvm::MachineInstr *instr) override;
   virtual ~CortexA7MMGenerator() = default;
 
 private:

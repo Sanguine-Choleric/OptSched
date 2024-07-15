@@ -501,7 +501,7 @@ public:
   // Computer the adjusted use count. Update "adjustedUseCnt_".
   void ComputeAdjustedUseCnt(SchedInstruction *inst);
 
-  int16_t CmputLastUseCnt(int SolverID);
+  int16_t CmputLastUseCnt(int SolverID, BBThread *rgn);
   int16_t GetLastUseCnt(int SolverID) { return DynamicFields_[SolverID].getLastUseCnt(); }
 
   InstType GetCrtclPathFrmRoot() { return crtclPathFrmRoot_; }
@@ -514,6 +514,10 @@ public:
 protected:
   MachineFunction *MF_;
   const SUnit *SU_;
+
+  bool isCP_FromScsr_ = false;
+  bool isCP_FromPrdcsr_ = false;
+
   // The "name" of this instruction. Usually a string indicating its type.
   string name_;
   // The mnemonic of this instruction, e.g. "add" or "jmp".

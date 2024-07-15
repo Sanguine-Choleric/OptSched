@@ -36,10 +36,10 @@ public:
   void Reset();
 
   // Adds an instruction to the ready list.
-  void AddInst(SchedInstruction *inst);
+  void AddInst(SchedInstruction *inst, BBThread *rgn);
 
   // Adds a list of instructions to the ready list.
-  void AddList(LinkedList<SchedInstruction> *lst);
+  void AddList(LinkedList<SchedInstruction> *lst, BBThread *rgn);
 
   // Get the element that iterator is currently pointing at without advancing
   SchedInstruction *viewNextPriorityInst();
@@ -68,7 +68,8 @@ public:
   // not been added to the ready list already, and advance the internal time.
   // TODO(max): Elaborate.
   void AddLatestSubLists(LinkedList<SchedInstruction> *lst1,
-                         LinkedList<SchedInstruction> *lst2);
+                         LinkedList<SchedInstruction> *lst2,
+                         BBThread *rgn);
 
   // Removes the most recently added sublist of instructions.
   // TODO(max): Elaborate.
@@ -83,7 +84,7 @@ public:
 
   // Update instruction priorities within the list
   // Called only if the priorities change dynamically during scheduling
-  void UpdatePriorities();
+  void UpdatePriorities(BBThread *rgn);
 
   unsigned long MaxPriority();
 
@@ -91,7 +92,7 @@ public:
   void Print(std::ostream &out);
 
   // Constructs the priority-list key based on the schemes listed in prirts_.
-  unsigned long CmputKey_(SchedInstruction *inst, bool isUpdate, bool &changed);
+  unsigned long CmputKey_(SchedInstruction *inst, bool isUpdate, bool &changed, BBThread *rgn = nullptr);
 
   // returns the priority list of instructions
   //inline PriorityList<SchedInstruction> getInstList() {return prirtyLst_;}
@@ -141,7 +142,7 @@ private:
 
   // Adds instructions at the bottom of a given list which have not been added
   // to the ready list already.
-  void AddLatestSubList_(LinkedList<SchedInstruction> *lst);
+  void AddLatestSubList_(LinkedList<SchedInstruction> *lst, BBThread *rgn);
 
   // Calculates a new priority key given an existing key of size keySize by
   // appending bitCnt bits holding the value val, assuming val < maxVal.

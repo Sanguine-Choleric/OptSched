@@ -84,6 +84,9 @@ SchedRegion::SchedRegion(MachineModel *machMdl, DataDepGraph *dataDepGraph,
                          SchedPriorities hurstcPrirts,
                          SchedPriorities enumPrirts, bool vrfySched,
                          Pruning PruningStrategy, SchedulerType HeurSchedType,
+                         SmallVector<MemAlloc<EnumTreeNode> *, 16> &EnumNodeAllocs,
+                         SmallVector<MemAlloc<CostHistEnumTreeNode> *, 16> &HistNodeAllocs, 
+                         SmallVector<MemAlloc<BinHashTblEntry<HistEnumTreeNode>> *, 16> &HashTablAllocs,
                          SPILL_COST_FUNCTION spillCostFunc) {
   machMdl_ = machMdl;
   dataDepGraph_ = dataDepGraph;
@@ -109,6 +112,10 @@ SchedRegion::SchedRegion(MachineModel *machMdl, DataDepGraph *dataDepGraph,
   spillCostFunc_ = spillCostFunc;
 
   OptimalSolverID_ = new int;  
+
+  EnumNodeAllocs_ = EnumNodeAllocs;
+  HistNodeAllocs_ = HistNodeAllocs;
+  HashTablAllocs_ = HashTablAllocs;
   
   DumpDDGs_ = GetDumpDDGs();
   DDGDumpPath_ = GetDDGDumpPath();
@@ -348,6 +355,8 @@ FUNC_RESULT SchedRegion::FindOptimalSchedule(
       *OptimalSolverID_ = 0;
     }
 
+    static_cast<BBInterfacer *>(this)->resetRegFields();
+
     FinishHurstc_();
 
     Logger::Event("HeuristicResult", "length", heuristicScheduleLength, //
@@ -524,9 +533,11 @@ FUNC_RESULT SchedRegion::FindOptimalSchedule(
     Milliseconds enumStart = Utilities::GetProcessorTime();
     if (!isLstOptml) {
       dataDepGraph_->SetHard(true);
-      if (isSecondPass_ && dataDepGraph_->GetMaxLtncy() <= 1)
+      if (isSecondPass_ && dataDepGraph_->GetMaxLtncy() <= 1) {
+        *OptimalSolverID_ = 0;
         Logger::Info("Problem size not increased after introducing latencies, "
                      "skipping second pass enumeration");
+      }
       else
         rslt = Optimize_(enumStart, rgnTimeout, lngthTimeout, OptimalSolverID_);
       Milliseconds enumTime = Utilities::GetProcessorTime() - enumStart;
@@ -789,7 +800,7 @@ FUNC_RESULT SchedRegion::Optimize_(Milliseconds startTime,
   InstCount initCost = bestCost_;
   
   Milliseconds timeout = IsTimeoutPerInst_ ? lngthTimeout : rgnTimeout;
-  enumrtr = AllocEnumrtr_(timeout);
+  enumrtr = AllocEnumrtr_(timeout, EnumNodeAllocs_, HistNodeAllocs_, HashTablAllocs_);
   
   if (enumrtr) {
     //#ifndef IS_TRACK_INFSBLTY_HITS

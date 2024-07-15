@@ -1,3 +1,4 @@
+#include "opt-sched/Scheduler/bb_thread.h"
 #include "opt-sched/Scheduler/sched_basic_data.h"
 #include "opt-sched/Scheduler/register.h"
 #include "opt-sched/Scheduler/stats.h"
@@ -155,10 +156,13 @@ SchedInstruction::SchedInstruction(InstCount num, const string &name,
 
 SchedInstruction::~SchedInstruction() {
 
-  delete[] DynamicFields_;
+// delete DynamicFields_;
   
   if (memAllocd_)
     DeAllocMem_();
+
+ delete[] DynamicFields_;
+
 
 }
 
@@ -168,9 +172,10 @@ void SchedInstruction::resetThreadWriteFields(int SolverID, bool full) {
   if (SolverID == -1) {  
     for (int SolverID_ = 0; SolverID_ < NumSolvers_; SolverID_++) {
       DynamicFields_[SolverID].reset(prdcsrCnt_, scsrCnt_);
-      if (sortedPrdcsrLst_ != NULL) 
-        if (sortedPrdcsrLst_[SolverID_] != NULL) 
-          delete sortedPrdcsrLst_[SolverID_]; 
+      if (sortedPrdcsrLst_ != NULL)
+        if (sortedPrdcsrLst_[SolverID_] != NULL)
+          delete sortedPrdcsrLst_[SolverID_];
+
       //if (rdyCyclePerPrdcsr_ != NULL) 
       //  if (rdyCyclePerPrdcsr_[SolverID_] != NULL) 
       //    delete[] rdyCyclePerPrdcsr_[SolverID_]; 
@@ -189,7 +194,7 @@ void SchedInstruction::resetThreadWriteFields(int SolverID, bool full) {
     if (sortedPrdcsrLst_ != NULL) 
       delete[] sortedPrdcsrLst_;
     if (sortedScsrLst_ != NULL) 
-      delete[] sortedScsrLst_;
+      delete sortedScsrLst_;
     //if (crntRange_ != NULL)
     //  delete[] crntRange_;
     
@@ -270,9 +275,6 @@ void SchedInstruction::resetThreadWriteFields(int SolverID, bool full) {
 
 
     if (full) {
-      if (sortedPrdcsrLst_ != NULL) 
-        if (sortedPrdcsrLst_[SolverID] != NULL) 
-          delete sortedPrdcsrLst_[SolverID]; 
 
       sortedPrdcsrLst_[SolverID] = new PriorityList<SchedInstruction>;
 
@@ -380,7 +382,9 @@ bool SchedInstruction::InitForSchdulng(int SolverID, InstCount schedLngth,
 
 void SchedInstruction::AllocMem_(InstCount instCnt, bool isCP_FromScsr,
                                  bool isCP_FromPrdcsr) {
-  
+  isCP_FromScsr_ = isCP_FromScsr;
+  isCP_FromPrdcsr_ = isCP_FromPrdcsr;
+
   // Thread dependent structures
   // TODO: cacheline dep, combine to struct
   //ready_ = new bool[NumSolvers_];
@@ -457,30 +461,16 @@ void SchedInstruction::AllocMem_(InstCount instCnt, bool isCP_FromScsr,
 void SchedInstruction::DeAllocMem_() {
   assert(memAllocd_);
 
-  for (int SolverID = 0; SolverID < NumSolvers_; SolverID++) {
-    if (DynamicFields_ != NULL)
-      DynamicFields_[SolverID].deallocMem();
-    if (sortedPrdcsrLst_ != NULL)
-      if (sortedPrdcsrLst_[SolverID] != NULL)
-        delete sortedPrdcsrLst_[SolverID];
-    //if (rdyCyclePerPrdcsr_ != NULL)
-    //  if (rdyCyclePerPrdcsr_[SolverID] != NULL)
-    //    delete[] rdyCyclePerPrdcsr_[SolverID];
-    //if (prevMinRdyCyclePerPrdcsr_ != NULL)
-    //  if (prevMinRdyCyclePerPrdcsr_[SolverID] != NULL)
-    //    delete[] prevMinRdyCyclePerPrdcsr_[SolverID];
-  }
-
   //if (rdyCyclePerPrdcsr_ != NULL)
   //  delete[] rdyCyclePerPrdcsr_;
   //if (prevMinRdyCyclePerPrdcsr_ != NULL)
-  //  delete[] prevMinRdyCyclePerPrdcsr_;
+  //  delete[] presortedPrdcsrLst_vMinRdyCyclePerPrdcsr_;
   if (sortedPrdcsrLst_ != NULL)
     delete[] sortedPrdcsrLst_;
   if (sortedScsrLst_ != NULL)
-    delete[] sortedScsrLst_;
+    delete sortedScsrLst_;
   if (crntRange_ != NULL)
-    delete[] crntRange_;
+    delete crntRange_;
 
   if (ltncyPerPrdcsr_ != NULL)
     delete[] ltncyPerPrdcsr_;
@@ -503,6 +493,19 @@ void SchedInstruction::DeAllocMem_() {
   //if (unschduldPrdcsrCnt_ != NULL)
   //  delete[] unschduldPrdcsrCnt_;
 
+
+
+/*
+  if (isCP_FromScsr_) {
+    delete[] crtclPathFrmRcrsvScsr_;
+    isCP_FromScsr_ = false;
+  }
+
+  if (isCP_FromPrdcsr_) {
+    delete[] crtclPathFrmRcrsvPrdcsr_;
+    isCP_FromPrdcsr_ = false;
+  }
+*/
   memAllocd_ = false;
 
 }
@@ -1048,16 +1051,23 @@ void SchedInstruction::SetPrdcsrNums_() {
   assert(prdcsrNum == GetPrdcsrCnt());
 }
 
-int16_t SchedInstruction::CmputLastUseCnt(int SolverID) {
+int16_t SchedInstruction::CmputLastUseCnt(int SolverID, BBThread *Rgn) {
   DynamicFields_[SolverID].setLastUseCnt(0);
 
   for (int i = 0; i < useCnt_; i++) {
     Register *reg = uses_[i];
-    if (reg) 
-     assert(reg->GetCrntUseCnt(SolverID) < reg->GetUseCnt());
+    auto Fields = Rgn->getRegFields(reg);
+    int RegCrntUseCnt = Fields.CrntUseCnt;
+    if (reg)  {
+    if (RegCrntUseCnt >= reg->GetUseCnt()) {
+      errs() << "Bad condition on Reg " << reg->GetNum() << "\n";
+      errs() << "CrntUseCnt: " << RegCrntUseCnt << ", useCnt: " << reg->GetUseCnt() << "\n";
+      assert(false);
+    }
+    }
     
     
-    if (reg->GetCrntUseCnt(SolverID) + 1 == reg->GetUseCnt())
+    if (RegCrntUseCnt + 1 == reg->GetUseCnt())
       DynamicFields_[SolverID].setLastUseCnt(DynamicFields_[SolverID].getLastUseCnt()+1);
   }
 

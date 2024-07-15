@@ -44,7 +44,7 @@ public:
   int16_t GetType() const;
   void SetType(int16_t type);
 
-  int GetNum(int SolverID) const;
+  int GetNum(int SolverID = -1) const;
   void SetNum(int SolverID, int num);
 
   inline int getNumSolvers() {return NumSolvers_; }
@@ -105,7 +105,7 @@ public:
 
 private:
   int16_t type_;
-  //int num_;
+  int num_;
   int defCnt_;
   int useCnt_;
   paddedVals *cachedVals;
@@ -174,11 +174,13 @@ public:
   // Increase the size of the register file by one and
   // return the RegNum of the created register.
   Register *getNext();
+ 
+  SmallVector<std::shared_ptr<Register>, 8> getRegs() { return Regs;}
 
 private:
   int16_t regType_;
   int physRegCnt_;
-  mutable SmallVector<std::unique_ptr<Register>, 8> Regs;
+  mutable SmallVector<std::shared_ptr<Register>, 8> Regs;
   int NumSolvers_;
 };
 
