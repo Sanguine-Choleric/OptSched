@@ -13,7 +13,8 @@ Description:  A wrapper that convert an LLVM target to an OptSched MachineModel.
 #include "llvm/CodeGen/TargetPassConfig.h"
 #include "llvm/CodeGen/TargetRegisterInfo.h"
 #include "llvm/MC/MCInstrItineraries.h"
-#include "llvm/Support/TargetRegistry.h"
+//#include "llvm/Support/TargetRegistry.h"
+#include "llvm/MC/TargetRegistry.h"
 #include "llvm/Target/TargetMachine.h"
 #include <memory>
 
@@ -99,13 +100,15 @@ void OptSchedMachineModel::convertMachineModel(
   registerTypes_.clear();
 
   if (mdlName_ == "amdgcn") {
+
+    // Hardcoded register names from build/lib/Target/AMDGPU/AMDGPUGenRegisterInfo.inc::getRegPressureSetName
     RegTypeInfo SGPR32;
-    SGPR32.name = "SGPR32";
+    SGPR32.name = "SReg_32";
     SGPR32.count = 80;
     registerTypes_.push_back(SGPR32);
 
     RegTypeInfo VGPR32;
-    VGPR32.name = "VGPR32";
+    VGPR32.name = "VGPR_32";
     VGPR32.count = 24;
     registerTypes_.push_back(VGPR32);
   } else {
