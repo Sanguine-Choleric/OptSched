@@ -12,10 +12,11 @@ ReadyList::ReadyList() {
   latestSubLst_ = *(new LinkedList<SchedInstruction>(INVALID_VALUE));
 }*/
 
-ReadyList::ReadyList(DataDepGraph *dataDepGraph, SchedPriorities prirts, int SolverID) {
+ReadyList::ReadyList(DataDepGraph *dataDepGraph, SchedPriorities prirts,
+                     int SolverID) {
   isFull_ = true;
   SolverID_ = SolverID;
-  
+
   prirts_ = prirts;
   int i;
   uint16_t totKeyBits = 0;
@@ -124,7 +125,10 @@ ReadyList::ReadyList(DataDepGraph *dataDepGraph, SchedPriorities prirts, int Sol
   }
 }
 
-ReadyList::~ReadyList() { if (isFull_) Reset(); }
+ReadyList::~ReadyList() {
+  if (isFull_)
+    Reset();
+}
 
 void ReadyList::Reset() {
   prirtyLst_.Reset();
@@ -201,7 +205,7 @@ unsigned long ReadyList::CmputKey_(SchedInstruction *inst, bool isUpdate,
 void ReadyList::AddLatestSubLists(LinkedList<SchedInstruction> *lst1,
                                   LinkedList<SchedInstruction> *lst2,
                                   BBThread *rgn) {
-  //assert(latestSubLst_.GetElmntCnt() == 0);
+  // assert(latestSubLst_.GetElmntCnt() == 0);
   if (lst1 != NULL)
     AddLatestSubList_(lst1, rgn);
   if (lst2 != NULL)
@@ -220,7 +224,8 @@ void ReadyList::Print(std::ostream &out) {
   prirtyLst_.ResetIterator();
 }
 
-void ReadyList::AddLatestSubList_(LinkedList<SchedInstruction> *lst, BBThread *rgn) {
+void ReadyList::AddLatestSubList_(LinkedList<SchedInstruction> *lst,
+                                  BBThread *rgn) {
   assert(lst != NULL);
 
 #ifdef IS_DEBUG_READY_LIST2
@@ -257,7 +262,7 @@ void ReadyList::RemoveLatestSubList() {
 
   for (SchedInstruction *inst = latestSubLst_.GetFrstElmnt(); inst != NULL;
        inst = latestSubLst_.GetNxtElmnt()) {
-    //assert(inst->IsInReadyList(SolverID_));
+    // assert(inst->IsInReadyList(SolverID_));
     inst->RemoveFromReadyList(SolverID_);
 #ifdef IS_DEBUG_READY_LIST2
     Logger::GetLogStream() << inst->GetNum() << ", ";
@@ -300,7 +305,6 @@ SchedInstruction *ReadyList::viewNextPriorityInst() {
   return prirtyLst_.ViewNxtPriorityElmnt();
 }
 
-
 SchedInstruction *ReadyList::GetNextPriorityInst() {
   return prirtyLst_.GetNxtPriorityElmnt();
 }
@@ -309,25 +313,63 @@ SchedInstruction *ReadyList::GetNextPriorityInst(unsigned long &key) {
   return prirtyLst_.GetNxtPriorityElmnt(key);
 }
 
+void ReadyList::prettyPriorityList(std::string &list) {
+  list = "[ ";
+  for (SchedInstruction *i = prirtyLst_.GetFrstElmnt(); i != nullptr;
+       i = prirtyLst_.GetNxtElmnt()) {
+    list += i->GetName();
+    list += " ";
+  }
+  list += "]";
+}
 void ReadyList::UpdatePriorities(BBThread *rgn) {
   assert(prirts_.isDynmc);
 
+  std::string list;
+  prettyPriorityList(list);
+
+  Logger::Info("UpdatePriorities Priority List: %s", list.c_str());
+
   SchedInstruction *inst;
   bool instChanged = false;
-  for (inst = prirtyLst_.GetFrstElmnt(); inst != NULL;
-       inst = prirtyLst_.GetNxtElmnt()) {
+  // for (inst = prirtyLst_.GetFrstElmnt(); inst != NULL;
+  //      inst = prirtyLst_.GetNxtElmnt()) {
+  //
+  //   Logger::Info("JEFF Looping priority list: %s", inst->GetName());
+  //   unsigned long key = CmputKey_(inst, true, instChanged, rgn);
+  //   if (instChanged) {
+  //     Logger::Info("JEFF Boosted Entry: %s | %d", inst->GetName(), key);
+  //
+  //     prirtyLst_.BoostEntry(keyedEntries_[inst->GetNum()], key);
+  //     prettyPriorityList(list);
+  //     Logger::Info("JEFF Updated List: %s", list.c_str());
+  //   }
+  // }
+  // Logger::Info("JEFF Finished updating priorities");
+
+  // While loop version for debug
+  inst = prirtyLst_.GetFrstElmnt();
+  while (inst != nullptr) {
+
+    // Logger::Info("UpdatePriorities While Looping priority list: %s", inst->GetName());
+
     unsigned long key = CmputKey_(inst, true, instChanged, rgn);
+
     if (instChanged) {
       prirtyLst_.BoostEntry(keyedEntries_[inst->GetNum()], key);
+      prettyPriorityList(list);
     }
+    // Logger::Info("UpdatePriorities Finished updating priorities");
+    inst = prirtyLst_.GetNxtElmnt();
   }
 }
 
-void ReadyList::GetUnscheduledInsts(LinkedList<SchedInstruction> *unscheduledInsts) {
-  //Logger::Info("getting unscheduld insts from prirtyLst");
+void ReadyList::GetUnscheduledInsts(
+    LinkedList<SchedInstruction> *unscheduledInsts) {
+  // Logger::Info("getting unscheduld insts from prirtyLst");
   prirtyLst_.getRemainingElmnts(unscheduledInsts);
-  //Logger::Info("size of fillList %d", unscheduledInsts->GetElmntCnt());
-  //Logger::Info("finished getting unscheduld insts from prirtyLst");
+  // Logger::Info("size of fillList %d", unscheduledInsts->GetElmntCnt());
+  // Logger::Info("finished getting unscheduld insts from prirtyLst");
 }
 
 void ReadyList::RemoveNextPriorityInst() { prirtyLst_.RmvCrntElmnt(); }
@@ -335,7 +377,6 @@ void ReadyList::RemoveNextPriorityInst() { prirtyLst_.RmvCrntElmnt(); }
 void ReadyList::RemoveSpecificInst(SchedInstruction *removeInst) {
   prirtyLst_.RmvElmnt(removeInst, false);
 }
-
 
 bool ReadyList::FindInst(SchedInstruction *inst, int &hitCnt) {
   return prirtyLst_.FindElmnt(inst, hitCnt);

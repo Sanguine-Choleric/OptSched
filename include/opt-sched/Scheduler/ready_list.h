@@ -49,6 +49,9 @@ public:
   // and so on.
   SchedInstruction *GetNextPriorityInst();
   SchedInstruction *GetNextPriorityInst(unsigned long &key);
+  void prettyPriorityList(std::string &list);
+  void logPriorityList();
+  void printPriorityList(std::string &list);
 
   // Removes the instruction returned by the last call to
   // GetNextPriorityInst().

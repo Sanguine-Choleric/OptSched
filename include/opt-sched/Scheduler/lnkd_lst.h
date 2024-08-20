@@ -19,6 +19,7 @@ Last Update:  May  2020
 #include <cstring>
 #include <iterator>
 #include <type_traits>
+#include <typeinfo>
 
 namespace llvm {
 namespace opt_sched {
@@ -538,19 +539,27 @@ template <class T> inline T *LinkedList<T>::GetLastElmnt() {
 }
 
 template <class T> inline T *LinkedList<T>::GetNxtElmnt() {
+  Logger::Info("GetNxtElmnt init");
+  Logger::Info("wasTopRmvd_ : %s", wasTopRmvd_ ? "true" : "false");
+  // Logger::Info("rtrvEntry : %s", typeid(rtrvEntry_).name());
+
   if (wasTopRmvd_) {
     rtrvEntry_ = topEntry_;
   } else {
+    assert(rtrvEntry_->GetNext() != nullptr);
     rtrvEntry_ = rtrvEntry_->GetNext();
   }
+  Logger::Info("GetNxtElmnt finished wasTopRmvd_ check");
 
   if (wasBottomRmvd_) {
     rtrvEntry_ = NULL;
   }
+  Logger::Info("GetNxtElmnt finished wasBottomRmvd_ check");
 
   wasTopRmvd_ = false;
   wasBottomRmvd_ = false;
   T *elmnt = rtrvEntry_ == NULL ? NULL : rtrvEntry_->element;
+  Logger::Info("GetNxtElmnt finished cleanup check");
   return elmnt;
 }
 
@@ -925,6 +934,8 @@ void PriorityList<T, K>::BoostEntry(KeyedEntry<T, K> *entry, K newKey) {
   }
 
   this->itrtrReset_ = true;
+
+  Logger::Info("Jeff Finished BoostEntry");
 }
 
 template <class T, class K>
