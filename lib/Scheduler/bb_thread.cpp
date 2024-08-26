@@ -1346,7 +1346,6 @@ FUNC_RESULT BBWithSpill::Enumerate_(Milliseconds StartTime,
   for (trgtLngth = schedLwrBound_; trgtLngth <= schedUprBound_; trgtLngth++) {
     InitForSchdulng();
     Logger::Event("Enumerating", "target_length", trgtLngth);
-    Logger::Info("JEFF TEST LOG");
 
     rslt = Enumrtr_->FindFeasibleSchedule(enumCrntSched_, trgtLngth, this,
                                           costLwrBound, deadline);
@@ -1354,7 +1353,6 @@ FUNC_RESULT BBWithSpill::Enumerate_(Milliseconds StartTime,
       timeout = true;
     HandlEnumrtrRslt_(rslt, trgtLngth);
 
-    Logger::Info("JEFF: Handled enumerated result"); 
 
     if (getBestCost() == 0 || rslt == RES_ERROR ||
         rslt == RES_TIMEOUT ||

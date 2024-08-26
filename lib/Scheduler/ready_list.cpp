@@ -313,54 +313,36 @@ SchedInstruction *ReadyList::GetNextPriorityInst(unsigned long &key) {
   return prirtyLst_.GetNxtPriorityElmnt(key);
 }
 
-void ReadyList::prettyPriorityList(std::string &list) {
-  list = "[ ";
-  for (SchedInstruction *i = prirtyLst_.GetFrstElmnt(); i != nullptr;
-       i = prirtyLst_.GetNxtElmnt()) {
-    list += i->GetName();
-    list += " ";
-  }
-  list += "]";
-}
+// Human-readable priority list for debugging
+// void ReadyList::prettyPriorityList(std::string &list) {
+//   list = "[ ";
+//   SchedInstruction *I = prirtyLst_.GetFrstElmnt();
+//   while (I != nullptr) {
+//     list += I->GetName();
+//     list += " ";
+//     I = prirtyLst_.GetNxtElmnt();
+//   }
+//   list += "]";
+// }
+
 void ReadyList::UpdatePriorities(BBThread *rgn) {
   assert(prirts_.isDynmc);
 
-  std::string list;
-  prettyPriorityList(list);
-
-  Logger::Info("UpdatePriorities Priority List: %s", list.c_str());
+  // std::string list;
+  // prettyPriorityList(list);
+  // Logger::Info("UpdatePriorities Priority List: %s", list.c_str());
 
   SchedInstruction *inst;
   bool instChanged = false;
-  // for (inst = prirtyLst_.GetFrstElmnt(); inst != NULL;
-  //      inst = prirtyLst_.GetNxtElmnt()) {
-  //
-  //   Logger::Info("JEFF Looping priority list: %s", inst->GetName());
-  //   unsigned long key = CmputKey_(inst, true, instChanged, rgn);
-  //   if (instChanged) {
-  //     Logger::Info("JEFF Boosted Entry: %s | %d", inst->GetName(), key);
-  //
-  //     prirtyLst_.BoostEntry(keyedEntries_[inst->GetNum()], key);
-  //     prettyPriorityList(list);
-  //     Logger::Info("JEFF Updated List: %s", list.c_str());
-  //   }
-  // }
-  // Logger::Info("JEFF Finished updating priorities");
-
-  // While loop version for debug
-  inst = prirtyLst_.GetFrstElmnt();
-  while (inst != nullptr) {
-
-    // Logger::Info("UpdatePriorities While Looping priority list: %s", inst->GetName());
+  for (inst = prirtyLst_.GetFrstElmnt(); inst != NULL;
+       inst = prirtyLst_.GetNxtElmnt()) {
 
     unsigned long key = CmputKey_(inst, true, instChanged, rgn);
-
     if (instChanged) {
+
       prirtyLst_.BoostEntry(keyedEntries_[inst->GetNum()], key);
-      prettyPriorityList(list);
+      // Logger::Info("UpdatePriorities Boosted Entry: %s | %d", inst->GetName(), key);
     }
-    // Logger::Info("UpdatePriorities Finished updating priorities");
-    inst = prirtyLst_.GetNxtElmnt();
   }
 }
 
