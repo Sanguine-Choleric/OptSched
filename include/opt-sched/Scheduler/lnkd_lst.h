@@ -19,6 +19,7 @@ Last Update:  May  2020
 #include <cstring>
 #include <iterator>
 #include <type_traits>
+#include <typeinfo>
 
 namespace llvm {
 namespace opt_sched {
@@ -538,9 +539,13 @@ template <class T> inline T *LinkedList<T>::GetLastElmnt() {
 }
 
 template <class T> inline T *LinkedList<T>::GetNxtElmnt() {
+  // Logger::Info("GetNxtElmnt init");
+  // Logger::Info("wasTopRmvd_ : %s", wasTopRmvd_ ? "true" : "false");
+
   if (wasTopRmvd_) {
     rtrvEntry_ = topEntry_;
   } else {
+    assert(rtrvEntry_ != nullptr);
     rtrvEntry_ = rtrvEntry_->GetNext();
   }
 
@@ -555,6 +560,7 @@ template <class T> inline T *LinkedList<T>::GetNxtElmnt() {
 }
 
 template <class T> inline T *LinkedList<T>::GetPrevElmnt() {
+  assert(rtrvEntry_ != NULL);
   rtrvEntry_ = rtrvEntry_->GetPrev();
   return rtrvEntry_ == NULL ? NULL : rtrvEntry_->element;
 }
@@ -646,6 +652,7 @@ template <class T> void LinkedList<T>::RmvEntry_(Entry<T> *entry, bool free) {
   if (prevEntry == NULL) {
     assert(entry == topEntry_);
     topEntry_ = nextEntry;
+    wasTopRmvd_= true; // Flag updates inside RmvEntry on head removal
   } else {
     prevEntry->SetNext(nextEntry);
   }
@@ -654,12 +661,14 @@ template <class T> void LinkedList<T>::RmvEntry_(Entry<T> *entry, bool free) {
   if (nextEntry == NULL) {
     assert(entry == bottomEntry_);
     bottomEntry_ = prevEntry;
+    wasBottomRmvd_ = true; // Flag updates inside RmvEntry on tail removal
   } else {
     nextEntry->SetPrev(prevEntry);
   }
 
-  if (entry == rtrvEntry_)
+  if (entry == rtrvEntry_) {
     rtrvEntry_ = prevEntry;
+  }
 
   if (free)
     FreeEntry_(entry);
@@ -925,6 +934,9 @@ void PriorityList<T, K>::BoostEntry(KeyedEntry<T, K> *entry, K newKey) {
   }
 
   this->itrtrReset_ = true;
+
+  // Logger::Info("BoostEntry wasTopRmvd_ : %s", this->wasTopRmvd_ ? "true" : "false");
+  // Logger::Info("BoostEntry rtrvEntry_ : %s", this->rtrvEntry_ ? "exists" : "null");
 }
 
 template <class T, class K>
