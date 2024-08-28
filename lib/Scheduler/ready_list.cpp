@@ -262,7 +262,6 @@ void ReadyList::RemoveLatestSubList() {
 
   for (SchedInstruction *inst = latestSubLst_.GetFrstElmnt(); inst != NULL;
        inst = latestSubLst_.GetNxtElmnt()) {
-    // assert(inst->IsInReadyList(SolverID_));
     inst->RemoveFromReadyList(SolverID_);
 #ifdef IS_DEBUG_READY_LIST2
     Logger::GetLogStream() << inst->GetNum() << ", ";
@@ -313,24 +312,8 @@ SchedInstruction *ReadyList::GetNextPriorityInst(unsigned long &key) {
   return prirtyLst_.GetNxtPriorityElmnt(key);
 }
 
-// Human-readable priority list for debugging
-// void ReadyList::prettyPriorityList(std::string &list) {
-//   list = "[ ";
-//   SchedInstruction *I = prirtyLst_.GetFrstElmnt();
-//   while (I != nullptr) {
-//     list += I->GetName();
-//     list += " ";
-//     I = prirtyLst_.GetNxtElmnt();
-//   }
-//   list += "]";
-// }
-
 void ReadyList::UpdatePriorities(BBThread *rgn) {
   assert(prirts_.isDynmc);
-
-  // std::string list;
-  // prettyPriorityList(list);
-  // Logger::Info("UpdatePriorities Priority List: %s", list.c_str());
 
   SchedInstruction *inst;
   bool instChanged = false;
@@ -341,17 +324,13 @@ void ReadyList::UpdatePriorities(BBThread *rgn) {
     if (instChanged) {
 
       prirtyLst_.BoostEntry(keyedEntries_[inst->GetNum()], key);
-      // Logger::Info("UpdatePriorities Boosted Entry: %s | %d", inst->GetName(), key);
     }
   }
 }
 
 void ReadyList::GetUnscheduledInsts(
     LinkedList<SchedInstruction> *unscheduledInsts) {
-  // Logger::Info("getting unscheduld insts from prirtyLst");
   prirtyLst_.getRemainingElmnts(unscheduledInsts);
-  // Logger::Info("size of fillList %d", unscheduledInsts->GetElmntCnt());
-  // Logger::Info("finished getting unscheduld insts from prirtyLst");
 }
 
 void ReadyList::RemoveNextPriorityInst() { prirtyLst_.RmvCrntElmnt(); }
