@@ -19,7 +19,6 @@ Last Update:  May  2020
 #include <cstring>
 #include <iterator>
 #include <type_traits>
-#include <typeinfo>
 
 namespace llvm {
 namespace opt_sched {
@@ -455,8 +454,7 @@ template <class T> void LinkedList<T>::RmvElmnt(const T *const elmnt, bool free)
        crntEntry = crntEntry->GetNext()) {
     if (crntEntry->element == elmnt) {
       // Found.
-      //RmvEntry_(crntEntry);
-      
+
       if (crntEntry == topEntry_) {
         topEntry_ = crntEntry->GetNext();
       }
@@ -473,7 +471,6 @@ template <class T> void LinkedList<T>::RmvElmnt(const T *const elmnt, bool free)
         prevEntry->SetNext(crntEntry->GetNext());
       }
 
-      // 
       if (crntEntry == rtrvEntry_) {
         rtrvEntry_ = prevEntry;
       }
@@ -539,9 +536,6 @@ template <class T> inline T *LinkedList<T>::GetLastElmnt() {
 }
 
 template <class T> inline T *LinkedList<T>::GetNxtElmnt() {
-  // Logger::Info("GetNxtElmnt init");
-  // Logger::Info("wasTopRmvd_ : %s", wasTopRmvd_ ? "true" : "false");
-
   if (wasTopRmvd_) {
     rtrvEntry_ = topEntry_;
   } else {
@@ -652,7 +646,7 @@ template <class T> void LinkedList<T>::RmvEntry_(Entry<T> *entry, bool free) {
   if (prevEntry == NULL) {
     assert(entry == topEntry_);
     topEntry_ = nextEntry;
-    wasTopRmvd_= true; // Flag updates inside RmvEntry on head removal
+    wasTopRmvd_ = true; // Flag updates inside RmvEntry on head removal
   } else {
     prevEntry->SetNext(nextEntry);
   }
@@ -666,9 +660,9 @@ template <class T> void LinkedList<T>::RmvEntry_(Entry<T> *entry, bool free) {
     nextEntry->SetPrev(prevEntry);
   }
 
-  if (entry == rtrvEntry_) {
+  if (entry == rtrvEntry_)
     rtrvEntry_ = prevEntry;
-  }
+
 
   if (free)
     FreeEntry_(entry);
@@ -688,7 +682,6 @@ template <class T> inline void LinkedList<T>::Init_() {
   wasBottomRmvd_ = false;
 }
 
-
 template <class T>
 void LinkedList<T>::CopyList(LinkedList<T> const *const otherLst) {
   assert(LinkedList<T>::elmntCnt_ == 0);
@@ -707,20 +700,6 @@ void LinkedList<T>::CopyList(LinkedList<T> const *const otherLst) {
 
   LinkedList<T>::itrtrReset_ = otherLst->itrtrReset_;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 template <class T> inline T *Queue<T>::ExtractElmnt() {
   if (LinkedList<T>::topEntry_ == NULL)
@@ -847,32 +826,24 @@ inline T *PriorityList<T, K>::GetNxtPriorityElmnt(K &key) {
 template <class T, class K>
 inline void PriorityList<T, K>::getRemainingElmnts(LinkedList<T> *fillList) {
   if (LinkedList<T>::rtrvEntry_ == NULL) {
-    //Logger::Info("rtrvEntryNull");
     if (LinkedList<T>::itrtrReset_) {
       LinkedList<T>::rtrvEntry_ = LinkedList<T>::topEntry_;
       LinkedList<T>::itrtrReset_ = false;
-    }
-    else if (LinkedList<T>::wasTopRmvd_) {
+    } else if (LinkedList<T>::wasTopRmvd_) {
       LinkedList<T>::rtrvEntry_ = LinkedList<T>::topEntry_;
       LinkedList<T>::wasTopRmvd_ = false;
-    }
-    else {
-      //Logger::Info("!itrtrReset");
+    } else {
       return;
     }
-      
   }
 
   Entry<T> *temp = LinkedList<T>::rtrvEntry_;
   if (temp != NULL) temp = temp->GetNext();
   while (temp != NULL) {
-    //Logger::Info("inserting %d into list", temp->element);
     fillList->InsrtElmnt(temp->element);
     temp = temp->GetNext();
   }
 }
-
-
 
 //(Vlad) added functionality to decrease priority
 // used for decreasing priority of clusterable instrs
@@ -934,9 +905,6 @@ void PriorityList<T, K>::BoostEntry(KeyedEntry<T, K> *entry, K newKey) {
   }
 
   this->itrtrReset_ = true;
-
-  // Logger::Info("BoostEntry wasTopRmvd_ : %s", this->wasTopRmvd_ ? "true" : "false");
-  // Logger::Info("BoostEntry rtrvEntry_ : %s", this->rtrvEntry_ ? "exists" : "null");
 }
 
 template <class T, class K>

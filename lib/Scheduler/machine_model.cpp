@@ -100,7 +100,10 @@ InstType MachineModel::GetInstTypeByName(llvm::StringRef typeName,
       return (InstType)i;
     }
   }
-  //  Logger::Error("Unrecognized instruction type %s.", typeName.c_str());
+#if DEBUG_LOG_TYPE
+  Logger::Error("Unrecognized instruction type %s.", typeName.str());
+#endif
+
   return INVALID_INST_TYPE;
 }
 
@@ -113,14 +116,16 @@ int16_t MachineModel::GetRegTypeByName(const char *const regTypeName) const {
     }
   }
 
+#if DEBUG_LOG_TYPE
   // Register information log/debug
-  //std::string registerString = "[ ";
-  //for (auto regType : registerTypes_) {
-  //  registerString += regType.name + " ";
-  //}
-  //registerString += "]";
-  //Logger::Info("Register types: %s", registerString.c_str());
-  //Logger::Info("Register type: %d, %s", Type, regTypeName);
+  std::string registerString = "[ ";
+  for (auto regType : registerTypes_) {
+    registerString += regType.name + " ";
+  }
+  registerString += "]";
+  Logger::Info("Register types: %s", registerString.c_str());
+  Logger::Info("Register type: %d, %s", Type, regTypeName);
+#endif
 
   assert(Type != INVALID_VALUE && "No register type with that name in machine model");
   return Type;
