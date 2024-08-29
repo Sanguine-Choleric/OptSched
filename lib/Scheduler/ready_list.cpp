@@ -205,7 +205,7 @@ unsigned long ReadyList::CmputKey_(SchedInstruction *inst, bool isUpdate,
 void ReadyList::AddLatestSubLists(LinkedList<SchedInstruction> *lst1,
                                   LinkedList<SchedInstruction> *lst2,
                                   BBThread *rgn) {
-  // assert(latestSubLst_.GetElmntCnt() == 0);
+  // FIXME: assert(latestSubLst_.GetElmntCnt() == 0);
   if (lst1 != NULL)
     AddLatestSubList_(lst1, rgn);
   if (lst2 != NULL)
