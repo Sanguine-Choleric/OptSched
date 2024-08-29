@@ -668,7 +668,6 @@ template <class T> void LinkedList<T>::RmvEntry_(Entry<T> *entry, bool free) {
   if (entry == rtrvEntry_)
     rtrvEntry_ = prevEntry;
 
-
   if (free)
     FreeEntry_(entry);
 
@@ -781,13 +780,10 @@ KeyedEntry<T, K> *PriorityList<T, K>::InsrtElmnt(T *elmnt, K key,
 
 template <class T, class K>
 inline T *PriorityList<T, K>::ViewNxtPriorityElmnt() {
-  if (LinkedList<T>::wasTopRmvd_) {
-    LinkedList<T>::rtrvEntry_ = LinkedList<T>::topEntry_;
-    LinkedList<T>::wasTopRmvd_ = false;
-  }
-  assert(LinkedList<T>::itrtrReset_ || LinkedList<T>::rtrvEntry_ != NULL);
+  bool rtrvInvalid = LinkedList<T>::itrtrReset_ || LinkedList<T>::wasTopRmvd_;
+  assert(rtrvInvalid || LinkedList<T>::rtrvEntry_ != NULL);
 
-  if (LinkedList<T>::itrtrReset_) {
+  if (rtrvInvalid) {
     return LinkedList<T>::topEntry_->element;
   } else {
     return LinkedList<T>::rtrvEntry_->element;
@@ -796,14 +792,12 @@ inline T *PriorityList<T, K>::ViewNxtPriorityElmnt() {
 
 template <class T, class K>
 inline T *PriorityList<T, K>::GetNxtPriorityElmnt() {
-  if (LinkedList<T>::wasTopRmvd_) {
+  bool rtrvInvalid = LinkedList<T>::itrtrReset_ || LinkedList<T>::wasTopRmvd_;
+  assert(rtrvInvalid || LinkedList<T>::rtrvEntry_ != NULL);
+
+  if (rtrvInvalid) {
     LinkedList<T>::rtrvEntry_ = LinkedList<T>::topEntry_;
     LinkedList<T>::wasTopRmvd_ = false;
-  }
-  assert(LinkedList<T>::itrtrReset_ || LinkedList<T>::rtrvEntry_ != NULL);
-
-  if (LinkedList<T>::itrtrReset_) {
-    LinkedList<T>::rtrvEntry_ = LinkedList<T>::topEntry_;
   } else {
     LinkedList<T>::rtrvEntry_ = LinkedList<T>::rtrvEntry_->GetNext();
   }
@@ -819,14 +813,12 @@ inline T *PriorityList<T, K>::GetNxtPriorityElmnt() {
 
 template <class T, class K>
 inline T *PriorityList<T, K>::GetNxtPriorityElmnt(K &key) {
-  if (LinkedList<T>::wasTopRmvd_) {
+  bool rtrvInvalid = LinkedList<T>::itrtrReset_ || LinkedList<T>::wasTopRmvd_;
+  assert(rtrvInvalid || LinkedList<T>::rtrvEntry_ != NULL);
+
+  if (rtrvInvalid) {
     LinkedList<T>::rtrvEntry_ = LinkedList<T>::topEntry_;
     LinkedList<T>::wasTopRmvd_ = false;
-  }
-  assert(LinkedList<T>::itrtrReset_ || LinkedList<T>::rtrvEntry_ != NULL);
-
-  if (LinkedList<T>::itrtrReset_) {
-    LinkedList<T>::rtrvEntry_ = LinkedList<T>::topEntry_;
   } else {
     LinkedList<T>::rtrvEntry_ = LinkedList<T>::rtrvEntry_->GetNext();
   }
