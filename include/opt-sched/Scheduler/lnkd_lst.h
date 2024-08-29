@@ -538,6 +538,7 @@ template <class T> inline T *LinkedList<T>::GetLastElmnt() {
 template <class T> inline T *LinkedList<T>::GetNxtElmnt() {
   if (wasTopRmvd_) {
     rtrvEntry_ = topEntry_;
+    wasTopRmvd_ = false;
   } else {
     assert(rtrvEntry_ != nullptr);
     rtrvEntry_ = rtrvEntry_->GetNext();
@@ -554,6 +555,10 @@ template <class T> inline T *LinkedList<T>::GetNxtElmnt() {
 }
 
 template <class T> inline T *LinkedList<T>::GetPrevElmnt() {
+  if (wasTopRmvd_) {
+    rtrvEntry_ = topEntry_;
+    wasTopRmvd_ = false;
+  }
   assert(rtrvEntry_ != NULL);
   rtrvEntry_ = rtrvEntry_->GetPrev();
   return rtrvEntry_ == NULL ? NULL : rtrvEntry_->element;
@@ -776,6 +781,10 @@ KeyedEntry<T, K> *PriorityList<T, K>::InsrtElmnt(T *elmnt, K key,
 
 template <class T, class K>
 inline T *PriorityList<T, K>::ViewNxtPriorityElmnt() {
+  if (LinkedList<T>::wasTopRmvd_) {
+    LinkedList<T>::rtrvEntry_ = LinkedList<T>::topEntry_;
+    LinkedList<T>::wasTopRmvd_ = false;
+  }
   assert(LinkedList<T>::itrtrReset_ || LinkedList<T>::rtrvEntry_ != NULL);
 
   if (LinkedList<T>::itrtrReset_) {
@@ -787,6 +796,10 @@ inline T *PriorityList<T, K>::ViewNxtPriorityElmnt() {
 
 template <class T, class K>
 inline T *PriorityList<T, K>::GetNxtPriorityElmnt() {
+  if (LinkedList<T>::wasTopRmvd_) {
+    LinkedList<T>::rtrvEntry_ = LinkedList<T>::topEntry_;
+    LinkedList<T>::wasTopRmvd_ = false;
+  }
   assert(LinkedList<T>::itrtrReset_ || LinkedList<T>::rtrvEntry_ != NULL);
 
   if (LinkedList<T>::itrtrReset_) {
@@ -806,7 +819,12 @@ inline T *PriorityList<T, K>::GetNxtPriorityElmnt() {
 
 template <class T, class K>
 inline T *PriorityList<T, K>::GetNxtPriorityElmnt(K &key) {
+  if (LinkedList<T>::wasTopRmvd_) {
+    LinkedList<T>::rtrvEntry_ = LinkedList<T>::topEntry_;
+    LinkedList<T>::wasTopRmvd_ = false;
+  }
   assert(LinkedList<T>::itrtrReset_ || LinkedList<T>::rtrvEntry_ != NULL);
+
   if (LinkedList<T>::itrtrReset_) {
     LinkedList<T>::rtrvEntry_ = LinkedList<T>::topEntry_;
   } else {
@@ -923,12 +941,15 @@ void PriorityList<T, K>::CopyList(
     if (!keyedEntries_.empty()) {
       const auto elementNum = entry->element->GetNum();
       assert(0 <= elementNum);
-      //if (static_cast<size_t>(elementNum) >= keyedEntries_.size()) {
-      //  Logger::Info("elementNum %d", elementNum);
-      //  Logger::Info("keyedEntries_.size() %d", keyedEntries_.size());
-      //}
-      //Logger::Info("keyedEntires_.size() %d", keyedEntries_.size());
-      //Logger::Info("elementNum %d", elementNum);
+#if DEBUG_LOG_TYPE
+      if (static_cast<size_t>(elementNum) >= keyedEntries_.size()) {
+        Logger::Info("elementNum %d", elementNum);
+        Logger::Info("keyedEntries_.size() %d", keyedEntries_.size());
+      }
+      Logger::Info("keyedEntires_.size() %d", keyedEntries_.size());
+      Logger::Info("elementNum %d", elementNum);
+#endif
+
       assert(static_cast<size_t>(elementNum) < keyedEntries_.size());
       keyedEntries_[elementNum] = newEntry;
     }
