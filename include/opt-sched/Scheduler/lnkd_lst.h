@@ -454,8 +454,7 @@ template <class T> void LinkedList<T>::RmvElmnt(const T *const elmnt, bool free)
        crntEntry = crntEntry->GetNext()) {
     if (crntEntry->element == elmnt) {
       // Found.
-      //RmvEntry_(crntEntry);
-      
+
       if (crntEntry == topEntry_) {
         topEntry_ = crntEntry->GetNext();
       }
@@ -472,7 +471,6 @@ template <class T> void LinkedList<T>::RmvElmnt(const T *const elmnt, bool free)
         prevEntry->SetNext(crntEntry->GetNext());
       }
 
-      // 
       if (crntEntry == rtrvEntry_) {
         rtrvEntry_ = prevEntry;
       }
@@ -540,7 +538,9 @@ template <class T> inline T *LinkedList<T>::GetLastElmnt() {
 template <class T> inline T *LinkedList<T>::GetNxtElmnt() {
   if (wasTopRmvd_) {
     rtrvEntry_ = topEntry_;
+    wasTopRmvd_ = false;
   } else {
+    assert(rtrvEntry_ != nullptr);
     rtrvEntry_ = rtrvEntry_->GetNext();
   }
 
@@ -555,6 +555,11 @@ template <class T> inline T *LinkedList<T>::GetNxtElmnt() {
 }
 
 template <class T> inline T *LinkedList<T>::GetPrevElmnt() {
+  if (wasTopRmvd_) {
+    rtrvEntry_ = topEntry_;
+    wasTopRmvd_ = false;
+  }
+  assert(rtrvEntry_ != NULL);
   rtrvEntry_ = rtrvEntry_->GetPrev();
   return rtrvEntry_ == NULL ? NULL : rtrvEntry_->element;
 }
@@ -646,6 +651,7 @@ template <class T> void LinkedList<T>::RmvEntry_(Entry<T> *entry, bool free) {
   if (prevEntry == NULL) {
     assert(entry == topEntry_);
     topEntry_ = nextEntry;
+    wasTopRmvd_ = true; // Flag updates inside RmvEntry on head removal
   } else {
     prevEntry->SetNext(nextEntry);
   }
@@ -654,6 +660,7 @@ template <class T> void LinkedList<T>::RmvEntry_(Entry<T> *entry, bool free) {
   if (nextEntry == NULL) {
     assert(entry == bottomEntry_);
     bottomEntry_ = prevEntry;
+    wasBottomRmvd_ = true; // Flag updates inside RmvEntry on tail removal
   } else {
     nextEntry->SetPrev(prevEntry);
   }
@@ -679,7 +686,6 @@ template <class T> inline void LinkedList<T>::Init_() {
   wasBottomRmvd_ = false;
 }
 
-
 template <class T>
 void LinkedList<T>::CopyList(LinkedList<T> const *const otherLst) {
   assert(LinkedList<T>::elmntCnt_ == 0);
@@ -698,20 +704,6 @@ void LinkedList<T>::CopyList(LinkedList<T> const *const otherLst) {
 
   LinkedList<T>::itrtrReset_ = otherLst->itrtrReset_;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 template <class T> inline T *Queue<T>::ExtractElmnt() {
   if (LinkedList<T>::topEntry_ == NULL)
@@ -788,9 +780,10 @@ KeyedEntry<T, K> *PriorityList<T, K>::InsrtElmnt(T *elmnt, K key,
 
 template <class T, class K>
 inline T *PriorityList<T, K>::ViewNxtPriorityElmnt() {
-  assert(LinkedList<T>::itrtrReset_ || LinkedList<T>::rtrvEntry_ != NULL);
+  bool rtrvInvalid = LinkedList<T>::itrtrReset_ || LinkedList<T>::wasTopRmvd_;
+  assert(rtrvInvalid || LinkedList<T>::rtrvEntry_ != NULL);
 
-  if (LinkedList<T>::itrtrReset_) {
+  if (rtrvInvalid) {
     return LinkedList<T>::topEntry_->element;
   } else {
     return LinkedList<T>::rtrvEntry_->element;
@@ -799,10 +792,12 @@ inline T *PriorityList<T, K>::ViewNxtPriorityElmnt() {
 
 template <class T, class K>
 inline T *PriorityList<T, K>::GetNxtPriorityElmnt() {
-  assert(LinkedList<T>::itrtrReset_ || LinkedList<T>::rtrvEntry_ != NULL);
+  bool rtrvInvalid = LinkedList<T>::itrtrReset_ || LinkedList<T>::wasTopRmvd_;
+  assert(rtrvInvalid || LinkedList<T>::rtrvEntry_ != NULL);
 
-  if (LinkedList<T>::itrtrReset_) {
+  if (rtrvInvalid) {
     LinkedList<T>::rtrvEntry_ = LinkedList<T>::topEntry_;
+    LinkedList<T>::wasTopRmvd_ = false;
   } else {
     LinkedList<T>::rtrvEntry_ = LinkedList<T>::rtrvEntry_->GetNext();
   }
@@ -818,9 +813,12 @@ inline T *PriorityList<T, K>::GetNxtPriorityElmnt() {
 
 template <class T, class K>
 inline T *PriorityList<T, K>::GetNxtPriorityElmnt(K &key) {
-  assert(LinkedList<T>::itrtrReset_ || LinkedList<T>::rtrvEntry_ != NULL);
-  if (LinkedList<T>::itrtrReset_) {
+  bool rtrvInvalid = LinkedList<T>::itrtrReset_ || LinkedList<T>::wasTopRmvd_;
+  assert(rtrvInvalid || LinkedList<T>::rtrvEntry_ != NULL);
+
+  if (rtrvInvalid) {
     LinkedList<T>::rtrvEntry_ = LinkedList<T>::topEntry_;
+    LinkedList<T>::wasTopRmvd_ = false;
   } else {
     LinkedList<T>::rtrvEntry_ = LinkedList<T>::rtrvEntry_->GetNext();
   }
@@ -838,32 +836,24 @@ inline T *PriorityList<T, K>::GetNxtPriorityElmnt(K &key) {
 template <class T, class K>
 inline void PriorityList<T, K>::getRemainingElmnts(LinkedList<T> *fillList) {
   if (LinkedList<T>::rtrvEntry_ == NULL) {
-    //Logger::Info("rtrvEntryNull");
     if (LinkedList<T>::itrtrReset_) {
       LinkedList<T>::rtrvEntry_ = LinkedList<T>::topEntry_;
       LinkedList<T>::itrtrReset_ = false;
-    }
-    else if (LinkedList<T>::wasTopRmvd_) {
+    } else if (LinkedList<T>::wasTopRmvd_) {
       LinkedList<T>::rtrvEntry_ = LinkedList<T>::topEntry_;
       LinkedList<T>::wasTopRmvd_ = false;
-    }
-    else {
-      //Logger::Info("!itrtrReset");
+    } else {
       return;
     }
-      
   }
 
   Entry<T> *temp = LinkedList<T>::rtrvEntry_;
   if (temp != NULL) temp = temp->GetNext();
   while (temp != NULL) {
-    //Logger::Info("inserting %d into list", temp->element);
     fillList->InsrtElmnt(temp->element);
     temp = temp->GetNext();
   }
 }
-
-
 
 //(Vlad) added functionality to decrease priority
 // used for decreasing priority of clusterable instrs
@@ -943,12 +933,15 @@ void PriorityList<T, K>::CopyList(
     if (!keyedEntries_.empty()) {
       const auto elementNum = entry->element->GetNum();
       assert(0 <= elementNum);
-      //if (static_cast<size_t>(elementNum) >= keyedEntries_.size()) {
-      //  Logger::Info("elementNum %d", elementNum);
-      //  Logger::Info("keyedEntries_.size() %d", keyedEntries_.size());
-      //}
-      //Logger::Info("keyedEntires_.size() %d", keyedEntries_.size());
-      //Logger::Info("elementNum %d", elementNum);
+#if DEBUG_LOG_TYPE
+      if (static_cast<size_t>(elementNum) >= keyedEntries_.size()) {
+        Logger::Info("elementNum %d", elementNum);
+        Logger::Info("keyedEntries_.size() %d", keyedEntries_.size());
+      }
+      Logger::Info("keyedEntires_.size() %d", keyedEntries_.size());
+      Logger::Info("elementNum %d", elementNum);
+#endif
+
       assert(static_cast<size_t>(elementNum) < keyedEntries_.size());
       keyedEntries_[elementNum] = newEntry;
     }
