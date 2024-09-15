@@ -21,6 +21,9 @@ using namespace llvm::opt_sched;
 
 #define DEBUG_TYPE "optsched"
 
+OptSchedRegistry<OptSchedTargetRegistry::OptSchedTargetFactory>
+    OptSchedTargetRegistry::Registry;
+
 // This is necessary because we cannot perfectly predict the number of registers
 // of each type that will be allocated.
 static const unsigned GPRErrorMargin = 0;

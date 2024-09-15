@@ -76,16 +76,17 @@ private:
 
 public:
   void add(OptSchedRegistryNode<FactoryT> *Node) {
+    Logger::Info("JEFF Adding Registry Node %s", Node->Name.c_str());
     Node->Next = List;
     List = Node;
   }
   FactoryT getFactoryWithName(llvm::StringRef Name) {
     FactoryT Factory = nullptr;
-    std::string Match = std::string(Name.data());
+    StringRef Match = Name;
 
     for (auto I = List; I; I = I->Next) {
-      std::string Temp = std::string(I->Name.data());
-      if (Match.compare(Temp) == 0) {
+      StringRef Temp = I->Name;
+      if (Match == Temp) {
         Factory = I->Factory;
         break;
       }
