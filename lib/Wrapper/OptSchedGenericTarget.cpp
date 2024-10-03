@@ -9,6 +9,7 @@
 #include "opt-sched/Scheduler/machine_model.h"
 #include "OptSchedDDGWrapperBasic.h"
 #include "OptSchedMachineWrapper.h"
+#include "OptSchedGenericTarget.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/CodeGen/ScheduleDAGInstrs.h"
 #include <memory>
@@ -16,36 +17,6 @@
 using namespace llvm;
 using namespace llvm::opt_sched;
 
-// OptSchedRegistry<OptSchedTargetRegistry::OptSchedTargetFactory>
-//     OptSchedTargetRegistry::Registry;
-
-namespace {
-
-class OptSchedGenericTarget : public OptSchedTarget {
-public:
-  std::unique_ptr<OptSchedMachineModel>
-  createMachineModel(const char *ConfigPath) override {
-    return std::make_unique<OptSchedMachineModel>(ConfigPath);
-  }
-
-  std::unique_ptr<OptSchedDDGWrapperBase>
-  createDDGWrapper(llvm::MachineSchedContext *Context, ScheduleDAGOptSched *DAG,
-                   OptSchedMachineModel *MM, LATENCY_PRECISION LatencyPrecision,
-                   const std::string &RegionID, const int NumSolvers) override {
-    return std::make_unique<OptSchedDDGWrapperBasic>(
-        Context, DAG, MM, LatencyPrecision, RegionID, NumSolvers);
-  }
-
-  void initRegion(llvm::ScheduleDAGInstrs *DAG, MachineModel *MM_,
-   	          Config &OccFile) override {
-    MM = MM_;
-  }
-  void finalizeRegion(const InstSchedule *Schedule) override {}
-  // For generic target find total PRP.
-  InstCount getCost(const llvm::SmallVectorImpl<unsigned> &PRP) const override;
-};
-
-} // end anonymous namespace
 
 InstCount OptSchedGenericTarget::getCost(
     const llvm::SmallVectorImpl<unsigned> &PRP) const {
@@ -55,15 +26,4 @@ InstCount OptSchedGenericTarget::getCost(
   return TotalPRP;
 }
 
-namespace llvm {
-namespace opt_sched {
 
-std::unique_ptr<OptSchedTarget> createOptSchedGenericTarget() {
-  return std::make_unique<OptSchedGenericTarget>();
-}
-
-OptSchedTargetRegistry
-    OptSchedGenericTargetRegistry("generic", createOptSchedGenericTarget);
-
-} // namespace opt_sched
-} // namespace llvm

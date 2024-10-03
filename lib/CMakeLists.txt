@@ -24,6 +24,9 @@ set(OPTSCHED_SRCS Scheduler/aco.cpp
   Wrapper/OptSchedMachineWrapper.cpp
   Wrapper/OptSchedDDGWrapperBasic.cpp
   Wrapper/OptSchedGenericTarget.cpp
+  Wrapper/AMDGPU/GCNOptSched.cpp
+  Wrapper/AMDGPU/OptSchedDDGWrapperGCN
+  Wrapper/AMDGPU/OptSchedGCNTarget
 )
 
 set(OPTSCHED_TARGET_DEPS "")

@@ -36,6 +36,8 @@
 #include "llvm/Support/Path.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetMachine.h"
+#include "OptSchedGenericTarget.h"
+#include "AMDGPU/OptSchedGCNTarget.h"
 #include <algorithm>
 #include <chrono>
 #include <string>
@@ -193,6 +195,30 @@ static std::unique_ptr<GraphTrans>
 createStaticNodeSupTrans(DataDepGraph *DataDepGraph, bool IsMultiPass = false) {
   return std::make_unique<StaticNodeSupTrans>(DataDepGraph, IsMultiPass);
 }
+
+
+OptSchedRegistry<OptSchedTargetRegistry::OptSchedTargetFactory>
+    OptSchedTargetRegistry::Registry;
+
+std::unique_ptr<OptSchedTarget> createOptSchedGCNTarget() {
+  return std::make_unique<OptSchedGCNTarget>();
+}
+
+std::unique_ptr<OptSchedTarget> createOptSchedGenericTarget() {
+  return std::make_unique<OptSchedGenericTarget>();
+}
+
+
+OptSchedTargetRegistry
+    OptSchedGenericTargetRegistry("generic", createOptSchedGenericTarget);
+
+
+OptSchedTargetRegistry OptSchedGCNTargetRegistry("amdgcn",
+                                                 createOptSchedGCNTarget);
+
+OptSchedTargetRegistry OptSchedGCNHSATargetRegistry("amdgcn-amd-amdhsa",
+                                                    createOptSchedGCNTarget);
+
 
 void ScheduleDAGOptSched::addGraphTransformations(
     OptSchedDDGWrapperBasic *BDDG) {
