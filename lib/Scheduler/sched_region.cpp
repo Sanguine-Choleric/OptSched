@@ -825,6 +825,10 @@ FUNC_RESULT SchedRegion::Optimize_(Milliseconds startTime,
     *OptimalSolverID = 0;
   }
 
+  if (!isSecondPass_) {
+    Logger::Info("JEFF First Pass BnB");
+  }
+
   Milliseconds solutionTime = Utilities::GetProcessorTime() - startTime;
   stats::solutionTime.Record(solutionTime);
 
