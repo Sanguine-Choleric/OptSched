@@ -627,9 +627,20 @@ template <class T> inline void BinHashTable<T>::CmputConsts_() {
 
 template <class T>
 inline UDT_HASHVAL BinHashTable<T>::HashKey(UDT_HASHKEY key) {
-  if (keyBitCnt_ == hashBitCnt_)
-    return (UDT_HASHVAL)key;
-  return ((UDT_HASHVAL)key >> hashRShft_);
+
+// #ifdef IS_DEBUG_SEARCH_ORDER
+//   Logger::Info("keyBitCnt_:%u hashBitCnt_:%u hashRShft_:%d", keyBitCnt_, hashBitCnt_, hashRShft_);
+// #endif
+
+  volatile UDT_HASHVAL result = key;
+
+  if (keyBitCnt_ == hashBitCnt_) {
+    result = static_cast<UDT_HASHVAL>(key);
+  } else {
+    result = static_cast<UDT_HASHVAL>(key) >> hashRShft_;
+  }
+
+  return result;
 }
 
 template <class T>
