@@ -1311,7 +1311,9 @@ bool Enumerator::FindNxtFsblBrnch_(EnumTreeNode *&newNode) {
         return false;
       }
 #ifdef IS_DEBUG_SEARCH_ORDER
-      Logger::Log((Logger::LOG_LEVEL) 4, false, "Out of instructions, stalling");
+      // Logger::Log((Logger::LOG_LEVEL) 4, false, "Out of instructions,
+      // stalling");
+      Logger::Info("Out of Instructions, stalling");
 #endif
       // then we only have the option of scheduling a stall
       assert(isEmptyNode == false || brnchCnt == 1);
@@ -1376,7 +1378,9 @@ bool Enumerator::FindNxtFsblBrnch_(EnumTreeNode *&newNode) {
       }
 
 #ifdef IS_DEBUG_SEARCH_ORDER
-        Logger::Log((Logger::LOG_LEVEL) 4, false, "SolverID %d Probing inst %d", SolverID_, inst->GetNum());
+      // Logger::Log((Logger::LOG_LEVEL) 4, false, "SolverID %d Probing inst
+      // %d", SolverID_, inst->GetNum());
+      Logger::Info("SolverID %d Probing inst %d", SolverID_, inst->GetNum());
 #endif
       assert(inst != NULL);
       bool isLegal = ChkInstLglty_(inst);
@@ -1445,7 +1449,8 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
     if (inst->GetPreFxdCycle() != INVALID_VALUE)
       if (inst->GetPreFxdCycle() != crntCycleNum_) {
 #ifdef IS_DEBUG_SEARCH_ORDER
-        Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: prefix fail");
+        // Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: prefix fail");
+        Logger::Info("probe: prefix fail");
 #endif
 
         return false;
@@ -1458,7 +1463,8 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
 #endif
       //stats::forwardLBInfeasibilityHits++;
 #ifdef IS_DEBUG_SEARCH_ORDER
-      Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: LB fail");
+      // Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: LB fail");
+      Logger::Info("probe: LB fail");
 #endif
       return false;
     }
@@ -1469,7 +1475,8 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
       //stats::backwardLBInfeasibilityHits++;
 
 #ifdef IS_DEBUG_SEARCH_ORDER
-      Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: deadline fail");
+      // Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: deadline fail");
+      Logger::Info("probe: deadline fail");
 #endif
       return false;
     }
@@ -1492,7 +1499,8 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
       nodeSupInfsbl++;
         isNodeDmntd = true;
 #ifdef IS_DEBUG_SEARCH_ORDER
-        Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: history fail");
+        // Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: history fail");
+        Logger::Info("probe: history fail");
 #endif
 
         return false;
@@ -1518,7 +1526,8 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
   if (!bbt_->isSecondPass()) Logger::Info("actually pruning due to slot count");
   //stats::slotCountInfeasibilityHits++;
 #ifdef IS_DEBUG_SEARCH_ORDER
-    Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: issue slot fail");
+    // Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: issue slot fail");
+    Logger::Info("probe: issue slot fail");
 #endif
     return false;
   }
@@ -1536,7 +1545,8 @@ bool Enumerator::ProbeBranch_(SchedInstruction *inst, EnumTreeNode *&newNode,
   //stats::rangeTighteningInfeasibilityHits++;
 
 #ifdef IS_DEBUG_SEARCH_ORDER
-    Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: tightn LB fail");
+    // Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: tightn LB fail");
+    Logger::Info("probe: tighten LB fail");
 #endif
     return false;
   }
@@ -1568,7 +1578,8 @@ if (SolverID_ >= 2) {
 #endif
   //stats::historyDominationInfeasibilityHits++;
 #ifdef IS_DEBUG_SEARCH_ORDER
-        Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: histDom fail");
+        // Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: histDom fail");
+        Logger::Info("probe: histDom fail");
 #endif
         nodeAlctr_->Free(newNode);
         newNode = NULL;
@@ -1591,7 +1602,8 @@ if (SolverID_ >= 2) {
 
       isRlxInfsbl = true;
 #ifdef IS_DEBUG_SEARCH_ORDER
-      Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: relaxed fail");
+      // Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: relaxed fail");
+      Logger::Info("probe: relaxed fail");
 #endif
         return false;
     }
@@ -1689,7 +1701,9 @@ bbt_->GlobalPoolLock_->unlock();
 #endif
 #ifdef IS_DEBUG_SEARCH_ORDER
   if (instToSchdul)
-    Logger::Log((Logger::LOG_LEVEL) 4, false, "Stepping forward to inst %d", instToSchdul->GetNum());
+    // Logger::Log((Logger::LOG_LEVEL) 4, false, "Stepping forward to inst %d",
+    // instToSchdul->GetNum());
+    Logger::Info("Stepping forward to inst %d", instToSchdul->GetNum());
 #endif
 
 if (bbt_->isWorkStealOn()) {
@@ -2036,7 +2050,10 @@ bool Enumerator::BackTrack_(bool trueState) {
 
   if (crntNode_->GetInst()) {
 #ifdef IS_DEBUG_SEARCH_ORDER
-    Logger::Log((Logger::LOG_LEVEL) 4, false, "SolverID %d Back tracking fron inst %d to inst %d", SolverID_, inst->GetNum(), trgtNode->GetInstNum());
+    // Logger::Log((Logger::LOG_LEVEL) 4, false, "SolverID %d Back tracking fron
+    // inst %d to inst %d", SolverID_, inst->GetNum(), trgtNode->GetInstNum());
+    Logger::Info("SolverID %d Backtracking from inst %d to inst %d", SolverID_,
+                 inst->GetNum(), trgtNode->GetInstNum());
 #endif
 }
   rdyLst_->RemoveLatestSubList();
@@ -2234,8 +2251,15 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
   int listSize = exmndSubProbs_->GetListSize(newNode->GetSig());
 
   UDT_HASHVAL key = exmndSubProbs_->HashKey(newNode->GetSig());
-  //stats::historyListSize.Record(listSize);
-  if (listSize == 0) return false;
+  
+
+#ifdef IS_DEBUG_SEARCH_ORDER
+  Logger::Info("WDSPE: HashKey:%u:%u NodeSig:%u listSize:%d entryCount:%d", key, exmndSubProbs_->HashKey(newNode->GetSig()), newNode->GetSig(), listSize, exmndSubProbs_->GetEntryCnt());
+#endif
+
+  // stats::historyListSize.Record(listSize);
+  if (listSize == 0)
+    return false;
   mostRecentMatchingHistNode_ = nullptr;
   bool mostRecentMatchWasSet = false;
   bool wasDmntSubProbExmnd = false;
@@ -2253,13 +2277,29 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
 #ifdef IS_DEBUG_SPD
     stats::signatureMatches++;
 #endif
-    if (exNode->DoesMatch(newNode, this, bbt_->isWorker() && IsFirstPass_, isGenerateState_)) {
+
+#ifdef IS_DEBUG_SEARCH_ORDER
+    Logger::Info("WDSPE: DoesMatch:%s",
+                 exNode->DoesMatch(newNode, this,
+                                   bbt_->isWorker() && IsFirstPass_,
+                                   isGenerateState_)
+                     ? "true"
+                     : "false");
+#endif
+
+    if (exNode->DoesMatch(newNode, this, bbt_->isWorker() && IsFirstPass_,
+                          isGenerateState_)) {
       if (!mostRecentMatchWasSet) {
         mostRecentMatchingHistNode_ =
             (exNode->GetSuffix() != nullptr) ? exNode : nullptr;
         mostRecentMatchWasSet = true;
       }
       bool doesDominate = exNode->DoesDominate(newNode, this);
+
+#ifdef IS_DEBUG_SEARCH_ORDER
+      Logger::Info("WDSPE: doesDominate:%s", doesDominate ? "true" : "false");
+#endif
+
       if (doesDominate) {
         
 #ifdef IS_DEBUG_SPD
@@ -2920,6 +2960,15 @@ bool LengthCostEnumerator::WasObjctvMet_() {
 }
 /*****************************************************************************/
 
+void LengthCostEnumerator::print_history_debug() {
+  auto prefix = crntNode_->GetHistory()->GetPrefix();
+  std::string s = "";
+  for (int i : prefix) {
+    s.append(std::to_string(i) + " ");
+  }
+  s.append("| ");
+  Logger::Info("%s", s.c_str());
+}
 bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
                                         EnumTreeNode *&newNode,
                                         bool &isNodeDmntd, bool &isRlxInfsbl,
@@ -2948,7 +2997,8 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
   if (isFsbl == false) {
     ++bbt_->CostInfsbl;
 #ifdef IS_DEBUG_SEARCH_ORDER
-    Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: cost fail");
+    // Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: cost fail");
+    Logger::Info("probe: cost fail");
 #endif
     crntNode_->incrementExploredChildren();
     crntNode_->SetLocalBestCost(newNode->GetLocalBestCost());
@@ -2960,6 +3010,7 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
 
     assert(newNode);
     EnumTreeNode *parent = newNode->GetParent();
+
     if (WasDmnntSubProbExmnd_(inst, newNode)) {
 #ifdef IS_DEBUG_FLOW
       Logger::Info("History domination\n\n");
@@ -2971,7 +3022,9 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
   //stats::historyDominationInfeasibilityHits;
       bbt_->unschdulInst(inst, crntCycleNum_, crntSlotNum_, parent);
 #ifdef IS_DEBUG_SEARCH_ORDER
-      Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: LCE history fail");
+      // Logger::Log((Logger::LOG_LEVEL) 4, false, "probe: LCE history fail");
+      Logger::Info("probe: LCE history fail");
+      print_history_debug();
 #endif
       isNodeDmntd = true;
       crntNode_->incrementExploredChildren();
@@ -2979,6 +3032,9 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
       newNode = NULL;
       return false;
     }
+#ifdef IS_DEBUG_SEARCH_ORDER
+    print_history_debug();
+#endif
   }
 
   assert(newNode);
@@ -3581,7 +3637,10 @@ bool LengthCostEnumerator::scheduleIntOrPrune(int instToSchdul,
                                                bool isPseudoRoot) {
 
 #ifdef IS_DEBUG_SEARCH_ORDER
-    Logger::Log((Logger::LOG_LEVEL)4, false, "SolverID %d probing global pool inst %d", SolverID_, instToSchdul);
+  // Logger::Log((Logger::LOG_LEVEL)4, false, "SolverID %d probing global pool
+  // inst %d", SolverID_, instToSchdul);
+  Logger::Info("SolverID %d probing global pool inst %d", SolverID_,
+               instToSchdul);
 #endif
 
   InstCount i;
@@ -3611,7 +3670,10 @@ bool LengthCostEnumerator::scheduleIntOrPrune(int instToSchdul,
   assert(flag);
 
 #ifdef IS_DEBUG_SEARCH_ORDER
-    Logger::Log((Logger::LOG_LEVEL)4, false, "SolverID %d stepping forward global pool inst %d", SolverID_, instToSchdul);
+  // Logger::Log((Logger::LOG_LEVEL)4, false, "SolverID %d stepping forward
+  // global pool inst %d", SolverID_, instToSchdul);
+  Logger::Info("SolverID %d stepping forward global pool inst %d", SolverID_,
+               instToSchdul);
 #endif
 
 
@@ -3988,9 +4050,11 @@ void LengthCostEnumerator::getRdyListAsNodes(std::pair<EnumTreeNode *, unsigned 
 
 /*****************************************************************************/
 ReadyList *LengthCostEnumerator::getGlobalPoolList(EnumTreeNode *newNode) {
-  #ifdef IS_DEBUG_SEARCH_ORDER
-    Logger::Log((Logger::LOG_LEVEL) 4, false, "Probing inst %d", newNode->GetInstNum());
-  #endif
+#ifdef IS_DEBUG_SEARCH_ORDER
+  // Logger::Log((Logger::LOG_LEVEL) 4, false, "Probing inst %d",
+  // newNode->GetInstNum());
+  Logger::Info("Probing inst %d", newNode->GetInstNum());
+#endif
   StepFrwrd_(newNode);
 
   assert(newNode->GetRdyLst()->GetInstCnt() > 0);
