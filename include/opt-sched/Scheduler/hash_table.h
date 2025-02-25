@@ -628,17 +628,12 @@ template <class T> inline void BinHashTable<T>::CmputConsts_() {
 template <class T>
 inline UDT_HASHVAL BinHashTable<T>::HashKey(UDT_HASHKEY key) {
 
-// #ifdef IS_DEBUG_SEARCH_ORDER
-//   Logger::Info("keyBitCnt_:%u hashBitCnt_:%u hashRShft_:%d", keyBitCnt_, hashBitCnt_, hashRShft_);
-// #endif
-
-  volatile UDT_HASHVAL result = key;
-
-  if (keyBitCnt_ == hashBitCnt_) {
-    result = static_cast<UDT_HASHVAL>(key);
-  } else {
-    result = static_cast<UDT_HASHVAL>(key) >> hashRShft_;
-  }
+  // FIXME: Without `volatile`, it seems like the compiler optimizes out parts
+  // of this function, leading to undefined behavior. Volatile prevents the
+  // compiler from making certain operations, so it's best if there's a better
+  // fix
+  volatile UDT_HASHVAL result = static_cast<UDT_HASHVAL>(key) >>
+                                (keyBitCnt_ == hashBitCnt_ ? 0 : hashRShft_);
 
   return result;
 }

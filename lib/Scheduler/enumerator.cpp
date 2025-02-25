@@ -3005,20 +3005,11 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
     return false;
   }
 
-#ifdef IS_DEBUG_SEARCH_ORDER
-  // bool ihd = IsHistDom();
-  // Logger::Info("probe: IsHistDom():%s", ihd ? "true" : "false");
-#endif
   if (IsHistDom() && prune) {
     ++bbt_->HistInfsbl;
 
     assert(newNode);
     EnumTreeNode *parent = newNode->GetParent();
-
-#ifdef IS_DEBUG_SEARCH_ORDER
-    bool wdspe = WasDmnntSubProbExmnd_(inst, newNode);
-    Logger::Info("probe: WasDmntSubProbExmnd_:%s", wdspe ? "true" : "false");
-#endif
 
     if (WasDmnntSubProbExmnd_(inst, newNode)) {
 #ifdef IS_DEBUG_FLOW
