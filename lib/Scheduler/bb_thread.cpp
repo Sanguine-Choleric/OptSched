@@ -1353,6 +1353,7 @@ FUNC_RESULT BBWithSpill::Enumerate_(Milliseconds StartTime,
       timeout = true;
     HandlEnumrtrRslt_(rslt, trgtLngth);
 
+   
 
     if (getBestCost() == 0 || rslt == RES_ERROR ||
         rslt == RES_TIMEOUT ||

@@ -908,7 +908,7 @@ int ScheduleDAGOptSched::parseGlobalPoolSort() const {
   }
 
     llvm::report_fatal_error(
-      llvm::StringRef("Unrecognized option for GLOBAL_POOL_SORT setting: " + name), false);
+      "Unrecognized option for GLOBAL_POOL_SORT setting: " + name, false);
 
 }
 
@@ -933,7 +933,7 @@ SPILL_COST_FUNCTION ScheduleDAGOptSched::parseSpillCostFunc() const {
   }
 
   llvm::report_fatal_error(
-      llvm::StringRef("Unrecognized option for SPILL_COST_FUNCTION setting: " + name), false);
+      "Unrecognized option for SPILL_COST_FUNCTION setting: " + name, false);
 }
 
 
@@ -958,7 +958,7 @@ SPILL_COST_FUNCTION ScheduleDAGOptSched::parseGlobalPoolSpillCostFunc() const {
   }
 
   llvm::report_fatal_error(
-      llvm::StringRef("Unrecognized option for SPILL_COST_FUNCTION setting: " + name), false);
+      "Unrecognized option for SPILL_COST_FUNCTION setting: " + name, false);
 }
 
 
@@ -995,7 +995,7 @@ bool ScheduleDAGOptSched::shouldPrintSpills() const {
   }
 
   llvm::report_fatal_error(
-      llvm::StringRef("Unrecognized option for PRINT_SPILL_COUNTS setting: " + printSpills),
+      "Unrecognized option for PRINT_SPILL_COUNTS setting: " + printSpills,
       false);
 }
 

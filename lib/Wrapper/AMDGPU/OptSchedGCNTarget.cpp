@@ -144,11 +144,10 @@ void OptSchedGCNTarget::dumpOccupancyInfo(const InstSchedule *Schedule) const {
   const InstCount *PRP;
   Schedule->GetPeakRegPressures(PRP);
 
-  // Hardcoded register names from build/lib/Target/AMDGPU/AMDGPUGenRegisterInfo.inc::getRegPressureSetName
-  unsigned SGPR32Count = PRP[MM->GetRegTypeByName("SReg_32")] + GPRErrorMargin;
+  unsigned SGPR32Count = PRP[MM->GetRegTypeByName("SGPR32")] + GPRErrorMargin;
   auto MaxOccSGPR = ST->getOccupancyWithNumSGPRs(SGPR32Count);
 
-  unsigned VGPR32Count = PRP[MM->GetRegTypeByName("VGPR_32")] + GPRErrorMargin;
+  unsigned VGPR32Count = PRP[MM->GetRegTypeByName("VGPR32")] + GPRErrorMargin;
   auto MaxOccVGPR = ST->getOccupancyWithNumVGPRs(VGPR32Count);
   auto Occ = std::min(std::min(MaxOccSGPR, MaxOccVGPR), MaxOccLDS);
 
