@@ -549,37 +549,71 @@ void ScheduleDAGOptSched::schedule() {
     if (isSimRegAllocEnabled()) {
       SimulatedSpills += region->GetSimSpills();
     }    
-  }
-  else
-  {
+  } else {
     Logger::Info("Running parallel B&B");
-    auto region = std::make_unique<BBMaster>(
-        OST.get(), dataDepGraph_, 0, HistTableHashBits,
-        LowerBoundAlgorithm, HeuristicPriorities, EnumPriorities, VerifySchedule,
-        PruningStrategy, SchedForRPOnly, EnumStalls, SCW, SCF, HeurSchedType, 
-        NumThreads, MinNodesAsMultiple, MinSplittingDepth, MaxSplittingDepth, NumSolvers, LocalPoolSize, ExploitationPercent, GlobalPoolSCF,
-        GlobalPoolSort, WorkSteal, IsTimeoutPerInst, TimeoutToMemblock, TwoPassEnabled, EnumNodeAllocs, HistNodeAllocs, HashTablAllocs);
+    Logger::Event("Short sequential BnB running");
+    // Run sequential BnB first - solves 'easy' instances to avoid parallel
+    // overhead Currently hardcoded to 10ms timeout.
+    auto SeqRegion = std::make_unique<BBWithSpill>(
+        OST.get(), dataDepGraph_, 0, HistTableHashBits, LowerBoundAlgorithm,
+        HeuristicPriorities, EnumPriorities, VerifySchedule, PruningStrategy,
+        SchedForRPOnly, EnumStalls, SCW, SCF, HeurSchedType, TimeoutToMemblock,
+        TwoPassEnabled, IsTimeoutPerInst, EnumNodeAllocs, HistNodeAllocs,
+        HashTablAllocs);
 
-      // Used for two-pass-optsched to alter upper bound value.
     if (SecondPass)
-      region->InitSecondPass();
+      SeqRegion->InitSecondPass();
 
     // Setup time before scheduling
     Utilities::startTime = std::chrono::high_resolution_clock::now();
     // Schedule region.
 
-    Rslt = region->FindOptimalSchedule(CurrentRegionTimeout, CurrentLengthTimeout,
-                                       IsEasy, NormBestCost, BestSchedLngth,
-                                       NormHurstcCost, HurstcSchedLngth, Sched,
-                                       FilterByPerp, blocksToKeep(schedIni), ParallelBB);
+    Rslt = SeqRegion->FindOptimalSchedule(
+        10, CurrentLengthTimeout, IsEasy, NormBestCost, BestSchedLngth,
+        NormHurstcCost, HurstcSchedLngth, Sched, FilterByPerp,
+        blocksToKeep(schedIni), ParallelBB);
 
-    if ((!(Rslt == RES_SUCCESS || Rslt == RES_TIMEOUT) || Sched == NULL)) {
-      LLVM_DEBUG(
-          Logger::Info("OptSched run failed: rslt=%d, sched=%p. Falling back.",
-                       Rslt, (void *)Sched));
-      // Scheduling with opt-sched failed.
-      // fallbackScheduler();
-      return;
+    // If 10ms sequential BnB doesn't solve, then attempt parallel with full
+    // time limit
+    if (Rslt == RES_TIMEOUT) {
+      // Actual Parallel
+      Logger::Event("Parallel BnB Running");
+      auto ParRegion = std::make_unique<BBMaster>(
+          OST.get(), dataDepGraph_, 0, HistTableHashBits, LowerBoundAlgorithm,
+          HeuristicPriorities, EnumPriorities, VerifySchedule, PruningStrategy,
+          SchedForRPOnly, EnumStalls, SCW, SCF, HeurSchedType, NumThreads,
+          MinNodesAsMultiple, MinSplittingDepth, MaxSplittingDepth, NumSolvers,
+          LocalPoolSize, ExploitationPercent, GlobalPoolSCF, GlobalPoolSort,
+          WorkSteal, IsTimeoutPerInst, TimeoutToMemblock, TwoPassEnabled,
+          EnumNodeAllocs, HistNodeAllocs, HashTablAllocs);
+
+      // Used for two-pass-optsched to alter upper bound value.
+      if (SecondPass)
+        ParRegion->InitSecondPass();
+
+      // Setup time before scheduling
+      Utilities::startTime = std::chrono::high_resolution_clock::now();
+      // Schedule region.
+
+      Rslt = ParRegion->FindOptimalSchedule(
+          CurrentRegionTimeout, CurrentLengthTimeout, IsEasy, NormBestCost,
+          BestSchedLngth, NormHurstcCost, HurstcSchedLngth, Sched, FilterByPerp,
+          blocksToKeep(schedIni), ParallelBB);
+
+      if ((!(Rslt == RES_SUCCESS || Rslt == RES_TIMEOUT) || Sched == NULL)) {
+        LLVM_DEBUG(Logger::Info(
+            "OptSched run failed: rslt=%d, sched=%p. Falling back.", Rslt,
+            (void *)Sched));
+        // Scheduling with opt-sched failed.
+        // fallbackScheduler();
+        return;
+      }
+
+      // Count simulated spills.
+      if (isSimRegAllocEnabled()) {
+        SimulatedSpills += SeqRegion->GetSimSpills();
+        SimulatedSpills += ParRegion->GetSimSpills();
+      }
     }
 
     OST->finalizeRegion(Sched);
@@ -589,12 +623,6 @@ void ScheduleDAGOptSched::schedule() {
         ResetFlags(SU);
       }
       return;
-    }
-
-      
-    // Count simulated spills.
-    if (isSimRegAllocEnabled()) {
-      SimulatedSpills += region->GetSimSpills();
     }
   }
 
