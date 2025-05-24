@@ -224,6 +224,16 @@ public:
   // Global Pool Nodes explored
   uint64_t GlobalPoolNodes = 0;
 
+  // Jeff H Thread Stop/Prune counts
+  // Doing it this way for a per-thread count + accumulation
+  uint64_t PruneHits{0};
+  uint64_t PruneMisses{0};
+  uint64_t ThreadStopHits{0};
+  uint64_t ThreadStopMisses{0};
+  uint64_t ThreadStopBetterPrefixCost{0};
+  uint64_t ThreadStopPrefixContainsPeak{0};
+  uint64_t ThreadStopHistoryStillExploring{0};
+
   int *RegCrntUseCnts;
   int *RegNums;
   int16_t *RegTypes;
