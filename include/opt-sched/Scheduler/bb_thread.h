@@ -233,6 +233,7 @@ public:
   uint64_t ThreadStopBetterPrefixCost{0};
   uint64_t ThreadStopPrefixContainsPeak{0};
   uint64_t ThreadStopHistoryStillExploring{0};
+  uint64_t ThreadStopControl{0};
 
   int *RegCrntUseCnts;
   int *RegNums;

@@ -549,6 +549,9 @@ static bool isHistoryPeakCostDominated(InstCount OtherPrefixCost,
                                        InstCount HistTotalCost,
                                        HistEnumTreeNode *HistoryNode,
                                        Enumerator *Enumerator) {
+  // "Control Group Counts"
+  ++Enumerator->bbt_->ThreadStopControl;
+
   const bool condition1 = OtherPrefixCost < HistPrefixCost;
   if (condition1) {
     Logger::Info("Thread stop: candidate prefix cost better");
@@ -558,12 +561,12 @@ static bool isHistoryPeakCostDominated(InstCount OtherPrefixCost,
   const bool condition2 = HistTotalCost == HistPrefixCost;
   if (condition2) {
     Logger::Info("Thread stop: prefix contains peak cost");
-    ++Enumerator->bbt_->ThreadStopBetterPrefixCost;
+    ++Enumerator->bbt_->ThreadStopPrefixContainsPeak;
   }
   const bool condition3 = !HistoryNode->getFullyExplored();
   if (condition3) {
     Logger::Info("Thread stop: history not fully explored");
-    ++Enumerator->bbt_->ThreadStopBetterPrefixCost;
+    ++Enumerator->bbt_->ThreadStopHistoryStillExploring;
   }
 
   if (condition1 && condition2 && condition3) {

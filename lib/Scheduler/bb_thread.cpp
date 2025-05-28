@@ -2741,8 +2741,9 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
   }
 
 
-  int PruneHits = 0, PruneMisses = 0, ThreadStopHits = 0, ThreadStopMisses = 0;
-  int ThreadStopBetterPrefixCost = 0, ThreadStopPrefixContainsPeak = 0, ThreadStopHistoryStillExploring = 0;
+  uint64_t ThreadStopControl = 0;
+  uint64_t PruneHits = 0, PruneMisses = 0, ThreadStopHits = 0, ThreadStopMisses = 0;
+  uint64_t ThreadStopBetterPrefixCost = 0, ThreadStopPrefixContainsPeak = 0, ThreadStopHistoryStillExploring = 0;
   for (int j = 0; j < NumThreads_; j++) {
     ThreadManager[j].join();
     
@@ -2753,6 +2754,15 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
     Logger::Info("HistInfsbl %d" , Workers[j]->HistInfsbl);
     Logger::Info("OtherInfsbl %d", Workers[j]->OtherInfsbl);
     Logger::Info("GlobalPoolNodes %d", Workers[j]->GlobalPoolNodes);
+
+    Logger::Info("PruneHits %d", Workers[j]->PruneHits);
+    Logger::Info("PruneMisses %d", Workers[j]->PruneMisses);
+    Logger::Info("ThreadStopHits %d", Workers[j]->ThreadStopHits);
+    Logger::Info("ThreadStopMisses %d", Workers[j]->ThreadStopMisses);
+    Logger::Info("ThreadStopBetterPrefixCost %d", Workers[j]->ThreadStopBetterPrefixCost);
+    Logger::Info("ThreadStopPrefixContainsPeak %d", Workers[j]->ThreadStopPrefixContainsPeak);
+    Logger::Info("ThreadStopHistoryStillExploring %d", Workers[j]->ThreadStopHistoryStillExploring);
+    Logger::Info("ThreadStopControl %d", Workers[j]->ThreadStopControl);
     PruneHits += Workers[j]->PruneHits;
     PruneMisses += Workers[j]->PruneMisses;
     ThreadStopHits += Workers[j]->ThreadStopHits;
@@ -2760,6 +2770,7 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
     ThreadStopBetterPrefixCost += Workers[j]->ThreadStopBetterPrefixCost;
     ThreadStopPrefixContainsPeak += Workers[j]->ThreadStopPrefixContainsPeak;
     ThreadStopHistoryStillExploring += Workers[j]->ThreadStopHistoryStillExploring;
+    ThreadStopControl += Workers[j]->ThreadStopControl;
   }
 
 
@@ -2785,7 +2796,8 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
       "thread_stop_misses", ThreadStopMisses,
       "thread_stop_better_prefix_cost", ThreadStopBetterPrefixCost,
       "thread_stop_prefix_contains_peak", ThreadStopPrefixContainsPeak,
-      "thread_stop_history_still_exploring", ThreadStopHistoryStillExploring
+      "thread_stop_history_still_exploring", ThreadStopHistoryStillExploring,
+      "thread_stop_control", ThreadStopControl
   );
 
   /*  ALGORITHM FOR FAIR REPRESENTATION
