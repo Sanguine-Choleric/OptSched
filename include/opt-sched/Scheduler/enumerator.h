@@ -912,7 +912,8 @@ public:
   void deleteNodeAlctr() override;
   
   bool WasObjctvMet_() override;
-  
+  void print_history_debug();
+
   void FreeAllocators_() override;
 
   void destroy();

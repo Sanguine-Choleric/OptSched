@@ -2742,7 +2742,8 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
   }
 
 
-
+  int PruneHits = 0, PruneMisses = 0, ThreadStopHits = 0, ThreadStopMisses = 0;
+  int ThreadStopBetterPrefixCost = 0, ThreadStopPrefixContainsPeak = 0, ThreadStopHistoryStillExploring = 0;
   for (int j = 0; j < NumThreads_; j++) {
     ThreadManager[j].join();
     
@@ -2753,7 +2754,13 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
     Logger::Info("HistInfsbl %d" , Workers[j]->HistInfsbl);
     Logger::Info("OtherInfsbl %d", Workers[j]->OtherInfsbl);
     Logger::Info("GlobalPoolNodes %d", Workers[j]->GlobalPoolNodes);
-    
+    PruneHits += Workers[j]->PruneHits;
+    PruneMisses += Workers[j]->PruneMisses;
+    ThreadStopHits += Workers[j]->ThreadStopHits;
+    ThreadStopMisses += Workers[j]->ThreadStopMisses;
+    ThreadStopBetterPrefixCost += Workers[j]->ThreadStopBetterPrefixCost;
+    ThreadStopPrefixContainsPeak += Workers[j]->ThreadStopPrefixContainsPeak;
+    ThreadStopHistoryStillExploring += Workers[j]->ThreadStopHistoryStillExploring;
   }
 
 
@@ -2772,8 +2779,15 @@ FUNC_RESULT BBMaster::Enumerate_(Milliseconds startTime, Milliseconds rgnTimeout
   int globalPoolSizeEnd = GlobalPool->size();
 
   Logger::Event("GlobalPoolNodesExplored", "num", globalPoolSizeStart - globalPoolSizeEnd);
-
-
+  Logger::Event("PruneCounts", "prune_hits", PruneHits, "prune_misses",
+                PruneMisses);
+  Logger::Event("ThreadStopCounts",
+      "thread_stop_hits", ThreadStopHits,
+      "thread_stop_misses", ThreadStopMisses,
+      "thread_stop_better_prefix_cost", ThreadStopBetterPrefixCost,
+      "thread_stop_prefix_contains_peak", ThreadStopPrefixContainsPeak,
+      "thread_stop_history_still_exploring", ThreadStopHistoryStillExploring
+  );
 
   /*  ALGORITHM FOR FAIR REPRESENTATION
   int *ExploitationCount = new int[firstLevelSize_];

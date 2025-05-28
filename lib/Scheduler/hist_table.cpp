@@ -1,4 +1,6 @@
 #include "opt-sched/Scheduler/hist_table.h"
+
+#include "opt-sched/Scheduler/bb_thread.h"
 #include "opt-sched/Scheduler/logger.h"
 #include "opt-sched/Scheduler/stats.h"
 #include "opt-sched/Scheduler/utilities.h"
@@ -506,9 +508,9 @@ void CostHistEnumTreeNode::Init_() {
 
 bool CostHistEnumTreeNode::DoesDominate(EnumTreeNode *node,
                                         Enumerator *enumrtr) {
-  #ifdef IS_DEBUG
-    assert(isCnstrctd_);
-  #endif
+#ifdef IS_DEBUG
+  assert(isCnstrctd_);
+#endif
   assert(enumrtr->IsCostEnum());
 
   InstCount shft = 0;
@@ -535,6 +537,54 @@ bool CostHistEnumTreeNode::DoesDominate(EnumTreeNode *node,
   // had at least one feasible sched below it, domination will be
   // determined by the cost domination condition
   return ChkCostDmntn_(node, enumrtr, shft);
+}
+
+// To be used with thread stop. 3 necessary conditions for valid thread stop.
+// 1. Candidate prefix cost is better than history prefix cost.
+// 2. Prefix cost can be improved (If peak cost is in prefix, it's possible to
+//    improve. If peak cost is in suffix, improving prefix does nothing).
+// 3. History node hasn't finished exploring its subspace
+static bool isHistoryPeakCostDominated(InstCount OtherPrefixCost,
+                                       InstCount HistPrefixCost,
+                                       InstCount HistTotalCost,
+                                       HistEnumTreeNode *HistoryNode,
+                                       Enumerator *Enumerator) {
+  const bool condition1 = OtherPrefixCost < HistPrefixCost;
+  if (condition1) {
+    Logger::Info("Thread stop: candidate prefix cost better");
+    ++Enumerator->bbt_->ThreadStopBetterPrefixCost;
+
+  }
+  const bool condition2 = HistTotalCost == HistPrefixCost;
+  if (condition2) {
+    Logger::Info("Thread stop: prefix contains peak cost");
+    ++Enumerator->bbt_->ThreadStopBetterPrefixCost;
+  }
+  const bool condition3 = !HistoryNode->getFullyExplored();
+  if (condition3) {
+    Logger::Info("Thread stop: history not fully explored");
+    ++Enumerator->bbt_->ThreadStopBetterPrefixCost;
+  }
+
+  if (condition1 && condition2 && condition3) {
+    Logger::Info("ShouldThreadStop: true");
+    ++Enumerator->bbt_->ThreadStopHits;
+    return true;
+  }
+
+  Logger::Info("ShouldThreadStop: false");
+  ++Enumerator->bbt_->ThreadStopMisses;
+  return false;
+}
+
+// Only works for peak cost functions i think (e.g. PRP)
+bool CostHistEnumTreeNode::IsDominated(EnumTreeNode *node,
+                                       Enumerator *enumrtr) {
+
+  const bool shouldThreadStop = isHistoryPeakCostDominated(
+      node->GetCostLwrBound(), partialCost_, totalCost_, this, enumrtr);
+
+  return shouldThreadStop;
 }
 
 bool CostHistEnumTreeNode::ChkCostDmntn_(EnumTreeNode *node,
@@ -596,6 +646,7 @@ static bool doesHistoryPeakCostDominate(InstCount OtherPrefixCost,
   return LCE->GetBestCost() <= OtherPrefixCost;
 }
 
+
 // Should we prune the other node based on RP cost.
 bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
                                                    Enumerator *E) {
@@ -652,6 +703,15 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
       InstCount instCnt = E->GetTotInstCnt();
       ShouldPrune =
           spillCostSum_ % instCnt >= Node->GetSpillCostSum() % instCnt;
+    }
+  }
+  if (!E->isSecondPass()) {
+    if (ShouldPrune) {
+      Logger::Info("ShouldPrune: true");
+      ++E->bbt_->PruneHits;
+    } else {
+      Logger::Info("ShouldPrune: false");
+      ++E->bbt_->PruneMisses;
     }
   }
 
