@@ -2294,12 +2294,12 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
             (exNode->GetSuffix() != nullptr) ? exNode : nullptr;
         mostRecentMatchWasSet = true;
       }
+      // Polymorphism - calls CostHistEnumTreeNode::DoesDominate
       bool doesDominate = exNode->DoesDominate(newNode, this);
-
-#ifdef IS_DEBUG_SEARCH_ORDER
-      Logger::Info("WDSPE: doesDominate:%s", doesDominate ? "true" : "false");
-#endif
-
+      bool isDominated = false;
+      if (!this->isSecondPass()) {
+        isDominated = exNode->IsDominated(newNode, this);
+      }
       if (doesDominate) {
         
 #ifdef IS_DEBUG_SPD
