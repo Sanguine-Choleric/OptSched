@@ -144,9 +144,16 @@ public:
   void Construct(EnumTreeNode *node, bool isTemp, bool isGenerateState, bool setCost = true) override;
   // Does the sub-problem at this node dominate the given node's?
   bool DoesDominate(EnumTreeNode *node, Enumerator *enumrtr) override;
-  bool IsDominated(EnumTreeNode *node, Enumerator *enumrtr) override;
+  bool IsDominated(EnumTreeNode *node, Enumerator *E) override; // Currently used for thread stop
   void SetCostInfo(EnumTreeNode *node, bool isTemp, Enumerator *enumrtr) override;
   void ResetHistFields(EnumTreeNode *node) override;
+
+  // Jeff H Thread Stop
+  bool should_thread_stop() const { return shouldThreadStop; }
+  void set_should_thread_stop(const bool should_thread_stop) {
+    shouldThreadStop = should_thread_stop;
+  }
+  int thread_id() const { return threadID; }
 
   inline void setTotalCostFromLB(InstCount totalCost) {
     totalCost_ = totalCost;
@@ -170,6 +177,10 @@ protected:
 
   bool isLngthFsbl_;
   bool costInfoSet_ = false;
+
+  // Jeff H Thread Stop
+  bool shouldThreadStop = false;
+  int threadID;
 
   bool ChkCostDmntnForBBSpill_(EnumTreeNode *node, Enumerator *enumrtr);
   bool ChkCostDmntn_(EnumTreeNode *node, Enumerator *enumrtr,

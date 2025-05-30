@@ -496,6 +496,8 @@ void CostHistEnumTreeNode::Construct(EnumTreeNode *node, bool isTemp, bool isGen
   totalCostIsUseable_ = false;
   totalCostIsActualCost_ = false;
 #endif
+
+  this->threadID = node->enumrtr_->SolverID_;
 }
 
 void CostHistEnumTreeNode::Init_() {
@@ -554,38 +556,45 @@ static bool isHistoryPeakCostDominated(InstCount OtherPrefixCost,
 
   const bool condition1 = OtherPrefixCost < HistPrefixCost;
   if (condition1) {
-    Logger::Info("Thread stop: candidate prefix cost better");
+    // Logger::Info("Thread stop: candidate prefix cost better");
     ++Enumerator->bbt_->ThreadStopBetterPrefixCost;
 
   }
   const bool condition2 = HistTotalCost == HistPrefixCost;
   if (condition2) {
-    Logger::Info("Thread stop: prefix contains peak cost");
+    // Logger::Info("Thread stop: prefix contains peak cost");
     ++Enumerator->bbt_->ThreadStopPrefixContainsPeak;
   }
   const bool condition3 = !HistoryNode->getFullyExplored();
   if (condition3) {
-    Logger::Info("Thread stop: history not fully explored");
+    // Logger::Info("Thread stop: history not fully explored");
     ++Enumerator->bbt_->ThreadStopHistoryStillExploring;
   }
 
   if (condition1 && condition2 && condition3) {
-    Logger::Info("ShouldThreadStop: true");
+    // Logger::Info("ShouldThreadStop: true");
     ++Enumerator->bbt_->ThreadStopHits;
     return true;
   }
 
-  Logger::Info("ShouldThreadStop: false");
+  // Logger::Info("ShouldThreadStop: false");
   ++Enumerator->bbt_->ThreadStopMisses;
   return false;
 }
 
 // Only works for peak cost functions i think (e.g. PRP)
-bool CostHistEnumTreeNode::IsDominated(EnumTreeNode *node,
-                                       Enumerator *enumrtr) {
+bool CostHistEnumTreeNode::IsDominated(EnumTreeNode *node, Enumerator *E) {
 
   const bool shouldThreadStop = isHistoryPeakCostDominated(
-      node->GetCostLwrBound(), partialCost_, totalCost_, this, enumrtr);
+      node->GetCostLwrBound(), partialCost_, totalCost_, this, E);
+
+  // Existing history table approach
+  if (shouldThreadStop) {
+    // TODO Real thread stop routine
+    // Signal the worker thread that's searching this space
+    // Pass prefix info to help backtrack
+    this->set_should_thread_stop(true);
+  }
 
   return shouldThreadStop;
 }
@@ -706,15 +715,6 @@ bool CostHistEnumTreeNode::ChkCostDmntnForBBSpill_(EnumTreeNode *Node,
       InstCount instCnt = E->GetTotInstCnt();
       ShouldPrune =
           spillCostSum_ % instCnt >= Node->GetSpillCostSum() % instCnt;
-    }
-  }
-  if (!E->isSecondPass()) {
-    if (ShouldPrune) {
-      Logger::Info("ShouldPrune: true");
-      ++E->bbt_->PruneHits;
-    } else {
-      Logger::Info("ShouldPrune: false");
-      ++E->bbt_->PruneMisses;
     }
   }
 

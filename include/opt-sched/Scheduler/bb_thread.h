@@ -23,20 +23,21 @@ Last Update:  Jan. 2022
 
 #include "opt-sched/Scheduler/OptSchedTarget.h"
 #include "opt-sched/Scheduler/defines.h"
+#include "opt-sched/Scheduler/enumerator.h"
 #include "opt-sched/Scheduler/gen_sched.h"
 #include "opt-sched/Scheduler/sched_region.h"
-#include "opt-sched/Scheduler/enumerator.h"
 #include "llvm/ADT/SmallVector.h"
-#include <map>
-#include <set>
-#include <vector>
-#include <queue>
-#include <thread>
-#include <mutex>
 #include <atomic>
-#include <stack>
-#include <iostream>
 #include <fstream>
+#include <iostream>
+#include <map>
+#include <mutex>
+#include <queue>
+#include <set>
+#include <stack>
+#include <thread>
+#include <unordered_map>
+#include <vector>
 
 namespace llvm {
 namespace opt_sched {

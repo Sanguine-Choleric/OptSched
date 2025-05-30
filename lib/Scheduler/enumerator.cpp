@@ -2296,12 +2296,21 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
       }
       // Polymorphism - calls CostHistEnumTreeNode::DoesDominate
       bool doesDominate = exNode->DoesDominate(newNode, this);
+      if (this->IsFirstPass_) {
+        if (doesDominate) {
+          // Logger::Info("ShouldPrune: true");
+          ++this->bbt_->PruneHits;
+        } else {
+          // Logger::Info("ShouldPrune: false");
+          ++this->bbt_->PruneMisses;
+        }
+      }
       bool isDominated = false;
       if (!this->isSecondPass()) {
         isDominated = exNode->IsDominated(newNode, this);
       }
       if (doesDominate) {
-        
+
 #ifdef IS_DEBUG_SPD
         Logger::Info("Node %d is dominated. Partial scheds:",
                      newNode->GetNum());
@@ -2322,14 +2331,14 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
 
         wasDmntSubProbExmnd = true;
         break;
-      } else {
-        if (exNode->getFullyExplored()) {
-          lastMatch = exNode;
-        }
+      }
+
+      if (exNode->getFullyExplored()) {
+        lastMatch = exNode;
+      }
 #ifdef IS_DEBUG_SPD
         stats::signatureAliases++;
 #endif
-      }
     }
 
     exNode = exmndSubProbs_->GetPrevMatch(srchPtr, newNode->GetSig());
@@ -2345,7 +2354,7 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
     bbt_->histTableUnlock(key);
   }
 
-  
+
 
   //stats::traversedHistoryListSize.Record(trvrsdListSize);
   return wasDmntSubProbExmnd;
@@ -2684,7 +2693,7 @@ bool Enumerator::EnumStall_() { return enblStallEnum_; }
 
 // TODO remove
 void Enumerator::printInfsbltyHits() {
-  
+
   Logger::Info("Cost Infeasibility Hits = %d",CostInfsbl);
   Logger::Info("Relaxed Infeasibility Hits = %d",rlxdInfsbl);
   Logger::Info("Backward LB Infeasibility Hits = %d",bkwrdLBInfsbl);
@@ -2693,7 +2702,7 @@ void Enumerator::printInfsbltyHits() {
   Logger::Info("History Domination Infeasibility Hits = %d",histDomInfsbl);
   Logger::Info("Range Tightening Infeasibility Hits = %d",rangeTightInfsbl);
   Logger::Info("Slot Count Infeasibility Hits = %d",slotCntInfsbl);
-  
+
 }
 
 /*****************************************************************************/
@@ -2704,7 +2713,7 @@ LengthEnumerator::LengthEnumerator(
     bool SchedForRPOnly, bool enblStallEnum, Milliseconds timeout, bool IsSecondPass,
     InstCount preFxdInstCnt, SchedInstruction *preFxdInsts[])
     : Enumerator(dataDepGraph, machMdl, schedUprBound, sigHashSize, prirts,
-                 PruningStrategy, SchedForRPOnly, enblStallEnum, timeout, 0, 1, 1, nullptr, nullptr, IsSecondPass, 
+                 PruningStrategy, SchedForRPOnly, enblStallEnum, timeout, 0, 1, 1, nullptr, nullptr, IsSecondPass,
                  preFxdInstCnt, preFxdInsts) {
   SetupAllocators_();
   tmpHstryNode_ = new HistEnumTreeNode;
@@ -2909,7 +2918,7 @@ FUNC_RESULT LengthCostEnumerator::FindFeasibleSchedule(InstSchedule *sched,
                                                        BBThread *bbt,
                                                        int costLwrBound,
                                                        Milliseconds deadline) {
-  
+
   bbt_ = bbt;
   IsTwoPass_ = bbt_->getIsTwoPass();
   IsFirstPass_ = IsTwoPass_ && !IsSecondPass_;
@@ -2945,7 +2954,7 @@ bool LengthCostEnumerator::WasObjctvMet_() {
 
     if (newCost < crntCost) {
       imprvmntCnt_++;
-      if (bbt_->isWorker() && IsFirstPass_) 
+      if (bbt_->isWorker() && IsFirstPass_)
         bbt_->incrementImprvmntCnt();
     }
 
@@ -2977,7 +2986,17 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
 
   isFsbl = Enumerator::ProbeBranch_(inst, newNode, isNodeDmntd, isRlxInfsbl,
                                     isLngthFsbl);
-  
+
+  if (newNode == nullptr) {
+    Logger::Info("NewNode==nullptr");
+  } else {
+    auto *HistoryNode =
+        static_cast<CostHistEnumTreeNode *>(newNode->GetHistory());
+    if (HistoryNode->should_thread_stop()) {
+      Logger::Info("Stopping Thread: %d", HistoryNode->thread_id());
+    }
+  }
+
   assert(newNode || !isFsbl);
 
   if (isFsbl == false) {
