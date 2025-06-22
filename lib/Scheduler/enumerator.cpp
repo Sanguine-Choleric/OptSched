@@ -2307,7 +2307,7 @@ bool Enumerator::WasDmnntSubProbExmnd_(SchedInstruction *,
       }
       bool isDominated = false;
       if (!this->isSecondPass()) {
-        isDominated = exNode->IsDominated(newNode, this);
+        isDominated = exNode->IsDominated(newNode, this, key);
       }
       if (doesDominate) {
 
@@ -2990,10 +2990,13 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
   if (newNode == nullptr) {
     Logger::Info("NewNode==nullptr");
   } else {
-    auto *HistoryNode =
-        static_cast<CostHistEnumTreeNode *>(newNode->GetHistory());
-    if (HistoryNode->should_thread_stop()) {
-      Logger::Info("Stopping Thread: %d", HistoryNode->thread_id());
+    auto enumerator = newNode->getEnumerator();
+    auto threadID = enumerator->getSolverID();
+    auto &threadStopRequest = enumerator->bbt_->threadStopRequests->at(threadID);
+    if (threadStopRequest.shouldThreadStop) {
+      Logger::Info("Stopping Thread: %d", threadID);
+      // TODO Real thread stop routine
+      // Shared data structure check goes here
     }
   }
 

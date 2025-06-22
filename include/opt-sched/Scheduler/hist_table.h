@@ -44,7 +44,8 @@ public:
   // Does the scheduled inst. list of this node match that of the given node
   bool DoesMatch(EnumTreeNode *node, Enumerator *enumrtr, bool isWorker, bool isGlobalPoolNode);
   // Is the sub-problem at this node dominated by the given node's?
-  virtual bool IsDominated(EnumTreeNode *node, Enumerator *enumrtr);
+  virtual bool IsDominated(EnumTreeNode *node, Enumerator *enumrtr,
+                           UDT_HASHVAL key);
   // Does the sub-problem at this node dominate the given node's?
   virtual bool DoesDominate(EnumTreeNode *node, Enumerator *enumrtr);
   virtual void Construct(EnumTreeNode *node, bool isTemp, bool isGenerateState, bool setCost = true);
@@ -144,7 +145,8 @@ public:
   void Construct(EnumTreeNode *node, bool isTemp, bool isGenerateState, bool setCost = true) override;
   // Does the sub-problem at this node dominate the given node's?
   bool DoesDominate(EnumTreeNode *node, Enumerator *enumrtr) override;
-  bool IsDominated(EnumTreeNode *node, Enumerator *E) override; // Currently used for thread stop
+  bool IsDominated(EnumTreeNode *node, Enumerator *E,
+                   UDT_HASHVAL key) override; // Currently used for thread stop
   void SetCostInfo(EnumTreeNode *node, bool isTemp, Enumerator *enumrtr) override;
   void ResetHistFields(EnumTreeNode *node) override;
 

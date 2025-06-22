@@ -583,7 +583,8 @@ static bool isHistoryPeakCostDominated(InstCount OtherPrefixCost,
 }
 
 // Only works for peak cost functions i think (e.g. PRP)
-bool CostHistEnumTreeNode::IsDominated(EnumTreeNode *node, Enumerator *E) {
+bool CostHistEnumTreeNode::IsDominated(EnumTreeNode *node, Enumerator *E,
+                                       UDT_HASHVAL key) {
 
   const bool shouldThreadStop = isHistoryPeakCostDominated(
       node->GetCostLwrBound(), partialCost_, totalCost_, this, E);
@@ -593,7 +594,10 @@ bool CostHistEnumTreeNode::IsDominated(EnumTreeNode *node, Enumerator *E) {
     // TODO Real thread stop routine
     // Signal the worker thread that's searching this space
     // Pass prefix info to help backtrack
-    this->set_should_thread_stop(true);
+    E->bbt_->threadStopRequests->at(this->thread_id()).lock.lock();
+    E->bbt_->threadStopRequests->at(this->thread_id()).shouldThreadStop = true;
+    E->bbt_->threadStopRequests->at(this->thread_id()).prefixSignature = key;
+    E->bbt_->threadStopRequests->at(this->thread_id()).lock.unlock();
   }
 
   return shouldThreadStop;
@@ -833,7 +837,8 @@ bool HistEnumTreeNode::DoesMatch(EnumTreeNode *node, Enumerator *enumrtr, bool i
   return !isSameSubspace && (*othrInstsSchduld == *instsSchduld);
 }
 
-bool HistEnumTreeNode::IsDominated(EnumTreeNode *node, Enumerator *enumrtr) {
+bool HistEnumTreeNode::IsDominated(EnumTreeNode *node, Enumerator *enumrtr,
+                                   UDT_HASHVAL key) {
   assert(node != NULL);
   InstCount shft = 0;
   return node->hstry_->DoesDominate_(NULL, this, ETN_HISTORY, enumrtr, shft);
