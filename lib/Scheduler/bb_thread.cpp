@@ -2122,22 +2122,25 @@ int BBWorker::getLocalPoolMaxSize(int SolverID) {return localPools_[SolverID]->g
 /*****************************************************************************/
 /*****************************************************************************/
 
-
-BBMaster::BBMaster(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
-             long rgnNum, int16_t sigHashSize, LB_ALG lbAlg,
-             SchedPriorities hurstcPrirts, SchedPriorities enumPrirts,
-             bool vrfySched, Pruning PruningStrategy, bool SchedForRPOnly,
-             bool enblStallEnum, int SCW, SPILL_COST_FUNCTION spillCostFunc,
-             SchedulerType HeurSchedType, int NumThreads, int MinNodesAsMultiple,
-             int MinSplittingDepth, 
-             int MaxSplittingDepth, int NumSolvers, int LocalPoolSize, float ExploitationPercent, 
-             SPILL_COST_FUNCTION GlobalPoolSCF, int GlobalPoolSort, bool WorkSteal, bool IsTimeoutPerInst,
-             int timeoutToMemblock, bool twoPassEnabled,  SmallVector<MemAlloc<EnumTreeNode> *, 16> &EnumNodeAllocs,
-             SmallVector<MemAlloc<CostHistEnumTreeNode> *, 16> &HistNodeAllocs, 
-             SmallVector<MemAlloc<BinHashTblEntry<HistEnumTreeNode>> *, 16> &HashTablAllocs)
-             : BBInterfacer(OST_, dataDepGraph, rgnNum, sigHashSize, lbAlg, hurstcPrirts,
-             enumPrirts, vrfySched, PruningStrategy, SchedForRPOnly, 
-             enblStallEnum, SCW, spillCostFunc, HeurSchedType, EnumNodeAllocs, HistNodeAllocs, HashTablAllocs) {
+BBMaster::BBMaster(
+    const OptSchedTarget *OST_, DataDepGraph *dataDepGraph, long rgnNum,
+    int16_t sigHashSize, LB_ALG lbAlg, SchedPriorities hurstcPrirts,
+    SchedPriorities enumPrirts, bool vrfySched, Pruning PruningStrategy,
+    bool SchedForRPOnly, bool enblStallEnum, int SCW,
+    SPILL_COST_FUNCTION spillCostFunc, SchedulerType HeurSchedType,
+    int NumThreads, int MinNodesAsMultiple, int MinSplittingDepth,
+    int MaxSplittingDepth, int NumSolvers, int LocalPoolSize,
+    float ExploitationPercent, SPILL_COST_FUNCTION GlobalPoolSCF,
+    int GlobalPoolSort, bool WorkSteal, bool IsTimeoutPerInst,
+    int timeoutToMemblock, bool twoPassEnabled,
+    SmallVector<MemAlloc<EnumTreeNode> *, 16> &EnumNodeAllocs,
+    SmallVector<MemAlloc<CostHistEnumTreeNode> *, 16> &HistNodeAllocs,
+    SmallVector<MemAlloc<BinHashTblEntry<HistEnumTreeNode>> *, 16>
+        &HashTablAllocs)
+    : BBInterfacer(OST_, dataDepGraph, rgnNum, sigHashSize, lbAlg, hurstcPrirts,
+                   enumPrirts, vrfySched, PruningStrategy, SchedForRPOnly,
+                   enblStallEnum, SCW, spillCostFunc, HeurSchedType,
+                   EnumNodeAllocs, HistNodeAllocs, HashTablAllocs) {
   SolverID_ = 0;
   NumThreads_ = NumThreads; //how many workers
   MinNodesAsMultiple_ = MinNodesAsMultiple;
@@ -2184,14 +2187,22 @@ BBMaster::BBMaster(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
   IsTimeoutPerInst_ = IsTimeoutPerInst;
 
   timeoutToMemblock_ = timeoutToMemblock;
-                
+
+  // Jeff H thread stop
+  // Any thread can read from any index.
+  // Only one thread id can write to its specific index (same as thread id).
+  // Probably needs to stay vector<int> for thread safety.
+  // Stored int is node signature, which is effectively the prefix.
+  // If stored int value is 0, no thread stop request - TODO double check if this is valid.
+  threadStopRequests = std::make_shared<std::vector<threadStopRequest>>(NumThreads_);
+
   initWorkers(OST_, dataDepGraph, rgnNum, sigHashSize, lbAlg, hurstcPrirts, enumPrirts,
               vrfySched, PruningStrategy, SchedForRPOnly, enblStallEnum, SCW, spillCostFunc, TwoPassEnabled_,
               HeurSchedType, BestCost_, schedLwrBound_, enumBestSched_, &OptmlSpillCost_, 
               &bestSchedLngth_, GlobalPool, &MasterNodeCount_, HistTableLock, &GlobalPoolLock, &BestSchedLock, 
               &NodeCountLock, &ImprvCountLock, &RegionSchedLock, &results, idleTimes,
               NumSolvers_, localPools, localPoolLocks, &InactiveThreads_, &InactiveThreadLock, LocalPoolSize_, WorkSteal_, 
-              &WorkStealOn_, IsTimeoutPerInst_, nodeCounts, timeoutToMemblock_, subspaceLwrBounds_);
+              &WorkStealOn_, IsTimeoutPerInst_, nodeCounts, timeoutToMemblock_, subspaceLwrBounds_, threadStopRequests);
   
   ThreadManager.resize(NumThreads_);
 
@@ -2222,20 +2233,23 @@ BBMaster::~BBMaster() {
 }
 /*****************************************************************************/
 
-void BBMaster::initWorkers(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
-             long rgnNum, int16_t sigHashSize, LB_ALG lbAlg,
-             SchedPriorities hurstcPrirts, SchedPriorities enumPrirts,
-             bool vrfySched, Pruning PruningStrategy, bool SchedForRPOnly,
-             bool enblStallEnum, int SCW, SPILL_COST_FUNCTION spillCostFunc, bool twoPassEnabled,
-             SchedulerType HeurSchedType, InstCount *BestCost, InstCount schedLwrBound,
-             InstSchedule *BestSched, InstCount *BestSpill, 
-             InstCount *BestLength, InstPool4 *GlobalPool, 
-             uint64_t *NodeCount, std::mutex **HistTableLock, std::mutex *GlobalPoolLock, std::mutex *BestSchedLock, 
-             std::mutex *NodeCountLock, std::mutex *ImprvCountLock, std::mutex *RegionSchedLock,
-             vector<FUNC_RESULT> *results, int *idleTimes,
-             int NumSolvers, vector<InstPool3 *> localPools, std::mutex **localPoolLocks, int *inactiveThreads,
-             std::mutex *inactiveThreadLock, int LocalPoolSize, bool WorkSteal, bool *WorkStealOn, bool IsTimeoutPerInst,
-             uint64_t *nodeCounts, int timeoutToMemblock, int64_t **subspaceLwrBounds) {
+void BBMaster::initWorkers(
+    const OptSchedTarget *OST_, DataDepGraph *dataDepGraph, long rgnNum,
+    int16_t sigHashSize, LB_ALG lbAlg, SchedPriorities hurstcPrirts,
+    SchedPriorities enumPrirts, bool vrfySched, Pruning PruningStrategy,
+    bool SchedForRPOnly, bool enblStallEnum, int SCW,
+    SPILL_COST_FUNCTION spillCostFunc, bool twoPassEnabled,
+    SchedulerType HeurSchedType, InstCount *BestCost, InstCount schedLwrBound,
+    InstSchedule *BestSched, InstCount *BestSpill, InstCount *BestLength,
+    InstPool4 *GlobalPool, uint64_t *NodeCount, std::mutex **HistTableLock,
+    std::mutex *GlobalPoolLock, std::mutex *BestSchedLock,
+    std::mutex *NodeCountLock, std::mutex *ImprvCountLock,
+    std::mutex *RegionSchedLock, vector<FUNC_RESULT> *results, int *idleTimes,
+    int NumSolvers, vector<InstPool3 *> localPools, std::mutex **localPoolLocks,
+    int *inactiveThreads, std::mutex *inactiveThreadLock, int LocalPoolSize,
+    bool WorkSteal, bool *WorkStealOn, bool IsTimeoutPerInst,
+    uint64_t *nodeCounts, int timeoutToMemblock, int64_t **subspaceLwrBounds,
+    std::shared_ptr<std::vector<threadStopRequest>> threadStopRequests) {
   
   Workers.resize(NumThreads_);
   

@@ -236,6 +236,14 @@ public:
   uint64_t ThreadStopHistoryStillExploring{0};
   uint64_t ThreadStopControl{0};
 
+  // Jeff H Thread Stop
+  struct threadStopRequest {
+    std::mutex lock;
+    bool shouldThreadStop;
+    int prefixSignature;
+  };
+  std::shared_ptr<std::vector<threadStopRequest>> threadStopRequests;
+
   int *RegCrntUseCnts;
   int *RegNums;
   int16_t *RegTypes;
@@ -822,20 +830,26 @@ private:
     
     int timeoutToMemblock_;
 
-    void initWorkers(const OptSchedTarget *OST_, DataDepGraph *dataDepGraph,
-             long rgnNum, int16_t sigHashSize, LB_ALG lbAlg,
-             SchedPriorities hurstcPrirts, SchedPriorities enumPrirts,
-             bool vrfySched, Pruning PruningStrategy, bool SchedForRPOnly,
-             bool enblStallEnum, int SCW, SPILL_COST_FUNCTION spillCostFunc, bool twoPassEnabled,
-             SchedulerType HeurSchedType, InstCount *BestCost, InstCount SchedLwrBound,
-             InstSchedule *BestSched, InstCount *BestSpill, 
-             InstCount *BestLength, InstPool4 *GlobalPool, 
-             uint64_t *NodeCount,  std::mutex **HistTableLock, std::mutex *GlobalPoolLock, std::mutex *BestSchedLock, 
-             std::mutex *NodeCountLock, std::mutex *ImprvCountLock, std::mutex *RegionSchedLock, 
-             vector<FUNC_RESULT> *results, int *idleTimes,
-             int NumSolvers, std::vector<InstPool3 *> localPools, std::mutex **localPoolLocks,
-             int *InactiveThreads_, std::mutex *InactiveThreadLock, int LocalPoolSize, bool WorkSteal, 
-             bool *WorkStealOn, bool IsTimeoutPerInst, uint64_t *nodeCounts, int timeoutToMemblock, int64_t **subspaceLwrBounds);
+
+    void initWorkers(
+        const OptSchedTarget *OST_, DataDepGraph *dataDepGraph, long rgnNum,
+        int16_t sigHashSize, LB_ALG lbAlg, SchedPriorities hurstcPrirts,
+        SchedPriorities enumPrirts, bool vrfySched, Pruning PruningStrategy,
+        bool SchedForRPOnly, bool enblStallEnum, int SCW,
+        SPILL_COST_FUNCTION spillCostFunc, bool twoPassEnabled,
+        SchedulerType HeurSchedType, InstCount *BestCost,
+        InstCount SchedLwrBound, InstSchedule *BestSched, InstCount *BestSpill,
+        InstCount *BestLength, InstPool4 *GlobalPool, uint64_t *NodeCount,
+        std::mutex **HistTableLock, std::mutex *GlobalPoolLock,
+        std::mutex *BestSchedLock, std::mutex *NodeCountLock,
+        std::mutex *ImprvCountLock, std::mutex *RegionSchedLock,
+        vector<FUNC_RESULT> *results, int *idleTimes, int NumSolvers,
+        std::vector<InstPool3 *> localPools, std::mutex **localPoolLocks,
+        int *InactiveThreads_, std::mutex *InactiveThreadLock,
+        int LocalPoolSize, bool WorkSteal, bool *WorkStealOn,
+        bool IsTimeoutPerInst, uint64_t *nodeCounts, int timeoutToMemblock,
+        int64_t **subspaceLwrBounds,
+        std::shared_ptr<std::vector<threadStopRequest>> threadStopRequests);
 
   
     bool initGlobalPool();
