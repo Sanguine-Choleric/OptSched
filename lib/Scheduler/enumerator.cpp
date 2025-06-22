@@ -2987,16 +2987,35 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
   isFsbl = Enumerator::ProbeBranch_(inst, newNode, isNodeDmntd, isRlxInfsbl,
                                     isLngthFsbl);
 
-  if (newNode == nullptr) {
-    Logger::Info("NewNode==nullptr");
-  } else {
-    auto enumerator = newNode->getEnumerator();
-    auto threadID = enumerator->getSolverID();
-    auto &threadStopRequest = enumerator->bbt_->threadStopRequests->at(threadID);
-    if (threadStopRequest.shouldThreadStop) {
-      Logger::Info("Stopping Thread: %d", threadID);
-      // TODO Real thread stop routine
-      // Shared data structure check goes here
+  // Jeff H Thread Stop
+  if (this->isWorker_) {
+    if (newNode == nullptr) {
+      // Logger::Info("NewNode==nullptr");
+    } else {
+      auto *enumerator = newNode->getEnumerator();
+      auto *historyNode = static_cast<CostHistEnumTreeNode*>(newNode->GetHistory());
+      int threadID = historyNode->thread_id();
+
+      // --- CRITICAL DEBUGGING ---
+      auto &requests_vector_ptr = enumerator->bbt_->threadStopRequests;
+      if (requests_vector_ptr == nullptr) {
+        Logger::Info("FATAL: threadStopRequests shared_ptr is NULL!");
+      }
+      if (threadID > 17) {
+        Logger::Info("Bad ThreadID: %d", threadID-2);
+      }
+      // --- END DEBUGGING ---
+
+      auto &threadStopRequest =
+          enumerator->bbt_->threadStopRequests->at(threadID);
+      threadStopRequest.lock.lock();
+      if (threadStopRequest.shouldThreadStop) {
+        Logger::Info("Stopping Thread: %d", threadID-2);
+        threadStopRequest.shouldThreadStop = false;
+        // TODO Real thread stop routine
+        // Shared data structure check goes here
+      }
+      threadStopRequest.lock.unlock();
     }
   }
 

@@ -182,7 +182,7 @@ protected:
 
   // Jeff H Thread Stop
   bool shouldThreadStop = false;
-  int threadID;
+  int threadID = 0;
 
   bool ChkCostDmntnForBBSpill_(EnumTreeNode *node, Enumerator *enumrtr);
   bool ChkCostDmntn_(EnumTreeNode *node, Enumerator *enumrtr,

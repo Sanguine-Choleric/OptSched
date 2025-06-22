@@ -665,7 +665,8 @@ public:
               vector<FUNC_RESULT> *resAddr, int *idleTimes, int NumSolvers, std::vector<InstPool3 *> localPools, 
               std::mutex **localPoolLocks, int *inactiveThreads, std::mutex *inactiveThreadLock, 
               int LocalPoolSize, bool WorkSteal, bool *WorkStealOn, bool IsTimeoutPerInst, uint64_t *nodeCounts,
-              int timeoutToMemblock, int64_t **subspaceLwrBounds);
+              int timeoutToMemblock, int64_t **subspaceLwrBounds,
+              std::shared_ptr<std::vector<threadStopRequest>> threadStopRequests);
 
     ~BBWorker();
   
