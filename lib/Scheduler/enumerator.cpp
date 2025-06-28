@@ -2989,11 +2989,12 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
 
   // Jeff H Thread Stop
   if (this->isWorker_) {
-    if (newNode == nullptr) {
+    if (crntNode_ == nullptr) {
       // Logger::Info("NewNode==nullptr");
     } else {
-      auto *enumerator = newNode->getEnumerator();
-      auto *historyNode = static_cast<CostHistEnumTreeNode*>(newNode->GetHistory());
+      auto *enumerator = this;
+      auto *historyNode =
+          static_cast<CostHistEnumTreeNode *>(crntNode_->GetHistory());
       int threadID = historyNode->thread_id();
 
       // --- CRITICAL DEBUGGING ---
@@ -3002,19 +3003,49 @@ bool LengthCostEnumerator::ProbeBranch_(SchedInstruction *inst,
         Logger::Info("FATAL: threadStopRequests shared_ptr is NULL!");
       }
       if (threadID > 17) {
-        Logger::Info("Bad ThreadID: %d", threadID-2);
+        Logger::Info("Bad ThreadID: %d", threadID - 2);
       }
       // --- END DEBUGGING ---
 
+      UDT_HASHKEY key = exmndSubProbs_->HashKey(crntNode_->GetSig());
       auto &threadStopRequest =
           enumerator->bbt_->threadStopRequests->at(threadID);
       threadStopRequest.lock.lock();
       if (threadStopRequest.shouldThreadStop) {
-        Logger::Info("Stopping Thread: %d", threadID-2);
-        threadStopRequest.shouldThreadStop = false;
+        Logger::Info("%d", threadStopRequest.prefixSignature);
         // TODO Real thread stop routine
         // Shared data structure check goes here
+        // Signature generally won't be equal since this thread continues
+        // enumeration
+        auto node = crntNode_->GetParent();
+        while (threadStopRequest.prefixSignature != key && node != nullptr &&
+               node->GetParent() != nullptr) {
+          node = node->GetParent();
+          key = exmndSubProbs_->HashKey(node->GetSig());
+        }
+        // TODO: Findout why key is sometimes 0 after loop
+        // This implies that no matching signature was found
+        //  Maybe latency in request is high enough that thread started searching another node
+        //  Maybe bug in how threadID is set for nodes (wrong thread signalled)
+        Logger::Info("Stopping Thread: %d | %d | %s", threadID - 2, key,
+                     threadStopRequest.prefixSignature == key ? "true"
+                                                              : "false");
+
+        // TODO: Backtracking Logic
+      //   if (node->GetParent() != nullptr) {
+      //     node = node->GetParent();
+      //     key = exmndSubProbs_->HashKey(node->GetSig());
+      //     while (threadStopRequest.prefixSignature != key && node->GetParent() != nullptr) {
+      //       node = node->GetParent();
+      //       key = exmndSubProbs_->HashKey(node->GetSig());
+      //     }
+      //     if (key == 0) { Logger::Info("ThreadStop Fail:%d|not found", key); }
+      //   } else {
+      //     Logger::Info("ThreadStop Fail:%d|no parent", key);
+      //   }
+      //   threadStopRequest.shouldThreadStop = false;
       }
+
       threadStopRequest.lock.unlock();
     }
   }

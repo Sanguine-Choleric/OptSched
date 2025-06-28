@@ -589,9 +589,7 @@ bool CostHistEnumTreeNode::IsDominated(EnumTreeNode *node, Enumerator *E,
   const bool shouldThreadStop = isHistoryPeakCostDominated(
       node->GetCostLwrBound(), partialCost_, totalCost_, this, E);
 
-  // Existing history table approach
   if (shouldThreadStop) {
-    // TODO Real thread stop routine
     // Signal the worker thread that's searching this space
     // Pass prefix info to help backtrack
     E->bbt_->threadStopRequests->at(this->thread_id()).lock.lock();
@@ -599,6 +597,7 @@ bool CostHistEnumTreeNode::IsDominated(EnumTreeNode *node, Enumerator *E,
     E->bbt_->threadStopRequests->at(this->thread_id()).prefixSignature = key;
     E->bbt_->threadStopRequests->at(this->thread_id()).lock.unlock();
   }
+
 
   return shouldThreadStop;
 }

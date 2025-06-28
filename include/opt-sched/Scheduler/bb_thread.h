@@ -240,7 +240,7 @@ public:
   struct threadStopRequest {
     std::mutex lock;
     bool shouldThreadStop;
-    int prefixSignature;
+    UDT_HASHVAL prefixSignature;
   };
   std::shared_ptr<std::vector<threadStopRequest>> threadStopRequests;
 
